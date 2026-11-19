@@ -1,8 +1,9 @@
 import type { APIRoute } from 'astro';
 
-import { usersApi } from '../../../server/users/runtime';
+import { deferOn, usersApi } from '../../../server/runtime';
 
 export const prerender = false;
 
-export const PATCH: APIRoute = ({ request, params }) => usersApi().update(request, params.id ?? '');
+export const PATCH: APIRoute = ({ request, params, locals }) =>
+  usersApi().update(request, params.id ?? '', deferOn(locals));
 export const ALL: APIRoute = ({ request }) => usersApi().methodNotAllowed(request, ['PATCH']);

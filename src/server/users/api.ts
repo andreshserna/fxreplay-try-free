@@ -3,14 +3,19 @@
  * Astro or Cloudflare, so the whole contract (docs/api.md) is testable with a fake clock,
  * an in-memory repository and no network.
  */
-import {
-  PROBLEMS,
-  problemType,
-  type FieldError,
-  type Problem,
-  type ProblemCode,
-} from '../../lib/api/problems';
+import { toContext } from '../../lib/analytics/attribution';
+import type { FieldError, Problem, ProblemCode } from '../../lib/api/problems';
 import { parseCreateUser, parseProfilePatch, type User } from '../../lib/api/schemas';
+import { assignAll, formatAssignments } from '../../lib/experiments/registry';
+import type { Defer, ServerEvents, VisitorContext } from '../analytics/emitter';
+import {
+  clientKey,
+  jsonResponse,
+  problemResponse,
+  requestContext,
+  type RequestContext,
+} from '../http/respond';
+import { looksAutomated, readVisitor, requestCountry, visitorCookie } from '../http/visitor';
 import { newUserId } from '../ids';
 import {
   readCookie,
@@ -39,15 +44,16 @@ export interface UsersApiOptions {
   limiters?: { create?: RateLimiter; update?: RateLimiter; list?: RateLimiter };
   sessionSecret: string;
   adminToken: string;
+  /** Where the conversion and the profile event go. Absent: nothing is emitted. */
+  events?: ServerEvents;
   now?: () => Date;
   log?: (message: string, detail: Record<string, unknown>) => void;
 }
 
-interface Context {
-  request: Request;
-  url: URL;
-  requestId: string;
-}
+type Context = RequestContext;
+
+/** Without a runtime to hand work to, it simply runs: its own errors are already caught. */
+const runNow: Defer = (work) => void work;
 
 type BodyResult = { ok: true; value: unknown } | { ok: false; code: ProblemCode };
 
@@ -90,7 +96,7 @@ export class UsersApi {
   }
 
   /** POST /api/users */
-  create(request: Request): Promise<Response> {
+  create(request: Request, defer: Defer = runNow): Promise<Response> {
     return this.#handle(request, async (context) => {
       if (!(await this.#allowed(this.#options.limiters?.create, clientKey(request)))) {
         return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
@@ -107,22 +113,42 @@ export class UsersApi {
       const { website, ...input } = parsed.data;
       if (website) return this.#decoy(context, input.email);
 
-      const result = await this.#options.service.create(input, idempotencyKey);
+      // The visitor and the experiment arms come from the server's own cookie, never from
+      // the body, so they cannot be forged or forgotten by a client.
+      const visitor = readVisitor(request);
+      const experiments = assignAll(visitor.id);
+      const result = await this.#options.service.create(input, idempotencyKey, {
+        anonymous_id: visitor.id,
+        experiments,
+      });
       if (result.kind === 'email_taken') return this.#problem(context, 'email_taken');
       if (result.kind === 'key_reused') return this.#problem(context, 'idempotency_key_reused');
 
+      // The conversion: emitted only now, after the row is committed, and never for a replay.
+      if (result.kind === 'created' && this.#options.events) {
+        defer(
+          this.#options.events.emit(
+            'signup_completed',
+            { user_id: result.user.id },
+            visitorContext(request, result.user),
+          ),
+        );
+      }
+
       const expiresAt = Math.floor(this.#now().getTime() / 1000) + SESSION_TTL_SECONDS;
       const session = await signSession(this.#options.sessionSecret, result.user.id, expiresAt);
-      return this.#json(context, 201, publicUser(result.user), {
+      const response = this.#json(context, 201, publicUser(result.user), {
         Location: `/api/users/${result.user.id}`,
         'Set-Cookie': sessionCookie(session),
         ...(result.kind === 'replayed' ? { 'Idempotency-Replayed': 'true' } : {}),
       });
+      if (visitor.isNew) response.headers.append('Set-Cookie', visitorCookie(visitor.id));
+      return response;
     });
   }
 
   /** PATCH /api/users/{id} */
-  update(request: Request, id: string): Promise<Response> {
+  update(request: Request, id: string, defer: Defer = runNow): Promise<Response> {
     return this.#handle(request, async (context) => {
       const cookie = readCookie(request.headers.get('Cookie'), SESSION_COOKIE);
       const nowSeconds = Math.floor(this.#now().getTime() / 1000);
@@ -142,9 +168,24 @@ export class UsersApi {
       if (!parsed.ok) return this.#invalid(context, parsed.errors);
 
       const user = await this.#options.service.updateProfile(id, parsed.data);
-      return user
-        ? this.#json(context, 200, publicUser(user))
-        : this.#problem(context, 'not_found');
+      if (!user) return this.#problem(context, 'not_found');
+
+      const { markets = [], experience, goal } = user.profile;
+      if (this.#options.events && (markets.length > 0 || experience || goal)) {
+        defer(
+          this.#options.events.emit(
+            'profile_completed',
+            {
+              user_id: user.id,
+              markets_count: markets.length,
+              ...(experience ? { experience } : {}),
+              ...(goal ? { goal } : {}),
+            },
+            visitorContext(request, user),
+          ),
+        );
+      }
+      return this.#json(context, 200, publicUser(user));
     });
   }
 
@@ -197,11 +238,7 @@ export class UsersApi {
     request: Request,
     respond: (context: Context) => Promise<Response>,
   ): Promise<Response> {
-    const context: Context = {
-      request,
-      url: new URL(request.url),
-      requestId: request.headers.get('cf-ray') ?? crypto.randomUUID(),
-    };
+    const context = requestContext(request);
     try {
       return await respond(context);
     } catch (error) {
@@ -257,16 +294,7 @@ export class UsersApi {
     headers: Record<string, string> = {},
     extra: Pick<Problem, 'detail' | 'errors'> = {},
   ): Response {
-    const { status, title } = PROBLEMS[code];
-    const problem: Problem = {
-      type: problemType(context.url.origin, code),
-      title,
-      status,
-      code,
-      instance: context.url.pathname,
-      ...extra,
-    };
-    return this.#json(context, status, problem, headers, 'application/problem+json');
+    return problemResponse(context, code, headers, extra);
   }
 
   #json(
@@ -274,23 +302,25 @@ export class UsersApi {
     status: number,
     body: unknown,
     headers: Record<string, string> = {},
-    contentType = 'application/json',
   ): Response {
-    return new Response(JSON.stringify(body), {
-      status,
-      headers: {
-        'Content-Type': `${contentType}; charset=utf-8`,
-        'Cache-Control': 'no-store',
-        'X-Request-Id': context.requestId,
-        ...headers,
-      },
-    });
+    return jsonResponse(context, status, body, headers);
   }
 }
 
-/** Who to count a public request against: the address Cloudflare saw. */
-const clientKey = (request: Request): string =>
-  request.headers.get('CF-Connecting-IP') ?? 'unknown';
+/**
+ * The analytics context of a server event about this user: the visitor as stored with
+ * the user at signup, so the profile event joins the same visitor as the conversion.
+ */
+function visitorContext(request: Request, user: UserRecord): VisitorContext {
+  const country = requestCountry(request);
+  return {
+    anonymous_id: user.anonymous_id ?? user.id,
+    experiments: formatAssignments(user.experiments),
+    is_bot: looksAutomated(request),
+    ...(country ? { country } : {}),
+    ...(user.attribution ? toContext(user.attribution) : {}),
+  };
+}
 
 async function readJson(request: Request): Promise<BodyResult> {
   const contentType = request.headers.get('Content-Type') ?? '';

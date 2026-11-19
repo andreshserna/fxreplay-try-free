@@ -52,19 +52,24 @@ The list operation also returns `attribution`, `experiments` and `anonymous_id`.
 ```json
 {
   "email": "Ada@Example.com ",
-  "anonymous_id": "0b5c1b0e-6a54-4d0f-9d43-2f6f0e7a9c11",
   "attribution": {
     "first_touch": { "source": "instagram", "medium": "paid_social", "campaign": "try_free", "via": "partner42", "landing_path": "/", "at": "2026-11-17T14:02:11Z" },
     "last_touch": { "source": "google", "medium": "cpc", "landing_path": "/", "at": "2026-11-18T23:27:40Z" }
   },
-  "experiments": { "hero_signup": "inline_email" },
   "website": ""
 }
 ```
 
-Only `email` is required. `attribution`, `experiments` and `anonymous_id` are stored with the
-user so acquisition data survives when client analytics are blocked. `website` is a honeypot:
-people never see it.
+Only `email` is required. `website` is a honeypot: people never see it.
+
+Three things are stored with the user so acquisition data survives when client analytics are
+blocked. `attribution` comes from the body, because only the browser saw the landing URL. The
+visitor's anonymous id and experiment arms do not: the server reads its own `HttpOnly` visitor
+cookie and computes the arms from it, so a client can neither forge nor forget them. Sending
+`anonymous_id` or `experiments` in the body is a validation error.
+
+After the row is committed, and only then, the server emits the `signup_completed` event
+(`docs/analytics-plan.md`). A replay emits nothing.
 
 **201 Created.** `Location: /api/users/usr_01JD…`, the user as above, and a session cookie:
 `__Host-session`, signed, `HttpOnly; Secure; SameSite=Lax; Path=/`, valid for one hour. It

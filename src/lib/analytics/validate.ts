@@ -6,6 +6,7 @@
  * reaching the analytics vendor. A missing or invalid required value rejects the event.
  */
 import {
+  ASSIGNMENTS_PATTERN,
   CONTEXT,
   EVENTS,
   ID_PATTERN,
@@ -24,6 +25,7 @@ const STRING_SHAPES = {
   label: LABEL_PATTERN,
   path: PATH_PATTERN,
   timestamp: TIMESTAMP_PATTERN,
+  assignments: ASSIGNMENTS_PATTERN,
 } as const;
 
 function conforms(spec: PropertySpec, value: unknown): boolean {

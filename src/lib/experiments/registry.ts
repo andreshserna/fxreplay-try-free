@@ -62,3 +62,9 @@ export const isVariant = <Key extends ExperimentKey>(
   value: unknown,
 ): value is VariantOf<Key> =>
   typeof value === 'string' && (EXPERIMENTS[key].variants as readonly string[]).includes(value);
+
+/** Assignments in the form the analytics context carries: `key:variant,key:variant`. */
+export const formatAssignments = (assignments: Partial<Assignments>): string =>
+  Object.entries(assignments)
+    .map(([key, variant]) => `${key}:${variant}`)
+    .join(',');

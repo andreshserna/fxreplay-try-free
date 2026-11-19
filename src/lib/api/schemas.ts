@@ -12,7 +12,6 @@ export const GOALS = ['strategy_testing', 'prop_firm', 'practice'] as const;
 
 export const EMAIL_MAX_LENGTH = 254;
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
-const MAX_EXPERIMENTS = 10;
 
 /** Trimmed and lowercased, then checked for shape only. Deliverability is not checked here. */
 export const emailSchema = z
@@ -45,19 +44,9 @@ export const attributionSchema = z.strictObject({
   last_touch: z.optional(z.nullable(touchSchema)),
 });
 
-const experimentKey = z.string().check(z.minLength(1), z.maxLength(64));
-
 export const createUserSchema = z.strictObject({
   email: emailSchema,
-  anonymous_id: z.optional(z.string().check(z.minLength(1), z.maxLength(64))),
   attribution: z.optional(attributionSchema),
-  experiments: z.optional(
-    z.record(experimentKey, experimentKey).check(
-      z.refine((assignments) => Object.keys(assignments).length <= MAX_EXPERIMENTS, {
-        error: 'Too many experiments.',
-      }),
-    ),
-  ),
   /** Honeypot. People never see this field, so a value means a bot. */
   website: z.optional(z.string().check(z.maxLength(200))),
 });

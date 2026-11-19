@@ -1,3 +1,5 @@
+import { execSync } from 'node:child_process';
+
 import cloudflare from '@astrojs/cloudflare';
 import react from '@astrojs/react';
 import { defineConfig, fontProviders } from 'astro/config';
@@ -22,6 +24,17 @@ const family = (name, cssVariable, slug, weights) => ({
   },
 });
 
+/** The build's git SHA: every analytics event carries it, so a regression points at a release. */
+function release() {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'unknown';
+  }
+}
+
 export default defineConfig({
   site: process.env.SITE_URL ?? 'http://localhost:4321',
   // Images are optimized at build time. Nothing is transformed at request time,
@@ -33,6 +46,7 @@ export default defineConfig({
   session: false,
   // One page: its CSS travels in the HTML instead of costing a render-blocking request.
   build: { inlineStylesheets: 'always' },
+  vite: { define: { __RELEASE__: JSON.stringify(process.env.RELEASE ?? release()) } },
   fonts: [
     family('Lato', '--font-display', 'lato', [400, 700, 900]),
     family('Nunito Sans', '--font-body', 'nunito-sans', [400, 600, 700]),

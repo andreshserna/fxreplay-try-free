@@ -114,6 +114,45 @@ describe('Users API over HTTP', () => {
     expect([...ids].sort().reverse()).toEqual(ids);
   });
 
+  it.skipIf(!ADMIN_TOKEN)('stores the visitor from the cookie the collector set', async () => {
+    const batch = {
+      context: { release: 'contract-test', page_path: '/', device_class: 'desktop' },
+      events: [
+        { name: 'landing_viewed', event_id: randomUUID(), occurred_at: new Date().toISOString() },
+        { name: 'signup_completed', event_id: randomUUID(), properties: { user_id: 'forged' } },
+      ],
+    };
+    const collected = await fetch(`${BASE_URL}/api/events`, {
+      method: 'POST',
+      headers: { Origin: BASE_URL, 'CF-Connecting-IP': address() },
+      body: JSON.stringify(batch),
+    });
+    expect(collected.status).toBe(202);
+    expect(await collected.json()).toEqual({ accepted: 1, rejected: 1 });
+    const visitor = (collected.headers.get('Set-Cookie') ?? '').split(';')[0] ?? '';
+    expect(visitor).toMatch(/^fxr_aid=[0-9a-f-]{36}$/);
+
+    const email = uniqueEmail();
+    const created = await fetch(`${BASE_URL}/api/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': key(),
+        'CF-Connecting-IP': address(),
+        Cookie: visitor,
+      },
+      body: JSON.stringify({ email }),
+    });
+    expect(created.status).toBe(201);
+
+    const listed = await fetch(`${BASE_URL}/api/users?limit=5`, {
+      headers: { Authorization: `Bearer ${ADMIN_TOKEN}`, 'CF-Connecting-IP': address() },
+    });
+    const page = (await listed.json()) as { data: (User & { anonymous_id: string })[] };
+    const stored = page.data.find((user) => user.email === email);
+    expect(stored?.anonymous_id).toBe(visitor.split('=')[1]);
+  });
+
   it('rate limits signups from one address and leaves other addresses alone', async () => {
     const noisy = address();
     const statuses: number[] = [];

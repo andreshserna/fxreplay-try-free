@@ -2,7 +2,11 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Problem } from '../../src/lib/api/problems';
 import type { User } from '../../src/lib/api/schemas';
+import { ServerEvents } from '../../src/server/analytics/emitter';
+import { MemorySink } from '../../src/server/analytics/sink';
 import { SESSION_COOKIE, signSession } from '../../src/server/http/session';
+import { VISITOR_COOKIE } from '../../src/server/http/visitor';
+import { assign } from '../../src/lib/experiments/registry';
 import { UsersApi, type RateLimiter } from '../../src/server/users/api';
 import { MemoryUsersRepository } from '../../src/server/users/memory-repository';
 import { StorageUnavailableError } from '../../src/server/users/repository';
@@ -16,6 +20,7 @@ const KEY = 'idem-key-0000000000000001';
 let clock: Date;
 let repository: MemoryUsersRepository;
 let api: UsersApi;
+let sink: MemorySink;
 const logged: Record<string, unknown>[] = [];
 
 const tick = (milliseconds: number) => {
@@ -24,8 +29,10 @@ const tick = (milliseconds: number) => {
 
 function build(limiters: { create?: RateLimiter; update?: RateLimiter; list?: RateLimiter } = {}) {
   repository = new MemoryUsersRepository();
+  sink = new MemorySink();
   api = new UsersApi({
     service: new UsersService(repository, () => clock),
+    events: new ServerEvents({ sink, release: 'test', now: () => clock }),
     limiters,
     sessionSecret: SECRET,
     adminToken: ADMIN,
@@ -106,25 +113,101 @@ describe('POST /api/users', () => {
     }
   });
 
-  it('stores attribution and experiments with the user, and returns them only in the list', async () => {
+  it('stores attribution with the user, and the visitor and experiment arm from the cookie', async () => {
     const attribution = {
       first_touch: { source: 'instagram', medium: 'paid_social', via: 'partner42' },
       last_touch: null,
     };
-    const created = await post({
-      email: 'ada@example.com',
-      anonymous_id: 'anon-1',
-      attribution,
-      experiments: { hero_signup: 'inline_email' },
-    });
+    const created = await post(
+      { email: 'ada@example.com', attribution },
+      { Cookie: `${VISITOR_COOKIE}=visitor-1` },
+    );
     expect(await created.json()).not.toHaveProperty('attribution');
+    expect(created.headers.getSetCookie().join()).not.toContain(VISITOR_COOKIE);
 
     const page = (await (await list()).json()) as ListResult;
     expect(page.data[0]).toMatchObject({
-      anonymous_id: 'anon-1',
+      anonymous_id: 'visitor-1',
       attribution,
+      experiments: { hero_signup: assign('hero_signup', 'visitor-1') },
+    });
+  });
+
+  it('refuses a visitor id or an experiment arm sent in the body', async () => {
+    const response = await post({
+      email: 'ada@example.com',
+      anonymous_id: 'someone-else',
       experiments: { hero_signup: 'inline_email' },
     });
+    expect(response.status).toBe(422);
+    expect(((await response.json()) as Problem).errors).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ field: 'anonymous_id', code: 'unknown_field' }),
+        expect.objectContaining({ field: 'experiments', code: 'unknown_field' }),
+      ]),
+    );
+  });
+
+  it('gives a visitor without a cookie an id, and sets it as an HttpOnly cookie', async () => {
+    const created = await post({ email: 'ada@example.com' });
+    const cookie = created.headers.getSetCookie().find((value) => value.startsWith(VISITOR_COOKIE));
+    expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('Secure');
+  });
+
+  it('emits the conversion once, after the user exists, and never for a replay or a refusal', async () => {
+    const cookie = { Cookie: `${VISITOR_COOKIE}=visitor-1` };
+    const attribution = { first_touch: { source: 'instagram', medium: 'paid_social' } };
+    const created = await post({ email: 'ada@example.com', attribution }, cookie);
+    const user = (await created.json()) as User;
+
+    expect(sink.events).toHaveLength(1);
+    expect(sink.events[0]).toMatchObject({
+      name: 'signup_completed',
+      properties: { user_id: user.id },
+      context: {
+        anonymous_id: 'visitor-1',
+        source: 'server',
+        release: 'test',
+        first_source: 'instagram',
+        first_medium: 'paid_social',
+        experiments: `hero_signup:${assign('hero_signup', 'visitor-1')}`,
+      },
+    });
+    expect(JSON.stringify(sink.events)).not.toContain('ada@example.com');
+
+    await post({ email: 'ada@example.com', attribution }, cookie); // a replay
+    await post({ email: 'ada@example.com' }, { 'Idempotency-Key': 'idem-key-0000000000000002' });
+    await post({ email: 'not-an-email' }, { 'Idempotency-Key': 'idem-key-0000000000000003' });
+    await post(
+      { email: 'bot@example.com', website: 'https://spam.example' },
+      { 'Idempotency-Key': 'idem-key-0000000000000004' },
+    );
+    expect(sink.events).toHaveLength(1);
+  });
+
+  it('emits the profile event for the same visitor as the conversion, when there is an answer', async () => {
+    const created = await post(
+      { email: 'ada@example.com' },
+      { Cookie: `${VISITOR_COOKIE}=visitor-1` },
+    );
+    const user = (await created.json()) as User;
+    const session = { Cookie: (created.headers.getSetCookie()[0] ?? '').split(';')[0] ?? '' };
+
+    await patch(user.id, { markets: null }, session);
+    expect(sink.events.map((event) => event.name)).toEqual(['signup_completed']);
+
+    await patch(user.id, { markets: ['forex', 'indices'], goal: 'prop_firm' }, session);
+    expect(sink.events[1]).toMatchObject({
+      name: 'profile_completed',
+      properties: { user_id: user.id, markets_count: 2, goal: 'prop_firm' },
+      context: { anonymous_id: 'visitor-1', source: 'server' },
+    });
+  });
+
+  it('still creates the user when the analytics destination fails', async () => {
+    sink.send = () => Promise.reject(new Error('destination down'));
+    expect((await post({ email: 'ada@example.com' })).status).toBe(201);
   });
 
   it('replays the first answer when the same key repeats the same body', async () => {

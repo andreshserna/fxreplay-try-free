@@ -15,6 +15,9 @@ export const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 export const LABEL_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 /** A path on this site, without query string or fragment. */
 export const PATH_PATTERN = /^\/[A-Za-z0-9/_-]{0,127}$/;
+/** Experiment assignments as `key:variant` pairs joined by commas. */
+export const ASSIGNMENTS_PATTERN =
+  /^[a-z0-9_]{1,40}:[a-z0-9_]{1,40}(?:,[a-z0-9_]{1,40}:[a-z0-9_]{1,40}){0,9}$/;
 
 interface Described {
   /** One line for the docs table. */
@@ -27,7 +30,7 @@ export type PropertySpec =
   | (Described & { type: 'integer'; min: number; max: number })
   | (Described & { type: 'number'; min: number; max: number })
   | (Described & { type: 'boolean' })
-  | (Described & { type: 'id' | 'label' | 'path' | 'timestamp' });
+  | (Described & { type: 'id' | 'label' | 'path' | 'timestamp' | 'assignments' });
 
 export interface EventDefinition {
   /** Where the event is emitted. The collector refuses server events sent by a browser. */
@@ -137,7 +140,7 @@ export const EVENTS = {
   },
   profile_completed: {
     source: 'server',
-    trigger: 'A profile update with at least one answer has been saved, once per user.',
+    trigger: 'A profile update that leaves at least one answer has been saved.',
     decision: 'Signup quality: the guardrail that stops a variant winning with empty accounts.',
     properties: {
       user_id: { type: 'id', description: 'The user who answered.' },
@@ -219,6 +222,11 @@ export const CONTEXT = {
     description: 'From the viewport width at page load.',
   },
   release: { type: 'id', description: 'The git SHA of the build that emitted it.' },
+  experiments: {
+    type: 'assignments',
+    optional: true,
+    description: 'The variant of every running experiment, as `key:variant` pairs.',
+  },
   first_source: { type: 'label', optional: true, description: 'First touch: utm_source.' },
   first_medium: { type: 'label', optional: true, description: 'First touch: utm_medium.' },
   first_campaign: { type: 'label', optional: true, description: 'First touch: utm_campaign.' },
@@ -227,6 +235,22 @@ export const CONTEXT = {
   last_campaign: { type: 'label', optional: true, description: 'Last touch: utm_campaign.' },
   via: { type: 'label', optional: true, description: 'The affiliate token, from ?via=.' },
   aff: { type: 'label', optional: true, description: 'The source tag, from ?aff=.' },
+  source: {
+    type: 'enum',
+    values: ['client', 'server'],
+    optional: true,
+    description: 'Where the event was emitted. Set by the server, never by the browser.',
+  },
+  country: {
+    type: 'label',
+    optional: true,
+    description: 'Two-letter country of the request, from the edge. Set by the server.',
+  },
+  is_bot: {
+    type: 'boolean',
+    optional: true,
+    description: 'The user agent looks automated. Set by the server, to filter in analysis.',
+  },
 } as const satisfies Record<string, PropertySpec>;
 
 type ValueOf<Spec> = Spec extends { type: 'enum'; values: readonly (infer Value)[] }

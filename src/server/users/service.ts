@@ -60,6 +60,9 @@ export function applyProfilePatch(profile: Profile, patch: ProfilePatch): Profil
 }
 
 /** The rules of the Users API, free of HTTP and of any particular store. */
+/** What the server knows about the visitor who is signing up. Never read from the body. */
+export type VisitorOfRecord = Pick<UserRecord, 'anonymous_id' | 'experiments'>;
+
 export class UsersService {
   readonly #repository: UsersRepository;
   readonly #now: () => Date;
@@ -73,7 +76,11 @@ export class UsersService {
    * Creates a user once per idempotency key. The same key with the same body returns the
    * user it created, so a retry after a timeout never reports "already registered".
    */
-  async create(input: CreateUserInput, idempotencyKey: string): Promise<CreateResult> {
+  async create(
+    input: CreateUserInput,
+    idempotencyKey: string,
+    visitor: VisitorOfRecord = { anonymous_id: null, experiments: {} },
+  ): Promise<CreateResult> {
     const hash = await requestHash(input);
     const now = this.#now();
 
@@ -85,9 +92,9 @@ export class UsersService {
       id: newUserId(now.getTime()),
       email: input.email,
       profile: {},
-      anonymous_id: input.anonymous_id ?? null,
+      anonymous_id: visitor.anonymous_id,
       attribution: input.attribution ?? null,
-      experiments: input.experiments ?? {},
+      experiments: visitor.experiments,
       created_at: timestamp,
       updated_at: timestamp,
     };
