@@ -1,7 +1,8 @@
 # Users API
 
-The contract the signup flow is built against. Status: written before the implementation
-(ADR 0006). Three operations, one resource, same origin as the site.
+The contract the signup flow is built against. It was written before the implementation
+(ADR 0006), and `tests/unit/users-api.test.ts` and `tests/api/users.http.test.ts` hold the
+implementation to it. Three operations, one resource, same origin as the site.
 
 ## Conventions
 
@@ -9,8 +10,9 @@ The contract the signup flow is built against. Status: written before the implem
   refused.
 - Every response carries `Cache-Control: no-store` and an `X-Request-Id`.
 - Errors are RFC 9457 problem details (`application/problem+json`). `code` is the stable
-  machine string a client switches on. `type` is the same identity as a URI. `detail` is for
-  people and may change.
+  machine string a client switches on. `type` is the same identity as a URI, and it resolves:
+  `/problems/<code>` is a page that describes the problem. `detail` is for people and may
+  change.
 - Unversioned while its only client ships in the same deployable. Changes are additive. The
   first external consumer gets a `/v1` prefix.
 - Same origin only: no CORS headers. A request that carries the session cookie must also
@@ -70,14 +72,15 @@ authorizes exactly one thing: updating this user's profile.
 
 **Idempotency.** A repeat of the same key with the same body returns the original response
 again, with `Idempotency-Replayed: true`. A retry after a timeout therefore never shows
-"already registered" to the person who just registered. Keys are kept for 24 hours.
+"already registered" to the person who just registered. Concurrent duplicates of one
+request get the same answer too: the database picks the winner and the rest replay it. Keys
+are kept for 24 hours.
 
 | Status | `code` | When |
 |---|---|---|
 | 400 | `invalid_json` | The body is not JSON |
 | 400 | `idempotency_key_missing` | No `Idempotency-Key`, or not in the allowed shape |
 | 409 | `email_taken` | The email already has an account. The UI offers the way to log in |
-| 409 | `request_in_progress` | The same key is still being processed. `Retry-After: 1` |
 | 413 | `payload_too_large` | Body over 8 KB |
 | 415 | `unsupported_media_type` | Not `application/json` |
 | 422 | `validation_failed` | A field is invalid. `errors` lists each one |
@@ -189,5 +192,5 @@ timeout, or a 500, 502, 503 or 504. It never retries a 4xx.
 | 422 `validation_failed` | The message under each field, focus on the first |
 | 409 `email_taken` | "You already have an account", with the way to log in |
 | 429 `rate_limited` | "Too many attempts", with when to try again |
-| 409 `request_in_progress`, 5xx after the retry, timeout, offline | "We could not reach the server", the input kept, a retry button |
+| 5xx after the retry, timeout, offline | "We could not reach the server", the input kept, a retry button |
 | Anything else | The same as a server error. It is logged as a contract violation |

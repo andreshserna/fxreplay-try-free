@@ -4,11 +4,28 @@
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-11-18",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "send_metrics": false,
   // Prerendered pages and hashed assets are served from here without running the Worker.
   "assets": {
     "binding": "ASSETS",
     "directory": "./dist",
   },
+  // No database id: Wrangler creates a local database for development and provisions the
+  // remote one on the first deploy. Secrets (SESSION_SECRET, ADMIN_TOKEN) are never in this
+  // file: `wrangler secret put` in production, `.dev.vars` locally.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fxreplay-try-free",
+      "migrations_dir": "migrations",
+    },
+  ],
+  // Approximate, per-location limits that stop abuse. They are not quotas (docs/api.md).
+  "ratelimits": [
+    { "name": "CREATE_LIMITER", "namespace_id": "1001", "simple": { "limit": 5, "period": 60 } },
+    { "name": "UPDATE_LIMITER", "namespace_id": "1002", "simple": { "limit": 20, "period": 60 } },
+    { "name": "LIST_LIMITER", "namespace_id": "1003", "simple": { "limit": 60, "period": 60 } },
+  ],
   "observability": {
     "enabled": true,
   },

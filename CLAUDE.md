@@ -23,15 +23,16 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 
 | Command | What it does |
 |---|---|
-| `npm run dev`, `build`, `preview`, `typecheck` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it), `astro check` |
-| `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner, no dependencies) |
+| `npm run dev`, `build`, `preview` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it). `dev` and `preview` run `setup` first: local secrets and D1 migrations |
+| `npm run typecheck`, `lint`, `format` | `wrangler types` and `astro check`; ESLint and Prettier's check; Prettier's write |
+| `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
+| `npm run test:api` | The same contract over HTTP against a running preview: the real Worker and a real D1 |
+| `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
 | `npm run gen` | Regenerate `tokens/*.css` and the contrast tables in `docs/brand-notes.md` (`gen:check` fails if stale) |
-| `npm run check:tokens` | Token rules over `src/` and `public/`: no color literals, no primitive tokens |
-| `npm run check:contrast` | Every pair in `tokens/contrast-pairs.json` against its WCAG threshold |
-| `npm run check:kit` | `tokens/tokens.json` still matches the kit (skipped where `brief/` is absent) |
+| `npm run check:tokens`, `check:contrast`, `check:kit` | No color literals or primitive tokens in product code; every UI pair meets its WCAG threshold; `tokens.json` still matches the kit |
 
-Still to come: `lint`, `test`, `test:e2e`, `lighthouse`. A command that does not exist yet is
-"not available", never "passed".
+Still to come: `test:e2e`, `lighthouse`. A command that does not exist yet is "not available",
+never "passed".
 
 ## Map
 
@@ -39,23 +40,23 @@ Still to come: `lint`, `test`, `test:e2e`, `lighthouse`. A command that does not
 |---|---|
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
-| `src/` | `pages/`, `layouts/`, `styles/global.css`, `assets/brand/` (the kit's logos, as shipped). Config: `astro.config.mjs`, `wrangler.jsonc` |
+| `src/pages/`, `src/layouts/`, `src/styles/` | The page, `api/users/` (thin endpoints), `problems/` (one page per error type), base styles |
+| `src/lib/api/` | The contract in code: shared schemas and the problem registry, used by both sides |
+| `src/server/` | `users/` (service, repository interface, D1 and in-memory implementations, HTTP handlers, `runtime.ts` for bindings), `http/session.ts` |
+| `migrations/`, `wrangler.jsonc`, `astro.config.mjs` | D1 schema; bindings; adapter, fonts and build settings |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
-| `scripts/` | `checks/` (shared by the edit hook and CI), `gen/`, `kit/` (rebuild and verify against the kit), `lib/` |
-| `docs/decisions/` | `log.md` (every decision, one line each) and the ADRs (the important ones) |
-| `docs/research/` | Evidence: `assumptions.md` (what must be verified), `brief.md` (what was found, with sources) |
-| `brief/`, `notes/` | Inputs and private review notes. Gitignored. `brief/` is read-only |
+| `scripts/`, `tests/` | `checks/`, `gen/`, `kit/`, `lib/`, `dev/setup.mjs`; `unit/` and `api/` tests |
+| `docs/` | `api.md`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` (assumptions and evidence) |
+| `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
 
 Planned, not built yet. Update this table when each lands:
 
 | Path | What will live there |
 |---|---|
-| `src/pages/api/` | The Users API endpoints |
 | `src/components/` | Page sections, and the signup form: the only island that hydrates |
-| `src/lib/api/` | The contract: shared schemas, the typed client, the error mapping |
+| `src/lib/api/client.ts` | The typed client: timeout, safe retries, one mapping from errors to UI states |
 | `src/lib/analytics/`, `src/lib/experiments/` | Event registry and `track()`; edge assignment and exposure |
-| `src/server/` | Repository interface and implementations, session cookie, rate limiting |
-| `tests/` | Unit and contract tests, end-to-end tests with axe |
+| `tests/e2e/` | End-to-end tests of the signup states and the funnel, with axe |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.
 

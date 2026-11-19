@@ -140,3 +140,25 @@ project or is costly to reverse also has an ADR in this folder.
 - **One open advisory, accepted:** a moderate denial-of-service report against `minimatch`
   inside the accessibility lint plugin. It is a development tool matching patterns we wrote.
   The offered fix is a downgrade that breaks the plugin.
+- **The Users API is plain functions from `Request` to `Response`.** The Astro endpoints are
+  three-line adapters, and one file (`runtime.ts`) knows about Cloudflare bindings. The whole
+  contract is therefore testable in Node with a fake clock and no network.
+- **Shared schemas use `zod/mini`.** The form and the server validate with the same rules,
+  and the tree-shakable build keeps the form's bundle small. Issues are mapped to the
+  contract's own field codes, so the library never leaks into the API.
+- **The user and its idempotency key are written in one D1 batch,** which is one transaction.
+  There is never a key without its user, so the `request_in_progress` answer was removed from
+  the contract. When concurrent duplicates race, the losers replay the winner's answer.
+- **Problem types come from one registry** that builds the error responses and one static
+  page per type under `/problems/`, so the `type` URI of every error resolves, as RFC 9457
+  intends.
+- **The session is our own HMAC-signed `__Host-` cookie, valid for one hour.** It authorizes
+  only the profile update. The API refuses to start with an empty signing secret.
+- **The contract is tested at two levels.** In Node against the in-memory repository (every
+  status code), and over HTTP against the real Worker with a real D1 (uniqueness under
+  concurrent requests, double submit, the rate limit). Nine deliberate breaks of the rules
+  were each caught by at least one test.
+- **`npm run dev` works on a fresh clone with no account.** A setup step writes random local
+  secrets to `.dev.vars` and applies the D1 migrations to a local database. The database id
+  is left out of `wrangler.jsonc`: Wrangler provisions the remote one on the first deploy.
+- **Wrangler's usage metrics are off.**

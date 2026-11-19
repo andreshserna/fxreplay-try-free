@@ -1,0 +1,87 @@
+---
+import { PROBLEMS, type ProblemCode } from '../../lib/api/problems';
+import Base from '../../layouts/Base.astro';
+
+/**
+ * One static page per problem type. They make the `type` URI of every error response
+ * resolve to something a person can read (RFC 9457), from the same registry the API uses.
+ */
+export function getStaticPaths() {
+  return (Object.keys(PROBLEMS) as ProblemCode[]).map((code) => ({
+    params: { code: code.replaceAll('_', '-') },
+    props: { code },
+  }));
+}
+
+interface Props {
+  code: ProblemCode;
+}
+
+const { code } = Astro.props;
+const { status, title } = PROBLEMS[code];
+---
+
+<Base title={`${title} (${status})`} description={`The ${code} problem type of the Users API.`}>
+  <main class="problem">
+    <p class="kind">Users API problem type</p>
+    <h1>{title}</h1>
+    <dl>
+      <dt>Status</dt>
+      <dd>{status}</dd>
+      <dt>Code</dt>
+      <dd>
+        <code>{code}</code>
+      </dd>
+    </dl>
+    <p>
+      Error responses from the Users API are <code>application/problem+json</code> documents.
+      Clients switch on <code>code</code>. The text of <code>title</code> and <code>detail</code> is
+      for people and may change.
+    </p>
+    <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
+  </main>
+</Base>
+
+<style>
+  .problem {
+    display: grid;
+    gap: 1.25rem;
+    max-width: 40rem;
+    margin-inline: auto;
+    padding: 3rem 1.25rem;
+  }
+
+  .kind,
+  .notice {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+
+  h1 {
+    font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+  }
+
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5rem 1.5rem;
+    margin: 0;
+    padding: 1rem 1.25rem;
+    border: 1px solid var(--border-primary);
+    border-radius: 0.75rem;
+    background: var(--bg-secondary);
+  }
+
+  dt {
+    color: var(--text-secondary);
+  }
+
+  dd {
+    margin: 0;
+  }
+
+  .notice {
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border-primary);
+  }
+</style>
