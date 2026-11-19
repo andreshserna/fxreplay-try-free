@@ -1,0 +1,198 @@
+#!/usr/bin/env node
+/**
+ * A labelled synthetic result set for the `hero_signup` experiment, so the analysis step can
+ * be demonstrated before any real data exists.
+ *
+ *   node scripts/experiment/synthetic.mjs --seed 7 --per-arm 6690 \
+ *     [--out docs/experiments/fixtures/hero_signup.synthetic.json]
+ *
+ * Counts are binomial draws from the assumed rates below, made with a seeded generator, so
+ * the same seed always writes the same bytes. The file says it is synthetic in its first key
+ * and in its note. Exit codes: 0 done, 2 invalid usage.
+ */
+import { writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { parseArgs } from 'node:util';
+
+const NAME = 'synthetic';
+
+// Every rate below is an ASSUMPTION made for the demonstration, not a measurement. They are
+// chosen so that the fixture exercises the analysis, nothing more.
+/** Assumed signup rate per exposed visitor. The variant is +18% relative. */
+const SIGNUP_RATE = { cta_button: 0.1, inline_email: 0.118 };
+/** Assumed share of signups that complete the profile. The variant is slightly lower. */
+const PROFILE_RATE = { cta_button: 0.46, inline_email: 0.44 };
+/** Assumed submissions per signup: about 1.15, some visitors submit more than once. */
+const SUBMISSIONS_PER_SIGNUP = 1.15;
+/** Assumed share of submissions that fail (invalid_email excluded), the same in both arms. */
+const FAILURE_RATE = { cta_button: 0.06, inline_email: 0.06 };
+/** Fixed p75 web vitals per arm, assumed plausible values, not draws. */
+const VITALS_P75 = {
+  cta_button: { lcp_ms: 1800, inp_ms: 120, cls: 0.02 },
+  inline_email: { lcp_ms: 1850, inp_ms: 130, cls: 0.02 },
+};
+/** The control is listed first, as the analysis expects. */
+const ARMS = /** @type {const} */ (['cta_button', 'inline_email']);
+const PERIOD = { start: '2026-12-01', end: '2026-12-14', whole_weeks: 2 };
+
+export const USAGE = `Usage: node scripts/experiment/synthetic.mjs --seed <n> --per-arm <n> [--out <file>]
+
+Writes a SYNTHETIC results file for the hero_signup experiment, drawn from assumed rates.
+The same seed always gives the same file.
+
+  --seed <n>        seed of the pseudo-random generator, an integer from 0 to 4294967295
+  --per-arm <n>     planned visitors per arm; 2 x n visitors are split at random
+  --out <file>      write the file there instead of printing it
+  --help            print this help
+`;
+
+const OPTIONS = /** @type {const} */ ({
+  seed: { type: 'string' },
+  'per-arm': { type: 'string' },
+  out: { type: 'string' },
+  help: { type: 'boolean' },
+});
+
+/**
+ * Mulberry32: a small, fast 32-bit generator with a good spread for simulation. Not for
+ * anything that needs to be unpredictable.
+ *
+ * @param {number} seed an unsigned 32-bit integer
+ * @returns {() => number} uniform draws in [0, 1)
+ */
+function mulberry32(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * An exact binomial draw: n Bernoulli trials. A loop is fast enough at these sizes (tens of
+ * thousands of trials) and needs no approximation.
+ *
+ * @param {number} n
+ * @param {number} p
+ * @param {() => number} random
+ */
+function binomial(n, p, random) {
+  let successes = 0;
+  for (let trial = 0; trial < n; trial += 1) if (random() < p) successes += 1;
+  return successes;
+}
+
+/**
+ * Builds the synthetic results. The draws happen in a fixed order (the split, then each arm's
+ * signups, profiles, extra submissions and failures), so the output depends on the seed only.
+ *
+ * @param {{ seed: number, perArm: number }} options
+ * @throws {RangeError} naming the invalid argument
+ */
+export function generate({ seed, perArm }) {
+  if (!(Number.isInteger(seed) && seed >= 0 && seed <= 0xffffffff)) {
+    throw new RangeError(`seed must be an integer from 0 to 4294967295, got ${seed}`);
+  }
+  if (!(Number.isInteger(perArm) && perArm > 0)) {
+    throw new RangeError(`perArm must be a positive integer, got ${perArm}`);
+  }
+  const random = mulberry32(seed);
+  const total = 2 * perArm;
+  const controlExposed = binomial(total, 0.5, random);
+  const exposed = { cta_button: controlExposed, inline_email: total - controlExposed };
+
+  const arms = {};
+  for (const arm of ARMS) {
+    const signups = binomial(exposed[arm], SIGNUP_RATE[arm], random);
+    const profiles = binomial(signups, PROFILE_RATE[arm], random);
+    // Every signup is a submission; the extra ones are retries and failures.
+    const submitted = signups + binomial(signups, SUBMISSIONS_PER_SIGNUP - 1, random);
+    const failed = binomial(submitted, FAILURE_RATE[arm], random);
+    arms[arm] = {
+      exposed: exposed[arm],
+      signups,
+      profiles,
+      submitted,
+      failed,
+      vitals_p75: { ...VITALS_P75[arm] },
+    };
+  }
+
+  return {
+    synthetic: true,
+    note: `Synthetic data generated by scripts/experiment/synthetic.mjs with seed ${seed}. Not a measurement of anything.`,
+    experiment: 'hero_signup',
+    generated_with: {
+      seed,
+      per_arm: perArm,
+      assumed_rates: {
+        signup: { ...SIGNUP_RATE },
+        profile_completion: { ...PROFILE_RATE },
+        submissions_per_signup: SUBMISSIONS_PER_SIGNUP,
+        failure: { ...FAILURE_RATE },
+      },
+    },
+    period: { ...PERIOD },
+    arms,
+  };
+}
+
+/** The file's bytes: two-space JSON with a final newline, which Prettier leaves as is. */
+export function serialize(results) {
+  return `${JSON.stringify(results, null, 2)}\n`;
+}
+
+/**
+ * @param {string} flag
+ * @param {string | undefined} text
+ */
+function integer(flag, text) {
+  if (text === undefined) throw new RangeError(`--${flag} is required (see --help)`);
+  if (!/^\d+$/.test(text.trim())) {
+    throw new RangeError(`--${flag} must be a non-negative integer, got "${text}"`);
+  }
+  return Number(text);
+}
+
+/**
+ * Runs the command. Without `--out` nothing is written; with it, only that file.
+ *
+ * @param {string[]} argv the arguments after the script name
+ * @returns {{ code: number, stdout: string, stderr: string }}
+ */
+export function run(argv) {
+  try {
+    let values;
+    try {
+      ({ values } = parseArgs({ args: argv, options: OPTIONS, strict: true }));
+    } catch (error) {
+      throw new RangeError(String(error.message).split('\n')[0], { cause: error });
+    }
+    if (values.help) return { code: 0, stdout: USAGE, stderr: '' };
+    const seed = integer('seed', values.seed);
+    const perArm = integer('per-arm', values['per-arm']);
+    const text = serialize(generate({ seed, perArm }));
+    if (values.out === undefined) return { code: 0, stdout: text, stderr: '' };
+    const path = resolve(values.out);
+    writeFileSync(path, text);
+    return {
+      code: 0,
+      stdout: `Wrote SYNTHETIC data to ${values.out} (seed ${seed}, ${perArm} per arm planned)\n`,
+      stderr: '',
+    };
+  } catch (error) {
+    if (!(error instanceof RangeError)) throw error;
+    const message = error.message.replace(/^perArm\b/, '--per-arm').replace(/^seed\b/, '--seed');
+    return { code: 2, stdout: '', stderr: `${NAME}: ${message}\n` };
+  }
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const { code, stdout, stderr } = run(process.argv.slice(2));
+  process.stdout.write(stdout);
+  process.stderr.write(stderr);
+  process.exitCode = code;
+}

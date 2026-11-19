@@ -18,9 +18,9 @@ export const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
   'X-Frame-Options': 'DENY',
   'Cross-Origin-Opener-Policy': 'same-origin',
-  // Features the page never uses. browsing-topics replaced FLoC's interest-cohort.
-  'Permissions-Policy':
-    'camera=(), microphone=(), geolocation=(), payment=(), usb=(), browsing-topics=()',
+  // Features the page never uses. Only names every Chromium build knows: an unknown one
+  // is reported in the console, which the end-to-end tests treat as a failure.
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
 } as const satisfies Record<string, string>;
 
 /**
