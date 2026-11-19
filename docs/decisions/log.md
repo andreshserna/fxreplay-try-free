@@ -178,3 +178,13 @@ project or is costly to reverse also has an ADR in this folder.
   specified beforehand and checked by tests, through a new `implementer` agent. Replaces
   "Fable everywhere", whose token cost interrupted a review.
   [ADR 0012](0012-models-by-kind-of-work.md).
+- **Nine events and one primary metric.** Signup conversion rate: visitors who complete
+  signup within 7 days of their first landing view, over visitors who viewed the landing.
+  Every event names the decision it informs.
+  [ADR 0013](0013-event-taxonomy-and-primary-metric.md).
+- **No vendor script on the page.** The tracker posts to a collector on the same origin,
+  which enforces the registry and forwards to PostHog from the server.
+  [ADR 0014](0014-first-party-event-collector.md).
+- **The first experiment is `hero_signup`:** a button that leads to the form (what their site
+  does today) against an email field in the hero (this page's bet).
+  [ADR 0015](0015-first-experiment-hero-signup.md).
