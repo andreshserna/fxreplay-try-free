@@ -401,3 +401,6 @@ project or is costly to reverse also has an ADR in this folder.
 - **FAQ answers open and close by growing.** `interpolate-size` animates the height to and
   from `auto` where the browser has it. Elsewhere the answer opens at once and fades in.
   No script.
+- **A call to action travels to the form instead of cutting to it.** `scroll-behavior:
+  smooth`, off under reduced motion. The cursor enters the email field when the page has
+  arrived (`scrollend`), not on the tap: focusing first raises a phone's keyboard mid-way.

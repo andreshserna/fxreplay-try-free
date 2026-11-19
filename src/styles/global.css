@@ -14,6 +14,8 @@
 
 html {
   color-scheme: dark;
+  /* A link to the form travels there instead of cutting to it. Off under reduced motion, below. */
+  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }

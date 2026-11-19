@@ -109,9 +109,19 @@ const running = EXPERIMENTS.hero_signup.enabled
     const location = target instanceof HTMLElement ? target.dataset.cta : undefined;
     if (!isLocation(location)) return;
     track('cta_clicked', { cta_name: 'start_free', cta_location: location });
-    // The link jumps to the form. Put the cursor in it too, so one tap is enough. The
-    // jump itself is the browser's and works without this script.
+    // The link travels to the form: the browser's own anchor, eased by the stylesheet, and
+    // it works without this script. Once the page has arrived, put the cursor in the field
+    // too, so one tap is enough. Focusing earlier would raise a phone's keyboard mid-way.
     const field = document.querySelector<HTMLInputElement>('#signup input[type="email"]');
-    requestAnimationFrame(() => field?.focus({ preventScroll: true }));
+    if (!field) return;
+    let arrived = false;
+    const focus = () => {
+      if (arrived) return;
+      arrived = true;
+      field.focus({ preventScroll: true });
+    };
+    document.addEventListener('scrollend', focus, { once: true });
+    // For a browser without `scrollend`, and for a form that was already in view.
+    window.setTimeout(focus, 1200);
   });
 </script>
