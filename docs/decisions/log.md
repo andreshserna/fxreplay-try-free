@@ -444,3 +444,7 @@ project or is costly to reverse also has an ADR in this folder.
   current runner a blocking-time regression does not fail the build. The budget itself is
   unchanged, every other budget is still judged on every push, and CI now publishes the
   Lighthouse table and reports with each run.
+- **A public PostHog dashboard, linked from the evaluation sheet and the analytics plan.** A
+  screenshot shows that the pipeline counted once. A dashboard lets a reviewer see it count:
+  the funnel, the experiment by arm, exposures per arm, field Web Vitals, failures by reason
+  and the bot flag. It holds aggregates only and is labelled as test traffic.

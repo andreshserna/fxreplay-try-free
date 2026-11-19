@@ -14,7 +14,7 @@ Live: https://fxreplay-try-free.mauricioserna123.workers.dev
 | Each experiment arm by itself | [`/variants/cta_button/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/cta_button/) (control), [`/variants/inline_email/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/inline_email/) (variant) |
 | Every check, on every push | [GitHub Actions](https://github.com/andreshserna/fxreplay-try-free/actions): lint, types, brand tokens, contrast, 354 unit and system tests, the API over HTTP, 54 browser tests with axe, the Lighthouse budgets. Each run's page shows the Lighthouse table, and the full reports download from it |
 | Lighthouse on the live page, run from Google's servers | [PageSpeed Insights](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Ffxreplay-try-free.mauricioserna123.workers.dev%2F). SEO reads low there on purpose: the demo ships `noindex` ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)) |
-| The funnel in PostHog, built from the page's own events | [The screenshot and how it was produced](analytics-plan.md#seen-working-end-to-end). The PostHog project itself is private |
+| The analytics in PostHog, built from the page's own events | [A public dashboard](https://us.posthog.com/shared/-YCoEmJJKBpu1B7V5XPA-1M_Zt0K9g), no login needed: the funnel, the experiment by arm, exposed visitors per arm, field Web Vitals, failures by reason, the bot flag. All of it is test traffic: [how it was produced](analytics-plan.md#seen-working-end-to-end) |
 | The events as they leave the page | Open the live site with the network panel filtered to `events`: batches to `/api/events`, same origin, no third-party request |
 | The API answering | The three commands below |
 
@@ -79,7 +79,7 @@ curl -i $SITE/api/users
 | Primary conversion metric | Signup conversion rate: visitors with an account within 7 days of their first view, over visitors with a view | Defined in the plan, computed in PostHog | [analytics-plan.md, Primary conversion metric](analytics-plan.md#primary-conversion-metric) |
 | An analytics architecture | Browser to a collector on the same origin, which validates every event against the registry and forwards it to PostHog. A `dataLayer` push per event for ad platforms | Cloudflare Worker, PostHog capture API | [ADR 0014](decisions/0014-first-party-event-collector.md), [the diagram](analytics-plan.md#architecture-and-tooling) |
 | Accurate and trustworthy data | Fifteen named risks, each with what prevents or detects it: no personal data in payloads, no double counting, no forged conversions, bots flagged, reconciliation against the database | Compile-time types, runtime validation, tests that drive the real page | [analytics-plan.md, Data quality](analytics-plan.md#data-quality), `tests/e2e/signup.spec.ts` |
-| Seen working | Nine scripted visits on the deployed site, read back as a funnel in PostHog | PostHog | [The funnel](analytics-plan.md#seen-working-end-to-end) |
+| Seen working | Nine scripted visits on the deployed site, read back as a funnel in PostHog | PostHog | [The public dashboard](https://us.posthog.com/shared/-YCoEmJJKBpu1B7V5XPA-1M_Zt0K9g), [the account of it](analytics-plan.md#seen-working-end-to-end) |
 
 ## Experiment proposal
 

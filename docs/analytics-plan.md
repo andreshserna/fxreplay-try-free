@@ -169,6 +169,11 @@ the funnel join them. The visit that submitted a malformed email produced no
 
 ![The signup funnel in PostHog, from internal test traffic](img/posthog-funnel.jpg)
 
+The same events are on [a public PostHog dashboard](https://us.posthog.com/shared/-YCoEmJJKBpu1B7V5XPA-1M_Zt0K9g),
+which needs no login: this funnel over every day since the first deploy, the experiment's
+readout by arm, exposed visitors per arm, field Web Vitals at p75, failures by reason, and
+visitors by the bot flag.
+
 This is test traffic, not a measurement of anything: the numbers show that the pipeline
 counts, not how the page converts. The other visitors in the first step are automated
 audits of the live page.
