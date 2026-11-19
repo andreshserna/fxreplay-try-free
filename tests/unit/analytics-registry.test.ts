@@ -10,7 +10,7 @@ import {
   type PropertySpec,
 } from '../../src/lib/analytics/registry';
 import { checkContext, checkProperties, toLabel } from '../../src/lib/analytics/validate';
-import { EXPERIMENTS, assign, assignAll, isVariant } from '../../src/lib/experiments/registry';
+import { EXPERIMENTS, assign, assignAll } from '../../src/lib/experiments/registry';
 
 const context = {
   event_id: '0b5c1b0e-6a54-4d0f-9d43-2f6f0e7a9c11',
@@ -60,7 +60,6 @@ describe('runtime validation', () => {
     expect(result).toEqual({
       ok: true,
       value: { form_location: 'hero', attempt: 2, reason: 'email_taken' },
-      dropped: ['email'],
     });
   });
 
@@ -150,7 +149,19 @@ describe('experiment assignment', () => {
   it('only ever returns a registered variant', () => {
     const seen = new Set(ids.slice(0, 500).map((id) => assign('hero_signup', id)));
     expect([...seen].sort()).toEqual([...EXPERIMENTS.hero_signup.variants].sort());
-    expect(isVariant('hero_signup', 'inline_email')).toBe(true);
-    expect(isVariant('hero_signup', 'something_else')).toBe(false);
+  });
+
+  it('records no arm for an experiment that is switched off, and serves its control', () => {
+    const experiment = EXPERIMENTS.hero_signup as { enabled: boolean };
+    const enabled = experiment.enabled;
+    experiment.enabled = false;
+    try {
+      expect(assignAll('visitor-a')).not.toHaveProperty('hero_signup');
+      expect(assign('hero_signup', 'visitor-a')).toBe('cta_button');
+      // Pinned to inline_email while the experiment runs.
+      expect(assign('hero_signup', 'visitor-c')).toBe('cta_button');
+    } finally {
+      experiment.enabled = enabled;
+    }
   });
 });

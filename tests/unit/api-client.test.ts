@@ -63,11 +63,8 @@ const problem =
 
 const header = (call: Call | undefined, name: string) => new Headers(call?.init.headers).get(name);
 
-const signUp = (client: ReturnType<typeof createApiClient>, signal?: AbortSignal) =>
-  client.createUser(
-    { email: 'ada@example.com', website: '' },
-    signal ? { idempotencyKey: KEY, signal } : { idempotencyKey: KEY },
-  );
+const signUp = (client: ReturnType<typeof createApiClient>) =>
+  client.createUser({ email: 'ada@example.com', website: '' }, { idempotencyKey: KEY });
 
 /** Runs every pending timer, including the timeouts and the pause, and returns the result. */
 async function settle<T>(promise: Promise<T>): Promise<T> {
@@ -89,7 +86,7 @@ describe('createUser', () => {
     const { client, calls } = scripted(json(201, USER));
     const result = await settle(signUp(client));
 
-    expect(result).toEqual({ kind: 'created', user: USER, replayed: false });
+    expect(result).toEqual({ kind: 'created', user: USER });
     expect(calls).toHaveLength(1);
     expect(calls[0]?.url).toBe('/api/users');
     expect(calls[0]?.init).toMatchObject({ method: 'POST', credentials: 'same-origin' });
@@ -101,9 +98,9 @@ describe('createUser', () => {
     });
   });
 
-  it('reports a replayed answer', async () => {
+  it('maps a replayed answer to the created user', async () => {
     const { client } = scripted(json(201, USER, { 'Idempotency-Replayed': 'true' }));
-    expect(await settle(signUp(client))).toEqual({ kind: 'created', user: USER, replayed: true });
+    expect(await settle(signUp(client))).toEqual({ kind: 'created', user: USER });
   });
 
   it('maps the listed problems to their states, without retrying any of them', async () => {
@@ -187,7 +184,7 @@ describe('createUser', () => {
     await vi.advanceTimersByTimeAsync(1);
     expect(calls).toHaveLength(2);
 
-    expect(await pending).toEqual({ kind: 'created', user: USER, replayed: false });
+    expect(await pending).toEqual({ kind: 'created', user: USER });
     expect(header(calls[1], 'Idempotency-Key')).toBe(KEY);
     expect(calls[1]?.init.body).toBe(calls[0]?.init.body);
   });
@@ -227,7 +224,7 @@ describe('createUser', () => {
 
   it('recovers when the retry after a timeout succeeds', async () => {
     const { client, calls } = scripted('hang', json(201, USER, { 'Idempotency-Replayed': 'true' }));
-    expect(await settle(signUp(client))).toEqual({ kind: 'created', user: USER, replayed: true });
+    expect(await settle(signUp(client))).toEqual({ kind: 'created', user: USER });
     expect(header(calls[1], 'Idempotency-Key')).toBe(KEY);
   });
 
@@ -244,41 +241,6 @@ describe('createUser', () => {
     vi.stubGlobal('navigator', { onLine: false });
     const { client } = scripted(new TypeError('fetch failed'), new TypeError('fetch failed'));
     expect(await settle(signUp(client))).toEqual({ kind: 'unavailable', reason: 'offline' });
-  });
-
-  it('stops without a retry when the caller aborts during the request', async () => {
-    const { client, calls } = scripted('hang', json(201, USER));
-    const controller = new AbortController();
-    const outcome = expect(signUp(client, controller.signal)).rejects.toMatchObject({
-      name: 'AbortError',
-    });
-
-    controller.abort();
-    await outcome;
-    await vi.runAllTimersAsync();
-    expect(calls).toHaveLength(1);
-  });
-
-  it('stops without a retry when the caller aborts during the pause', async () => {
-    const { client, calls } = scripted(problem(503, 'service_unavailable'), json(201, USER));
-    const controller = new AbortController();
-    const outcome = expect(signUp(client, controller.signal)).rejects.toMatchObject({
-      name: 'AbortError',
-    });
-
-    await vi.advanceTimersByTimeAsync(200);
-    controller.abort();
-    await outcome;
-    await vi.runAllTimersAsync();
-    expect(calls).toHaveLength(1);
-  });
-
-  it('does not call the API when the caller has already aborted', async () => {
-    const { client, calls } = scripted(json(201, USER));
-    await expect(signUp(client, AbortSignal.abort())).rejects.toMatchObject({
-      name: 'AbortError',
-    });
-    expect(calls).toHaveLength(0);
   });
 });
 
@@ -376,7 +338,6 @@ describe('against the real handlers', () => {
     );
     expect(created).toMatchObject({
       kind: 'created',
-      replayed: false,
       user: { email: 'ada@example.com', profile: {} },
     });
 

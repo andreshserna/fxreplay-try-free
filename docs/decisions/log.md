@@ -369,3 +369,16 @@ project or is costly to reverse also has an ADR in this folder.
     used on page hide could not drop the referrer.
   - Assignment is pinned by a test: four ids and their arms. A change to the hash would
     have moved every running visitor with all tests passing.
+- **Code nothing used is gone,** from the code review's list: the API client's caller-supplied
+  abort signal and its `replayed` flag, two pass-through methods in the Users API, two type
+  guards, and a `dropped` list only tests read. 163 lines out, 76 in.
+- **An experiment that is switched off records no arm.** Before, every user and conversion
+  was stored with the control's name while nothing was being tested, which reads later as
+  an experiment that ran. The page's events name no arm either.
+- **Considered and left as they are,** from the same review: the visitor cookie keeps its
+  name and accepts any id of up to 64 characters. A `__Host-` prefix matters on a domain
+  shared with other sites, which is what it should get on a path of fxreplay.com. Signing
+  it would not stop a script from choosing its arm, since it can discard ids until one
+  lands where it wants: the sample-ratio check and the bot flag are the controls. The
+  framework's own refusal of cross-site form posts stays on as a second barrier, though its
+  403 does not pass through the middleware.

@@ -24,7 +24,7 @@ type Unavailable = {
 type Unexpected = { kind: 'unexpected'; status: number; code: string | null };
 
 export type CreateUserResult =
-  | { kind: 'created'; user: User; replayed: boolean }
+  | { kind: 'created'; user: User }
   | Invalid
   | { kind: 'email_taken' }
   | RateLimited
@@ -43,12 +43,6 @@ export type UpdateProfileResult =
 interface CreateUserOptions {
   /** One key per signup attempt, reused when the person retries it by hand. */
   idempotencyKey: string;
-  /** Cancels the request, the pause and the retry. The call then rejects with its reason. */
-  signal?: AbortSignal;
-}
-
-interface UpdateProfileOptions {
-  signal?: AbortSignal;
 }
 
 interface ApiClientOptions {
@@ -60,11 +54,7 @@ interface ApiClientOptions {
 
 interface ApiClient {
   createUser(input: CreateUserInput, options: CreateUserOptions): Promise<CreateUserResult>;
-  updateProfile(
-    id: string,
-    patch: ProfilePatch,
-    options?: UpdateProfileOptions,
-  ): Promise<UpdateProfileResult>;
+  updateProfile(id: string, patch: ProfilePatch): Promise<UpdateProfileResult>;
 }
 
 const RETRYABLE_STATUSES = new Set([500, 502, 503, 504]);
@@ -175,11 +165,7 @@ function toCreateResult(received: Received): CreateUserResult {
   if (received.kind === 'no_answer') return { kind: 'unavailable', reason: received.reason };
   if (received.status === 201) {
     const user = readUser(received.text);
-    if (user) {
-      const replayed = received.headers.get('Idempotency-Replayed') === 'true';
-      return { kind: 'created', user, replayed };
-    }
-    return { kind: 'unexpected', status: 201, code: null };
+    return user ? { kind: 'created', user } : { kind: 'unexpected', status: 201, code: null };
   }
   const problem = readProblem(received);
   if (isAnswer(received.status, problem, 'email_taken')) return { kind: 'email_taken' };
@@ -203,20 +189,8 @@ function toUpdateResult(received: Received): UpdateProfileResult {
   return sharedResult(received, problem);
 }
 
-/** Waits, unless the caller aborts first. */
-function pause(milliseconds: number, signal: AbortSignal | undefined): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const onAbort = () => {
-      clearTimeout(timer);
-      reject(signal?.reason);
-    };
-    const timer = setTimeout(() => {
-      signal?.removeEventListener('abort', onAbort);
-      resolve();
-    }, milliseconds);
-    signal?.addEventListener('abort', onAbort, { once: true });
-  });
-}
+const pause = (milliseconds: number): Promise<void> =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
 
 export function createApiClient({
   fetch,
@@ -225,20 +199,13 @@ export function createApiClient({
   retryDelayMs = 400,
 }: ApiClientOptions): ApiClient {
   /** One attempt, aborted after `timeoutMs`, including the time to read the body. */
-  async function attempt(
-    url: string,
-    init: RequestInit,
-    signal: AbortSignal | undefined,
-  ): Promise<Received> {
-    signal?.throwIfAborted();
+  async function attempt(url: string, init: RequestInit): Promise<Received> {
     const controller = new AbortController();
     let timedOut = false;
     const timer = setTimeout(() => {
       timedOut = true;
       controller.abort();
     }, timeoutMs);
-    const onAbort = () => controller.abort(signal?.reason);
-    signal?.addEventListener('abort', onAbort, { once: true });
     // Settles the attempt on abort even if the fetch implementation ignores its signal.
     const aborted = new Promise<never>((_, reject) => {
       controller.signal.addEventListener('abort', () => reject(controller.signal.reason), {
@@ -253,45 +220,39 @@ export function createApiClient({
       const text = await Promise.race([response.text(), aborted]);
       return { kind: 'answer', status: response.status, headers: response.headers, text };
     } catch {
-      if (signal?.aborted) throw signal.reason;
       const reason = isOffline() ? 'offline' : timedOut ? 'timeout' : 'network';
       return { kind: 'no_answer', reason };
     } finally {
       clearTimeout(timer);
-      signal?.removeEventListener('abort', onAbort);
     }
   }
 
   /** At most two attempts, identical, the second only when the first may be retried. */
-  async function send(
-    path: string,
-    init: RequestInit,
-    signal: AbortSignal | undefined,
-  ): Promise<Received> {
+  async function send(path: string, init: RequestInit): Promise<Received> {
     const url = `${baseUrl}${path}`;
-    const first = await attempt(url, init, signal);
+    const first = await attempt(url, init);
     if (first.kind === 'answer' && !RETRYABLE_STATUSES.has(first.status)) return first;
-    await pause(retryDelayMs, signal);
-    return attempt(url, init, signal);
+    await pause(retryDelayMs);
+    return attempt(url, init);
   }
 
   return {
-    async createUser(input, { idempotencyKey, signal }) {
+    async createUser(input, { idempotencyKey }) {
       const init: RequestInit = {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Idempotency-Key': idempotencyKey },
         body: JSON.stringify(input),
       };
-      return toCreateResult(await send('/api/users', init, signal));
+      return toCreateResult(await send('/api/users', init));
     },
 
-    async updateProfile(id, patch, { signal } = {}) {
+    async updateProfile(id, patch) {
       const init: RequestInit = {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(patch),
       };
-      return toUpdateResult(await send(`/api/users/${encodeURIComponent(id)}`, init, signal));
+      return toUpdateResult(await send(`/api/users/${encodeURIComponent(id)}`, init));
     },
   };
 }

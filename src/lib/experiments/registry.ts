@@ -51,17 +51,19 @@ export function assign<Key extends ExperimentKey>(key: Key, anonymousId: string)
   return variants[bucket] ?? variants[0];
 }
 
-/** Every experiment's variant for this visitor. */
-export function assignAll(anonymousId: string): Assignments {
-  const keys = Object.keys(EXPERIMENTS) as ExperimentKey[];
-  return Object.fromEntries(keys.map((key) => [key, assign(key, anonymousId)])) as Assignments;
+/**
+ * This visitor's variant in every experiment that is running. One that is switched off is
+ * left out: everyone sees its control, and recording that as an arm would claim an
+ * experiment that is not happening.
+ */
+export function assignAll(anonymousId: string): Partial<Assignments> {
+  const keys = (Object.keys(EXPERIMENTS) as ExperimentKey[]).filter(
+    (key) => EXPERIMENTS[key].enabled,
+  );
+  return Object.fromEntries(
+    keys.map((key) => [key, assign(key, anonymousId)]),
+  ) as Partial<Assignments>;
 }
-
-export const isVariant = <Key extends ExperimentKey>(
-  key: Key,
-  value: unknown,
-): value is VariantOf<Key> =>
-  typeof value === 'string' && (EXPERIMENTS[key].variants as readonly string[]).includes(value);
 
 /** Assignments in the form the analytics context carries: `key:variant,key:variant`. */
 export const formatAssignments = (assignments: Partial<Assignments>): string =>

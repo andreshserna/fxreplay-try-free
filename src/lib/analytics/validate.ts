@@ -46,8 +46,7 @@ function conforms(spec: PropertySpec, value: unknown): boolean {
 const withinRange = (spec: { min: number; max: number }, value: unknown): boolean =>
   typeof value === 'number' && value >= spec.min && value <= spec.max;
 
-export type Checked<Value> =
-  { ok: true; value: Value; dropped: string[] } | { ok: false; issues: string[] };
+export type Checked<Value> = { ok: true; value: Value } | { ok: false; issues: string[] };
 
 function check<Value>(specs: Record<string, PropertySpec>, input: unknown): Checked<Value> {
   if (typeof input !== 'object' || input === null || Array.isArray(input)) {
@@ -70,9 +69,7 @@ function check<Value>(specs: Record<string, PropertySpec>, input: unknown): Chec
     }
   }
   if (issues.length > 0) return { ok: false, issues };
-
-  const dropped = Object.keys(source).filter((key) => !Object.hasOwn(specs, key));
-  return { ok: true, value: value as Value, dropped };
+  return { ok: true, value: value as Value };
 }
 
 /** Checks an event's own properties against its definition. */

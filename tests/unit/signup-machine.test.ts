@@ -36,7 +36,7 @@ describe('the signup flow', () => {
     const state = run([
       typed('ada@example.com'),
       submit('ada@example.com', 'key-1'),
-      { type: 'answered', result: { kind: 'created', user: USER, replayed: false } },
+      { type: 'answered', result: { kind: 'created', user: USER } },
     ]);
     expect(state).toEqual({ step: 'profile', user: USER, saving: false, trouble: null });
   });

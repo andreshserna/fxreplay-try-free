@@ -4,7 +4,7 @@
  * an in-memory repository and no network.
  */
 import { readTouch, toContext, type Touch } from '../../lib/analytics/attribution';
-import type { FieldError, Problem, ProblemCode } from '../../lib/api/problems';
+import type { FieldError, ProblemCode } from '../../lib/api/problems';
 import {
   parseCreateUser,
   parseProfilePatch,
@@ -119,14 +119,14 @@ export class UsersApi {
   create(request: Request, defer: Defer = runNow): Promise<Response> {
     return this.#handle(request, async (context) => {
       if (!(await this.#allowed(this.#options.limiters?.create, clientKey(request)))) {
-        return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
+        return problemResponse(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
       }
       const idempotencyKey = request.headers.get('Idempotency-Key') ?? '';
       if (!IDEMPOTENCY_KEY.test(idempotencyKey)) {
-        return this.#problem(context, 'idempotency_key_missing');
+        return problemResponse(context, 'idempotency_key_missing');
       }
       const body = await readJson(request);
-      if (!body.ok) return this.#problem(context, body.code);
+      if (!body.ok) return problemResponse(context, body.code);
       const parsed = parseCreateUser(body.value);
       if (!parsed.ok) return this.#invalid(context, parsed.errors);
 
@@ -134,10 +134,10 @@ export class UsersApi {
       if (website) return this.#decoy(context, input.email);
 
       const result = await this.#register(request, input, idempotencyKey, defer);
-      if (result.kind === 'email_taken') return this.#problem(context, 'email_taken');
-      if (result.kind === 'key_reused') return this.#problem(context, 'idempotency_key_reused');
+      if (result.kind === 'email_taken') return problemResponse(context, 'email_taken');
+      if (result.kind === 'key_reused') return problemResponse(context, 'idempotency_key_reused');
 
-      const response = this.#json(context, 201, publicUser(result.user), {
+      const response = jsonResponse(context, 201, publicUser(result.user), {
         Location: `/api/users/${result.user.id}`,
         ...(result.kind === 'replayed' ? { 'Idempotency-Replayed': 'true' } : {}),
       });
@@ -163,7 +163,7 @@ export class UsersApi {
       // before this code runs: this is the rule stated where it can be read and tested.
       const origin = request.headers.get('Origin');
       if (origin !== null && origin !== context.url.origin) {
-        return this.#problem(context, 'forbidden');
+        return problemResponse(context, 'forbidden');
       }
       const contentType = request.headers.get('Content-Type') ?? '';
       if (contentType.split(';')[0]?.trim().toLowerCase() !== FORM_CONTENT_TYPE) {
@@ -257,20 +257,20 @@ export class UsersApi {
       const sessionUser = cookie
         ? await verifySession(this.#options.sessionSecret, cookie, nowSeconds)
         : null;
-      if (!sessionUser) return this.#problem(context, 'unauthenticated');
+      if (!sessionUser) return problemResponse(context, 'unauthenticated');
       if (request.headers.get('Origin') !== context.url.origin || sessionUser !== id) {
-        return this.#problem(context, 'forbidden');
+        return problemResponse(context, 'forbidden');
       }
       if (!(await this.#allowed(this.#options.limiters?.update, sessionUser))) {
-        return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
+        return problemResponse(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
       }
       const body = await readJson(request);
-      if (!body.ok) return this.#problem(context, body.code);
+      if (!body.ok) return problemResponse(context, body.code);
       const parsed = parseProfilePatch(body.value);
       if (!parsed.ok) return this.#invalid(context, parsed.errors);
 
       const user = await this.#options.service.updateProfile(id, parsed.data);
-      if (!user) return this.#problem(context, 'not_found');
+      if (!user) return problemResponse(context, 'not_found');
 
       const { markets = [], experience, goal } = user.profile;
       if (this.#options.events && (markets.length > 0 || experience || goal)) {
@@ -287,7 +287,7 @@ export class UsersApi {
           ),
         );
       }
-      return this.#json(context, 200, publicUser(user));
+      return jsonResponse(context, 200, publicUser(user));
     });
   }
 
@@ -296,13 +296,13 @@ export class UsersApi {
     return this.#handle(request, async (context) => {
       // The limit comes before the token check, so it also bounds guessing the token.
       if (!(await this.#allowed(this.#options.limiters?.list, clientKey(request)))) {
-        return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
+        return problemResponse(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
       }
       const [scheme, token] = (request.headers.get('Authorization') ?? '').split(' ');
       const authorized =
         scheme === 'Bearer' && (await secretsMatch(token ?? '', this.#options.adminToken));
       if (!authorized) {
-        return this.#problem(context, 'unauthenticated', { 'WWW-Authenticate': 'Bearer' });
+        return problemResponse(context, 'unauthenticated', { 'WWW-Authenticate': 'Bearer' });
       }
 
       const errors: FieldError[] = [];
@@ -326,14 +326,14 @@ export class UsersApi {
       }
       if (errors.length > 0 || before === null) return this.#invalid(context, errors);
 
-      return this.#json(context, 200, await this.#options.service.list(limit, before));
+      return jsonResponse(context, 200, await this.#options.service.list(limit, before));
     });
   }
 
   /** Any other method on a users path. */
   methodNotAllowed(request: Request, allow: string[]): Promise<Response> {
     return this.#handle(request, async (context) =>
-      this.#problem(context, 'method_not_allowed', { Allow: allow.join(', ') }),
+      problemResponse(context, 'method_not_allowed', { Allow: allow.join(', ') }),
     );
   }
 
@@ -354,8 +354,10 @@ export class UsersApi {
         error: error instanceof Error ? error.message : String(error),
       });
       return unavailable
-        ? this.#problem(context, 'service_unavailable', { 'Retry-After': RETRY_AFTER_UNAVAILABLE })
-        : this.#problem(context, 'internal_error');
+        ? problemResponse(context, 'service_unavailable', {
+            'Retry-After': RETRY_AFTER_UNAVAILABLE,
+          })
+        : problemResponse(context, 'internal_error');
     }
   }
 
@@ -379,12 +381,12 @@ export class UsersApi {
       created_at: timestamp,
       updated_at: timestamp,
     };
-    return this.#json(context, 201, user, { Location: `/api/users/${user.id}` });
+    return jsonResponse(context, 201, user, { Location: `/api/users/${user.id}` });
   }
 
   #invalid(context: Context, errors: FieldError[]): Response {
     const count = errors.length;
-    return this.#problem(
+    return problemResponse(
       context,
       'validation_failed',
       {},
@@ -393,24 +395,6 @@ export class UsersApi {
         errors,
       },
     );
-  }
-
-  #problem(
-    context: Context,
-    code: ProblemCode,
-    headers: Record<string, string> = {},
-    extra: Pick<Problem, 'detail' | 'errors'> = {},
-  ): Response {
-    return problemResponse(context, code, headers, extra);
-  }
-
-  #json(
-    context: Context,
-    status: number,
-    body: unknown,
-    headers: Record<string, string> = {},
-  ): Response {
-    return jsonResponse(context, status, body, headers);
   }
 }
 

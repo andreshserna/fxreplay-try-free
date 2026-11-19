@@ -98,9 +98,6 @@ export interface Problem {
   errors?: FieldError[];
 }
 
-export const isProblemCode = (value: unknown): value is ProblemCode =>
-  typeof value === 'string' && Object.hasOwn(PROBLEMS, value);
-
 /** The problem's identity as a URI: the page that documents it. */
 export const problemType = (origin: string, code: ProblemCode): string =>
   `${origin}/problems/${code.replaceAll('_', '-')}`;

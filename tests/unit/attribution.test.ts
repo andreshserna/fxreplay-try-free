@@ -275,7 +275,7 @@ describe('toContext', () => {
       aff: 'partner1',
     });
     const checked = checkContext({ ...minimalContext, ...context });
-    expect(checked).toEqual({ ok: true, value: { ...minimalContext, ...context }, dropped: [] });
+    expect(checked).toEqual({ ok: true, value: { ...minimalContext, ...context } });
   });
 
   it('takes via and aff from the last touch before the first', () => {

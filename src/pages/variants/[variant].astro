@@ -52,13 +52,14 @@ const structuredData = {
     acceptedAnswer: { '@type': 'Answer', text: item.a },
   })),
 };
+
+// Switched off, everyone sees the control and no event names an arm.
+const running = EXPERIMENTS.hero_signup.enabled
+  ? { experiments: formatAssignments({ hero_signup: variant }) }
+  : {};
 ---
 
-<Base
-  experiments={formatAssignments({ hero_signup: variant })}
-  title={TITLE}
-  description={DESCRIPTION}
->
+<Base {...running} title={TITLE} description={DESCRIPTION}>
   <script
     slot="head"
     type="application/ld+json"
