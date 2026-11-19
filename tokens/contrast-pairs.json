@@ -1,50 +1,277 @@
 {
   "$description": "Foreground and background pairs for scripts/checks/contrast.mjs. `ui` lists every pair the interface uses; each must pass (4.5:1 for text, 3:1 for large text and for the boundaries of controls) and may name only semantic or extension tokens. `kit` audits the kit's own pairings: it is reported in docs/brand-notes.md and never enforced.",
   "ui": [
-    { "foreground": "text-primary", "background": "bg-primary", "kind": "text", "use": "Headings and body copy on the page ground" },
-    { "foreground": "text-secondary", "background": "bg-primary", "kind": "text", "use": "Secondary copy on the page ground" },
-    { "foreground": "text-primary", "background": "bg-secondary", "kind": "text", "use": "Text typed in a form field, and copy on raised surfaces" },
-    { "foreground": "text-secondary", "background": "bg-secondary", "kind": "text", "use": "Helper text on a field's fill and on raised surfaces" },
-    { "foreground": "text-link", "background": "bg-primary", "kind": "text", "use": "Links on the page ground" },
-    { "foreground": "card-text-link", "background": "bg-tertiary", "kind": "text", "use": "Links inside tertiary surfaces" },
-    { "foreground": "btn-text", "background": "btn-bg-primary-active", "kind": "text", "use": "Primary button label" },
-    { "foreground": "btn-text", "background": "btn-bg-primary-hover", "kind": "text", "use": "Primary button label, hover" },
-    { "foreground": "btn-text", "background": "btn-bg-primary-pressed", "kind": "text", "use": "Primary button label, pressed" },
-    { "foreground": "btn-bg-primary-active", "background": "bg-primary", "kind": "boundary", "use": "Primary button's shape against the ground" },
-    { "foreground": "border-field", "background": "bg-primary", "kind": "boundary", "use": "Form field boundary against the ground" },
-    { "foreground": "border-field", "background": "bg-secondary", "kind": "boundary", "use": "Form field boundary against its own fill" },
-    { "foreground": "border-field-error", "background": "bg-primary", "kind": "boundary", "use": "Field boundary in error, against the ground" },
-    { "foreground": "border-field-error", "background": "bg-secondary", "kind": "boundary", "use": "Field boundary in error, against its own fill" },
-    { "foreground": "text-error", "background": "bg-primary", "kind": "text", "use": "Field error message" },
-    { "foreground": "border-focus", "background": "bg-primary", "kind": "boundary", "use": "Focus ring, which its offset places on the ground" },
-    { "foreground": "text-success", "background": "bg-card", "kind": "text", "use": "Message in the success card" },
-    { "foreground": "border-success", "background": "bg-primary", "kind": "boundary", "use": "Success card's boundary against the ground" }
+    {
+      "foreground": "text-primary",
+      "background": "bg-primary",
+      "kind": "text",
+      "use": "Headings and body copy on the page ground"
+    },
+    {
+      "foreground": "text-secondary",
+      "background": "bg-primary",
+      "kind": "text",
+      "use": "Secondary copy on the page ground"
+    },
+    {
+      "foreground": "text-primary",
+      "background": "bg-secondary",
+      "kind": "text",
+      "use": "Text typed in a form field, and copy on raised surfaces"
+    },
+    {
+      "foreground": "text-secondary",
+      "background": "bg-secondary",
+      "kind": "text",
+      "use": "Helper text on a field's fill and on raised surfaces"
+    },
+    {
+      "foreground": "text-link",
+      "background": "bg-primary",
+      "kind": "text",
+      "use": "Links on the page ground"
+    },
+    {
+      "foreground": "card-text-link",
+      "background": "bg-tertiary",
+      "kind": "text",
+      "use": "Links inside tertiary surfaces"
+    },
+    {
+      "foreground": "btn-text",
+      "background": "btn-bg-primary-active",
+      "kind": "text",
+      "use": "Primary button label"
+    },
+    {
+      "foreground": "btn-text",
+      "background": "btn-bg-primary-hover",
+      "kind": "text",
+      "use": "Primary button label, hover"
+    },
+    {
+      "foreground": "btn-text",
+      "background": "btn-bg-primary-pressed",
+      "kind": "text",
+      "use": "Primary button label, pressed"
+    },
+    {
+      "foreground": "btn-bg-primary-active",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "Primary button's shape against the ground"
+    },
+    {
+      "foreground": "border-field",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "Form field boundary against the ground"
+    },
+    {
+      "foreground": "border-field",
+      "background": "bg-secondary",
+      "kind": "boundary",
+      "use": "Form field boundary against its own fill"
+    },
+    {
+      "foreground": "border-field-error",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "Field boundary in error, against the ground"
+    },
+    {
+      "foreground": "border-field-error",
+      "background": "bg-secondary",
+      "kind": "boundary",
+      "use": "Field boundary in error, against its own fill"
+    },
+    {
+      "foreground": "text-error",
+      "background": "bg-primary",
+      "kind": "text",
+      "use": "Field error message"
+    },
+    {
+      "foreground": "border-focus",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "Focus ring, which its offset places on the ground"
+    },
+    {
+      "foreground": "text-success",
+      "background": "bg-card",
+      "kind": "text",
+      "use": "Message in the success card"
+    },
+    {
+      "foreground": "border-success",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "Success card's boundary against the ground"
+    },
+    {
+      "foreground": "chart-playhead",
+      "background": "bg-secondary",
+      "kind": "boundary",
+      "use": "Play control of the hero illustration, its edge and icon"
+    },
+    {
+      "foreground": "icon-primary",
+      "background": "bg-secondary",
+      "kind": "boundary",
+      "use": "Icons of the hero illustration's controls"
+    }
   ],
   "kit": [
-    { "foreground": "text-brand", "background": "bg-primary", "kind": "text", "note": "Fails for body-size text. Fine for large text and UI. We use text-link (blue-500) for links." },
-    { "foreground": "blue-500", "background": "bg-primary", "kind": "text", "note": "The nearest step that passes: our text-link and border-focus." },
-    { "foreground": "blue-400", "background": "bg-primary", "kind": "text", "note": "Passes with room." },
-    { "foreground": "blue-500", "background": "bg-tertiary", "kind": "text", "note": "Just under. Links inside tertiary surfaces use blue-400 (card-text-link)." },
-    { "foreground": "blue-400", "background": "bg-tertiary", "kind": "text", "note": "Passes." },
-    { "foreground": "btn-text", "background": "btn-bg-primary-active", "kind": "text", "note": "Passes narrowly. Do not lighten the button or thin the label." },
-    { "foreground": "btn-bg-primary-hover", "background": "bg-primary", "kind": "boundary", "note": "The hovered CTA fades into the ground. Its label stays readable." },
-    { "foreground": "btn-bg-primary-pressed", "background": "bg-primary", "kind": "boundary", "note": "The pressed CTA fades into the ground. Its label stays readable." },
-    { "foreground": "blue-500", "background": "btn-bg-primary-hover", "kind": "boundary", "note": "A blue-500 edge would keep the hovered button's shape. Proposed; the candidate chooses." },
-    { "foreground": "blue-500", "background": "btn-bg-primary-pressed", "kind": "boundary", "note": "The same edge against the pressed fill." },
-    { "foreground": "btn-bg-primary-disabled", "background": "bg-primary", "kind": "boundary", "note": "blue-950 is undefined; with the kit page's black fallback a disabled primary button disappears. We never render it." },
-    { "foreground": "border-primary", "background": "bg-primary", "kind": "boundary", "note": "Fine as a divider. Not enough for a control's boundary." },
-    { "foreground": "border-secondary", "background": "bg-primary", "kind": "boundary", "note": "Fine as a divider. Not enough for a control's boundary." },
-    { "foreground": "border-tertiary", "background": "bg-primary", "kind": "boundary", "note": "Fine as a divider. Not enough for a control's boundary." },
-    { "foreground": "dark-300", "background": "bg-primary", "kind": "boundary", "note": "Misses 3:1 by a hair." },
-    { "foreground": "btn-border-outline", "background": "bg-primary", "kind": "boundary", "note": "dark-200: the first step that passes. Our border-field." },
-    { "foreground": "border-error", "background": "bg-primary", "kind": "boundary", "note": "Not enough to outline a field in error." },
-    { "foreground": "error", "background": "bg-primary", "kind": "boundary", "note": "Passes. Our border-field-error." },
-    { "foreground": "banner-color-paragraph", "background": "banner-bg-success", "kind": "text", "note": "Light text on the success fill fails. Our success state is a dark card with text-success." },
-    { "foreground": "banner-color-paragraph", "background": "banner-bg-warning", "kind": "text", "note": "Light text on the warning fill fails." },
-    { "foreground": "banner-color-paragraph", "background": "banner-bg-error", "kind": "text", "note": "Light text on the error fill." },
-    { "foreground": "dark-900", "background": "success", "kind": "text", "note": "Dark text on the success fill would pass." },
-    { "foreground": "dark-900", "background": "warning", "kind": "text", "note": "Dark text on the warning fill would pass." },
-    { "foreground": "neutral-50", "background": "success-dark", "kind": "text", "note": "Light text on the -dark fill would pass." },
-    { "foreground": "neutral-50", "background": "warning-dark", "kind": "text", "note": "Light text on the -dark fill would pass." }
+    {
+      "foreground": "text-brand",
+      "background": "bg-primary",
+      "kind": "text",
+      "note": "Fails for body-size text. Fine for large text and UI. We use text-link (blue-500) for links."
+    },
+    {
+      "foreground": "blue-500",
+      "background": "bg-primary",
+      "kind": "text",
+      "note": "The nearest step that passes: our text-link and border-focus."
+    },
+    {
+      "foreground": "blue-400",
+      "background": "bg-primary",
+      "kind": "text",
+      "note": "Passes with room."
+    },
+    {
+      "foreground": "blue-500",
+      "background": "bg-tertiary",
+      "kind": "text",
+      "note": "Just under. Links inside tertiary surfaces use blue-400 (card-text-link)."
+    },
+    {
+      "foreground": "blue-400",
+      "background": "bg-tertiary",
+      "kind": "text",
+      "note": "Passes."
+    },
+    {
+      "foreground": "btn-text",
+      "background": "btn-bg-primary-active",
+      "kind": "text",
+      "note": "Passes narrowly. Do not lighten the button or thin the label."
+    },
+    {
+      "foreground": "btn-bg-primary-hover",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "The hovered CTA fades into the ground. Its label stays readable."
+    },
+    {
+      "foreground": "btn-bg-primary-pressed",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "The pressed CTA fades into the ground. Its label stays readable."
+    },
+    {
+      "foreground": "blue-500",
+      "background": "btn-bg-primary-hover",
+      "kind": "boundary",
+      "note": "A blue-500 edge would keep the hovered button's shape. Proposed; the candidate chooses."
+    },
+    {
+      "foreground": "blue-500",
+      "background": "btn-bg-primary-pressed",
+      "kind": "boundary",
+      "note": "The same edge against the pressed fill."
+    },
+    {
+      "foreground": "btn-bg-primary-disabled",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "blue-950 is undefined; with the kit page's black fallback a disabled primary button disappears. We never render it."
+    },
+    {
+      "foreground": "border-primary",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Fine as a divider. Not enough for a control's boundary."
+    },
+    {
+      "foreground": "border-secondary",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Fine as a divider. Not enough for a control's boundary."
+    },
+    {
+      "foreground": "border-tertiary",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Fine as a divider. Not enough for a control's boundary."
+    },
+    {
+      "foreground": "dark-300",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Misses 3:1 by a hair."
+    },
+    {
+      "foreground": "btn-border-outline",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "dark-200: the first step that passes. Our border-field."
+    },
+    {
+      "foreground": "border-error",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Not enough to outline a field in error."
+    },
+    {
+      "foreground": "error",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "note": "Passes. Our border-field-error."
+    },
+    {
+      "foreground": "banner-color-paragraph",
+      "background": "banner-bg-success",
+      "kind": "text",
+      "note": "Light text on the success fill fails. Our success state is a dark card with text-success."
+    },
+    {
+      "foreground": "banner-color-paragraph",
+      "background": "banner-bg-warning",
+      "kind": "text",
+      "note": "Light text on the warning fill fails."
+    },
+    {
+      "foreground": "banner-color-paragraph",
+      "background": "banner-bg-error",
+      "kind": "text",
+      "note": "Light text on the error fill."
+    },
+    {
+      "foreground": "dark-900",
+      "background": "success",
+      "kind": "text",
+      "note": "Dark text on the success fill would pass."
+    },
+    {
+      "foreground": "dark-900",
+      "background": "warning",
+      "kind": "text",
+      "note": "Dark text on the warning fill would pass."
+    },
+    {
+      "foreground": "neutral-50",
+      "background": "success-dark",
+      "kind": "text",
+      "note": "Light text on the -dark fill would pass."
+    },
+    {
+      "foreground": "neutral-50",
+      "background": "warning-dark",
+      "kind": "text",
+      "note": "Light text on the -dark fill would pass."
+    }
   ]
 }

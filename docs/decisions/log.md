@@ -385,3 +385,19 @@ project or is costly to reverse also has an ADR in this folder.
 - **Lighthouse runs five times per arm in CI, three locally.** On a shared runner the median
   of three total-blocking-time values missed the 150 ms budget once (173 ms) and passed on a
   second run of the same commit (36 ms). The budget stays where it is. The sample grows.
+- **The hero illustration's controls work.** It draws a play button, a step button and a
+  speed, and a drawn control that does nothing is the first thing a visitor taps. Play
+  reveals the candles behind the hatch, one per 0.6 s, at 1x, 2x or 4x. The continuation was
+  chosen so the trade touches neither of its levels and ends back at its entry: the picture
+  still shows no result. It is 1.4 KB of plain script, not a second island, inert without
+  script, and the lab numbers did not move. This is the "signature hero interaction" the
+  plan left to be decided.
+- **`replay_demo_used`, a tenth event:** the first use of those controls, once per page
+  load. It answers whether the interaction earns its place: do visitors who play it sign
+  up more than those who do not.
+- **No text below 16px.** The smallest step of the type scale was 13 to 14px, used for
+  captions, labels and notices. It is now 16px, and secondary text is set apart by color
+  and weight. A browser test reads every text element's computed size on both arms.
+- **FAQ answers open and close by growing.** `interpolate-size` animates the height to and
+  from `auto` where the browser has it. Elsewhere the answer opens at once and fades in.
+  No script.

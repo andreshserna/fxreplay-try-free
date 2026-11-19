@@ -68,6 +68,20 @@ export const EVENTS = {
       },
     },
   },
+  replay_demo_used: {
+    source: 'client',
+    trigger:
+      "The visitor's first use of the hero illustration's controls or a tap on its chart, once per page load.",
+    decision:
+      'Whether the interactive illustration earns its place: do visitors who play it sign up more than those who do not.',
+    properties: {
+      control: {
+        type: 'enum',
+        values: ['play', 'step', 'speed'],
+        description: 'The control used first. A tap on the chart counts as play.',
+      },
+    },
+  },
   signup_started: {
     source: 'client',
     trigger: 'The first input into the email field, once per page load.',

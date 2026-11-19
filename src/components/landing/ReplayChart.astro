@@ -2,8 +2,12 @@
 /**
  * An original illustration of market replay: candles already played, candles
  * arriving one by one behind a playhead, an open simulated trade, and a future
- * that stays hidden. It carries no ticker, prices or dates, so it claims
- * nothing about a market.
+ * that stays hidden until the visitor plays it. It carries no ticker, prices or
+ * dates, so it claims nothing about a market.
+ *
+ * The controls work: play, one candle at a time, and speed. A drawn play button
+ * that does nothing is the first thing a visitor taps. Played to its end, the
+ * trade is still open and back at its entry: the picture never shows a result.
  */
 /**
  * The geometry is fixed, not passed in: the stylesheet below repeats two of these
@@ -15,6 +19,8 @@ const REPLAYED = 6;
 const SLOTS = 38;
 const ENTRY = 19;
 const SEED = 2682;
+/** The candles behind the hatch: a continuation that touches neither level of the trade. */
+const AHEAD_SEED = 292;
 
 interface Candle {
   open: number;
@@ -24,15 +30,15 @@ interface Candle {
 }
 
 /** A fixed pseudo-random walk, so every build draws the same chart. */
-function series(count: number, start: number): Candle[] {
+function series(count: number, start: number, from = 0, firstOpen = 50): Candle[] {
   let state = start;
   const random = () => {
     state = (state * 1664525 + 1013904223) % 4294967296;
     return state / 4294967296;
   };
   const candles: Candle[] = [];
-  let price = 50;
-  for (let index = 0; index < count; index += 1) {
+  let price = firstOpen;
+  for (let index = from; index < from + count; index += 1) {
     const drift = Math.sin(index / 3.4 + 0.8) * 2.6 + 0.5;
     const open = price;
     const close = open + drift + (random() - 0.5) * 9;
@@ -55,10 +61,17 @@ const pitch = WIDTH / SLOTS; // 20: the playhead travels REPLAYED x 20 = 120
 const bodyWidth = Math.round(pitch * 0.54);
 
 const visible = series(SHOWN + REPLAYED, SEED);
+const ahead = series(
+  SLOTS - visible.length,
+  AHEAD_SEED,
+  visible.length,
+  visible.at(-1)?.close ?? 50,
+);
 const sinceEntry = visible.slice(ENTRY);
 const entryPrice = visible[ENTRY]?.close ?? 50;
 
-// The trade is still open at the last candle: neither level has been reached.
+// The trade is still open at the last candle: neither level has been reached. The levels
+// come from what is shown at rest, and the candles ahead were chosen to stay between them.
 const stop = Math.min(...sinceEntry.map((candle) => candle.low)) - 3;
 const reach = Math.max(...sinceEntry.map((candle) => candle.high)) - entryPrice;
 const target = entryPrice + Math.max(reach + 3, (entryPrice - stop) * 1.5);
@@ -68,7 +81,7 @@ const bottom = Math.min(stop, ...visible.map((candle) => candle.low));
 const y = (price: number) =>
   PAD_TOP + ((top - price) / (top - bottom)) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
 
-const candles = visible.map((candle, index) => {
+const candles = [...visible, ...ahead].map((candle, index) => {
   const center = pitch * index + pitch / 2;
   const bodyTop = y(Math.max(candle.open, candle.close));
   const bodyBottom = y(Math.min(candle.open, candle.close));
@@ -85,16 +98,21 @@ const candles = visible.map((candle, index) => {
 });
 
 const playheadStart = pitch * SHOWN;
-const playheadEnd = pitch * (SHOWN + REPLAYED);
 const tradeX = pitch * ENTRY + pitch / 2;
 const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share));
 ---
 
-<figure class="replay">
+<figure
+  class="replay"
+  data-replay
+  data-shown={SHOWN}
+  data-resting={SHOWN + REPLAYED}
+  data-slots={SLOTS}
+>
   <svg
     viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
     role="img"
-    aria-label="Illustration: a candle chart replayed one candle at a time, with a simulated trade still open. Everything to the right of the playhead stays hidden."
+    aria-label="Illustration: a candle chart replayed one candle at a time, with a simulated trade still open. Everything to the right of the playhead stays hidden until it is played."
   >
     <defs>
       <pattern id="future" width="10" height="10" patternUnits="userSpaceOnUse">
@@ -125,14 +143,13 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
       <circle class="marker" cx={tradeX} cy={y(entryPrice)} r="5"></circle>
     </g>
 
-    <rect class="future" x={playheadEnd} y="0" width={WIDTH - playheadEnd} height={HEIGHT}></rect>
-
     {candles.map((candle) => (
       <g
         class:list={[
           'candle',
           candle.rising ? 'rising' : 'falling',
-          candle.step >= 0 && `arriving step-${candle.step}`,
+          candle.step >= 0 && candle.step < REPLAYED && `arriving step-${candle.step}`,
+          candle.step >= REPLAYED && 'ahead',
         ]}
       >
         <path class="wick" d={`M${candle.center} ${candle.wickTop}V${candle.wickBottom}`} />
@@ -147,29 +164,141 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
       </g>
     ))}
 
+    {/* Drawn from the playhead's first position and moved with it, so it always hides what is ahead. */}
+    <rect class="future" x={playheadStart} y="0" width={WIDTH} height={HEIGHT}></rect>
+
     <g class="playhead">
       <path class="line" d={`M${playheadStart} 0V${HEIGHT}`}></path>
       <path class="handle" d={`M${playheadStart - 7} 0h14v9l-7 7-7-7z`}></path>
     </g>
   </svg>
 
-  <div class="transport" aria-hidden="true">
-    <span class="key play">
-      <svg viewBox="0 0 16 16" width="14" height="14">
+  {/* Inert until the script below takes over: without it these would be buttons that do nothing. */}
+  <div class="transport" role="group" aria-label="Controls of the replay illustration" inert>
+    <button type="button" class="key play" data-control="play" aria-label="Play">
+      <svg class="icon-play" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
         <path d="M4.5 2.5v11l9-5.5z"></path>
       </svg>
-    </span>
-    <span class="key">
-      <svg viewBox="0 0 16 16" width="14" height="14">
+      <svg class="icon-pause" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+        <path d="M3.5 2.5h3.5v11H3.5zM9 2.5h3.5v11H9z"></path>
+      </svg>
+    </button>
+    <button type="button" class="key" data-control="step" aria-label="Next candle">
+      <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
         <path d="M11 3h2v10h-2zM3 3v10l7-5z"></path>
       </svg>
-    </span>
+    </button>
     <span class="track">
       <span class="played"></span>
     </span>
-    <span class="speed">1x</span>
+    <button type="button" class="key speed" data-control="speed" aria-label="Speed: 1x">
+      1x
+    </button>
   </div>
 </figure>
+
+<script>
+  import { track } from '../../lib/analytics/track';
+
+  /** The time one candle takes at 1x, and the speeds the last control cycles through. */
+  const TICK_MS = 600;
+  const SPEEDS = [1, 2, 4];
+
+  for (const figure of document.querySelectorAll<HTMLElement>('[data-replay]')) {
+    const shown = Number(figure.dataset.shown);
+    const slots = Number(figure.dataset.slots);
+    const candles = [...figure.querySelectorAll('.candle')];
+    const chart = figure.querySelector('svg');
+    const transport = figure.querySelector('.transport');
+    const playKey = figure.querySelector<HTMLButtonElement>('[data-control="play"]');
+    const speedKey = figure.querySelector<HTMLButtonElement>('[data-control="speed"]');
+    if (!chart || !transport || !playKey || !speedKey) continue;
+
+    let position = Number(figure.dataset.resting);
+    let speed = 0;
+    let timer: number | undefined;
+    let used = false;
+
+    const render = () => {
+      // From here the script places the playhead. The entrance animation steps aside.
+      figure.classList.add('live');
+      figure.style.setProperty('--at', String(position - shown));
+      candles.forEach((candle, index) => candle.classList.toggle('ahead', index >= position));
+      const playing = timer !== undefined;
+      figure.dataset.state = playing ? 'playing' : 'paused';
+      playKey.setAttribute(
+        'aria-label',
+        playing ? 'Pause' : position >= slots ? 'Play again' : 'Play',
+      );
+      speedKey.textContent = `${SPEEDS[speed]}x`;
+      speedKey.setAttribute('aria-label', `Speed: ${SPEEDS[speed]}x`);
+    };
+
+    const pause = () => {
+      window.clearInterval(timer);
+      timer = undefined;
+    };
+
+    const step = () => {
+      // Past the last candle, the replay starts over.
+      if (position >= slots) position = shown;
+      position += 1;
+      if (position >= slots) pause();
+      render();
+    };
+
+    const start = () => {
+      timer = window.setInterval(step, TICK_MS / (SPEEDS[speed] ?? 1));
+    };
+
+    const controls: Record<string, () => void> = {
+      play: () => {
+        if (timer === undefined) {
+          start();
+          step(); // The first candle arrives on the tap, not a beat later.
+        } else {
+          pause();
+          render();
+        }
+      },
+      step: () => {
+        pause();
+        step();
+      },
+      speed: () => {
+        speed = (speed + 1) % SPEEDS.length;
+        if (timer !== undefined) {
+          pause();
+          start();
+        }
+        render();
+      },
+    };
+
+    const use = (control: 'play' | 'step' | 'speed') => {
+      controls[control]?.();
+      if (used) return;
+      used = true;
+      track('replay_demo_used', { control });
+    };
+
+    transport.addEventListener('click', (event) => {
+      const key = event.target instanceof Element ? event.target.closest('button') : null;
+      const control = key?.dataset.control;
+      if (control === 'play' || control === 'step' || control === 'speed') use(control);
+    });
+    // The chart itself is the other thing a visitor taps.
+    chart.addEventListener('click', () => use('play'));
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden' && timer !== undefined) {
+        pause();
+        render();
+      }
+    });
+    transport.removeAttribute('inert');
+    figure.classList.add('ready');
+  }
+</script>
 
 <style>
   .replay {
@@ -203,6 +332,30 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
 
   .future {
     fill: url('#future');
+    /* At rest: REPLAYED x pitch past the playhead's first position. */
+    transform: translateX(120px);
+  }
+
+  /* A candle the replay has not reached yet. */
+  .ahead {
+    opacity: 0;
+  }
+
+  /* Once a control is used, the script sets --at: candles past the first position, 20px each. */
+  .live .playhead,
+  .live .future {
+    transform: translateX(calc(var(--at) * 20px));
+    transition: transform 0.2s ease-out;
+    animation: none;
+  }
+
+  .live .candle {
+    transition: opacity 0.2s ease-out;
+    animation: none;
+  }
+
+  .ready svg {
+    cursor: pointer;
   }
 
   .target {
@@ -306,22 +459,32 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-3) var(--space-4);
+    padding: var(--space-3) var(--replay-bleed, var(--space-4)) var(--space-3) var(--space-4);
     border-top: 1px solid var(--border-primary);
   }
 
   .key {
     display: grid;
+    flex: none;
     place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--border-secondary);
-    border-radius: 0.5rem;
+    min-width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid var(--border-field);
+    border-radius: var(--radius-control);
+    background: none;
+    color: var(--text-primary);
+    font: inherit;
+    cursor: pointer;
+    transition:
+      border-color 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.1s ease;
   }
 
   .key svg {
-    width: 0.875rem;
-    fill: var(--icon-secondary);
+    width: 1rem;
+    fill: var(--icon-primary);
   }
 
   .key.play {
@@ -330,6 +493,26 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
 
   .key.play svg {
     fill: var(--chart-playhead);
+  }
+
+  @media (hover: hover) {
+    .key:hover {
+      border-color: var(--icon-primary);
+      background: var(--bg-tertiary);
+    }
+  }
+
+  .key:active {
+    transform: scale(0.94);
+  }
+
+  .icon-pause,
+  [data-state='playing'] .icon-play {
+    display: none;
+  }
+
+  [data-state='playing'] .icon-pause {
+    display: block;
   }
 
   .track {
@@ -348,9 +531,17 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
     width: 71%; /* (SHOWN + REPLAYED) / SLOTS */
   }
 
+  .live .played {
+    width: calc((var(--at) + 21) / 38 * 100%);
+    transition: width 0.2s ease-out;
+  }
+
+  /* A label on a control, not a line of text: it is pressed, not selected. */
   .speed {
-    color: var(--text-secondary);
-    font-size: var(--step--1);
+    padding-inline: var(--space-3);
+    font-size: 1rem;
     font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    user-select: none;
   }
 </style>

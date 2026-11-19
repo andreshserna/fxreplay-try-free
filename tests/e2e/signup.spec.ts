@@ -337,3 +337,59 @@ test.describe('before the script takes over', () => {
     expect(sent.events.some((event) => event.name === 'signup_failed')).toBe(false);
   });
 });
+
+test.describe('the hero illustration', () => {
+  test('its controls do what they show: one candle, speed, play and pause', async ({
+    page,
+    baseURL,
+  }) => {
+    const sent = recordEvents(page);
+    await openAs(page, baseURL, 'cta_button');
+    const figure = page.locator('[data-replay].ready');
+    const controls = figure.getByRole('group', { name: 'Controls of the replay illustration' });
+    const drawn = () =>
+      figure
+        .locator('.candle')
+        .evaluateAll(
+          (candles) => candles.filter((candle) => getComputedStyle(candle).opacity !== '0').length,
+        );
+
+    await controls.getByRole('button', { name: 'Next candle' }).click();
+    await expect.poll(drawn).toBe(28);
+
+    await controls.getByRole('button', { name: 'Speed: 1x' }).click();
+    await expect(controls.getByRole('button', { name: 'Speed: 2x' })).toHaveText('2x');
+
+    await controls.getByRole('button', { name: 'Play', exact: true }).click();
+    await expect.poll(drawn).toBeGreaterThan(30);
+    await controls.getByRole('button', { name: 'Pause' }).click();
+    const paused = await drawn();
+    await page.waitForTimeout(700);
+    expect(await drawn()).toBe(paused);
+
+    await flushEvents(page);
+    const used = sent.events.filter((event) => event.name === 'replay_demo_used');
+    expect(used.map((event) => event.properties)).toEqual([{ control: 'step' }]);
+  });
+});
+
+test.describe('legibility', () => {
+  for (const arm of ['cta_button', 'inline_email'] as const) {
+    test(`no text on the page is set below 16px (${arm})`, async ({ page, baseURL }) => {
+      await openAs(page, baseURL, arm);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll('body *')]
+          .filter(
+            (element) =>
+              element.getClientRects().length > 0 &&
+              [...element.childNodes].some(
+                (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+              ) &&
+              parseFloat(getComputedStyle(element).fontSize) < 16,
+          )
+          .map((element) => `${element.tagName} "${element.textContent?.trim().slice(0, 40)}"`),
+      );
+      expect(small).toEqual([]);
+    });
+  }
+});

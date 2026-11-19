@@ -79,9 +79,9 @@ svg {
 /* The kit page's uppercase, letter-spaced label, set in the body family. */
 .kicker {
   color: var(--text-link);
-  font-size: 0.75rem;
+  font-size: var(--step--1);
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   line-height: 1.4;
   text-transform: uppercase;
 }

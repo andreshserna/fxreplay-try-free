@@ -75,7 +75,7 @@ import { QUESTIONS } from './faq';
     display: none;
   }
 
-  /* A plus that becomes a minus: two bars, one of which lies down when open. */
+  /* A plus that becomes a minus: the upright bar shrinks away as the mark turns. */
   summary::after {
     content: '';
     flex: none;
@@ -84,17 +84,60 @@ import { QUESTIONS } from './faq';
     background:
       linear-gradient(var(--icon-primary), var(--icon-primary)) center / 100% 2px no-repeat,
       linear-gradient(var(--icon-primary), var(--icon-primary)) center / 2px 100% no-repeat;
-    transition: transform 0.2s ease;
+    transition:
+      transform 0.3s ease,
+      background-size 0.3s ease;
   }
 
   details[open] summary::after {
-    background: linear-gradient(var(--icon-primary), var(--icon-primary)) center / 100% 2px
-      no-repeat;
+    background-size:
+      100% 2px,
+      2px 0;
+    transform: rotate(180deg);
   }
 
   details p {
     max-width: 40rem;
     padding-bottom: var(--space-5);
     color: var(--text-secondary);
+  }
+
+  /* The answer opens and closes by growing, not by appearing. `interpolate-size` lets the
+     height run to and from `auto`. A browser without it opens the answer at once and
+     fades it in, below. */
+  .list {
+    interpolate-size: allow-keywords;
+  }
+
+  details::details-content {
+    block-size: 0;
+    overflow: clip;
+    opacity: 0;
+    transition:
+      block-size 0.3s ease,
+      opacity 0.3s ease,
+      content-visibility 0.3s allow-discrete;
+  }
+
+  details[open]::details-content {
+    block-size: auto;
+    opacity: 1;
+  }
+
+  @supports not (interpolate-size: allow-keywords) {
+    details::details-content {
+      block-size: auto;
+    }
+
+    details[open] p {
+      animation: reveal 0.3s ease;
+    }
+  }
+
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
   }
 </style>

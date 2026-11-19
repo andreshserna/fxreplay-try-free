@@ -5,7 +5,9 @@
  */
 :root {
   /* Type: fluid between a 360px and a 1440px viewport. No breakpoints, no jumps. */
-  --step--1: clamp(0.8125rem, 0.79rem + 0.11vw, 0.875rem);
+  /* The floor. No text on the page is set below 16px: secondary text is set apart by
+     color and weight, not by a size that is hard to read on a phone. */
+  --step--1: 1rem;
   --step-0: clamp(1rem, 0.96rem + 0.19vw, 1.125rem);
   --step-1: clamp(1.125rem, 1.04rem + 0.37vw, 1.375rem);
   --step-2: clamp(1.375rem, 1.2rem + 0.74vw, 1.875rem);

@@ -130,7 +130,11 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
       align-self: start;
     }
 
+    /* The chart runs off the edge of the screen. Its controls do not: they end where the
+       page's content ends. */
     .stage :global(.replay) {
+      --replay-bleed: max(var(--gutter), calc((100vw - var(--measure)) / 2));
+
       border-right: 0;
       border-radius: var(--radius-surface) 0 0 var(--radius-surface);
     }
