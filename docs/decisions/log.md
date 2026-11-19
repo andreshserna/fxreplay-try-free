@@ -96,3 +96,15 @@ project or is costly to reverse also has an ADR in this folder.
   ([ADR 0011](0011-cloudflare-workers-with-d1.md)). One platform covers static assets, the
   API, edge logic, the database, rate limiting and the CDN, and development runs on the
   production runtime with a local database and no account.
+- **The Users API contract is `docs/api.md`,** written before the implementation. Create is
+  idempotent by key, so a retry after a timeout replays the first answer instead of reporting
+  "already registered". Lists page by key, not by offset. `email_taken` reveals that an
+  address is registered: a deliberate trade for a useful next step, bounded by rate limiting,
+  and the first thing that would change in production.
+- **Fonts go through Astro's Fonts API,** which downloads, self-hosts and preloads them and
+  generates metric-matched fallbacks. Lato 400, 700, 900 and Nunito Sans 400, 600, 700, Latin
+  subset, from the open-licensed Fontsource packages. Set up with the scaffold.
+- **React or Preact for the island is decided by measurement,** not in advance. The form is
+  written with hooks only, so both run it. The scaffold starts on React, the stack ADR 0001
+  names, and the two are compared on bytes shipped and blocking time before the choice is
+  recorded.
