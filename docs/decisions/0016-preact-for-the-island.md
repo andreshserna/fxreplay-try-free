@@ -1,6 +1,6 @@
 # 0016. The island runs on Preact
 
-- **Status:** accepted
+- **Status:** superseded by 0017
 - **Date:** 2026-11-18
 - **Phase:** 3
 

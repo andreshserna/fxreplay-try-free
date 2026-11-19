@@ -261,3 +261,6 @@ project or is costly to reverse also has an ADR in this folder.
   Worker and asset responses, the cache rules, a 422 for a bad email, and a 401 on the user
   list without a token. Secrets were generated on the deploying machine, outside the
   repository, and uploaded with the deploy.
+- **Back to React for the island.** Preact was built and measured first: 25 KB against 82,
+  and identical lab scores. With no budget separating them, the team's own stack won.
+  [ADR 0017](0017-react-for-the-island.md), which supersedes 0016.

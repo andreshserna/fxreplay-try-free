@@ -1,5 +1,5 @@
 /*
- * The signup form and what follows it. Plain classes, because the form is a Preact
+ * The signup form and what follows it. Plain classes, because the form is a React
  * island and Astro's scoped styles do not reach inside it.
  */
 .signup {

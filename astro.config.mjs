@@ -1,7 +1,7 @@
 import { execSync } from 'node:child_process';
 
 import cloudflare from '@astrojs/cloudflare';
-import preact from '@astrojs/preact';
+import react from '@astrojs/react';
 import { defineConfig, fontProviders } from 'astro/config';
 
 /**
@@ -40,7 +40,7 @@ export default defineConfig({
   // Images are optimized at build time. Nothing is transformed at request time,
   // so the deployment needs no image service.
   adapter: cloudflare({ imageService: 'compile' }),
-  integrations: [preact()],
+  integrations: [react()],
   // The signup issues its own signed cookie (docs/api.md). Astro's session store,
   // which would provision a KV namespace on deploy, is not used.
   session: false,

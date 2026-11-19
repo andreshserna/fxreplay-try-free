@@ -99,8 +99,8 @@ One change, the browser tracker, as it actually went:
 - **Parallel work with a contract.** While the registry was being designed, three
   specifications ran in parallel on a cheaper model: the API client, the statistics, the
   attribution capture. Each came back with tests and a mutation check.
-- **Measurement instead of opinion.** React and Preact were both built and measured. The
-  budgets are a command that fails the build.
+- **Measurement instead of opinion.** React and Preact were both built and measured before
+  choosing between them. The budgets are a command that fails the build.
 
 ## Where AI output was corrected or rejected
 

@@ -1,7 +1,7 @@
 # Architecture
 
 One deployable on Cloudflare: an Astro site whose pages are static files, and a small Worker
-that runs only where a request needs a decision. The page ships 25 KB of script, none of it
+that runs only where a request needs a decision. The page ships 82 KB of script, none of it
 from a third party.
 
 ```
@@ -27,7 +27,7 @@ from a third party.
 | Layer | Where | What it holds |
 |---|---|---|
 | Pages | `src/pages/`, `src/layouts/` | Prerendered HTML. One document per experiment arm |
-| The island | `src/components/signup/` | The signup form: a pure state machine and a thin Preact component. The only code that hydrates |
+| The island | `src/components/signup/` | The signup form: a pure state machine and a thin React component. The only code that hydrates |
 | Shared contract | `src/lib/api/` | Schemas used by the form and the server, the problem registry, the typed client |
 | Measurement | `src/lib/analytics/`, `src/lib/experiments/` | The event registry, the tracker, attribution, experiment assignment |
 | Server | `src/server/` | Plain functions from `Request` to `Response`. One file, `runtime.ts`, knows Cloudflare |
@@ -41,7 +41,7 @@ an in-memory repository, and again over HTTP against the real Worker and a real 
 | Decision | Why | What it costs | Record |
 |---|---|---|---|
 | Astro, static by default, one island | The page is content with one interactive piece. Speed is part of conversion | Anything interactive beyond the form needs a second island | [0001](decisions/0001-astro-react-islands-strict-typescript.md) |
-| Preact for the island | 25 KB of script instead of 84, measured, same tests green | Not a drop-in for a React codebase: two imports differ | [0016](decisions/0016-preact-for-the-island.md) |
+| React for the island | Their stack. Preact was built and measured first: 57 KB smaller, and no difference in any lab score or budget | 57 KB of script the page could do without | [0017](decisions/0017-react-for-the-island.md) |
 | One deployable | Page, API and edge logic ship and roll back together | The API scales with the site, not on its own | [0002](decisions/0002-one-deployable.md) |
 | Cloudflare Workers with D1 | One platform for assets, edge logic, SQL with a real unique constraint, rate limiting | A runtime that is not Node, and 10 ms of CPU per request on the free plan | [0011](decisions/0011-cloudflare-workers-with-d1.md) |
 | Email-first signup, no password | The lowest-friction path to an account. Their flow asks for three fields on two screens before one exists | A simulated account: no verification, no login | [0005](decisions/0005-email-first-signup-without-password.md) |
@@ -99,9 +99,7 @@ Their marketing site is already Astro with React islands (`docs/research/brief.m
 4. **Consent.** Their consent tool decides what may be recorded. The server-side conversion
    stays, as it is needed to operate the service. Marketing destinations wait for consent.
 5. **Their languages.** Each of their eight locales is one more prerendered document per arm.
-6. **The island moves to React** if one runtime across their site is worth more than 59 KB on
-   this page. It is a measured trade, and theirs to make.
-7. **Email verification and abuse controls** that a demo leaves out: verification, a
+6. **Email verification and abuse controls** that a demo leaves out: verification, a
    challenge on suspicious signups, deliverability checks.
 
 ## Verified, and not

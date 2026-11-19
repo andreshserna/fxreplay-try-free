@@ -6,8 +6,7 @@
  * always lands on what changed. The submit button is never disabled: while a request
  * is in flight it says so and ignores a second press.
  */
-import type { TargetedSubmitEvent } from 'preact';
-import { useEffect, useId, useReducer, useRef } from 'preact/hooks';
+import { useEffect, useId, useReducer, useRef, type SubmitEvent } from 'react';
 
 import { attribution, track } from '../../lib/analytics/track';
 import { apiClient, newIdempotencyKey } from '../../lib/api/client';
@@ -120,8 +119,8 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
 
   if (state.step === 'profile' || state.step === 'done') {
     return (
-      <div class="signup signup-after">
-        <h3 ref={heading} tabindex={-1} class="signup-title">
+      <div className="signup signup-after">
+        <h3 ref={heading} tabIndex={-1} className="signup-title">
           {state.step === 'profile' ? 'Your free account is ready.' : 'You are all set.'}
         </h3>
         {state.step === 'profile' ? (
@@ -137,7 +136,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
             }}
           />
         ) : (
-          <p class="signup-note">
+          <p className="signup-note">
             This demo ends here. On the real site, your first replay session would open now.
           </p>
         )}
@@ -151,7 +150,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
   const fieldTrouble = trouble?.kind === 'invalid' || trouble?.kind === 'email_taken';
   const errorId = `${id}-error`;
 
-  function onSubmit(event: TargetedSubmitEvent<HTMLFormElement>) {
+  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (submitting) return;
     const parsed = parseEmail(email);
@@ -166,28 +165,28 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
   return (
     // Before this script runs, the form still works: it posts to /signup as plain HTML.
     <form
-      class={`signup signup-${layout}`}
+      className={`signup signup-${layout}`}
       method="post"
       action="/signup"
       onSubmit={onSubmit}
       noValidate
     >
       <label htmlFor={id}>Email</label>
-      <div class="signup-controls">
+      <div className="signup-controls">
         <input
           ref={input}
           id={id}
           name="email"
           type="email"
-          inputmode="email"
-          autocomplete="email"
-          autocapitalize="none"
-          spellcheck={false}
+          inputMode="email"
+          autoComplete="email"
+          autoCapitalize="none"
+          spellCheck={false}
           placeholder="name@example.com"
           value={state.email}
           aria-invalid={fieldTrouble || undefined}
           aria-describedby={trouble ? errorId : undefined}
-          onInput={(event) => {
+          onChange={(event) => {
             if (!started.current) {
               started.current = true;
               track('signup_started', { form_location: location });
@@ -197,7 +196,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
           onBlur={() => dispatch({ type: 'blurred', error: emailError(state.email) })}
         />
         <button type="submit" aria-busy={submitting || undefined}>
-          {submitting && <span class="signup-spinner" aria-hidden="true" />}
+          {submitting && <span className="signup-spinner" aria-hidden="true" />}
           <span>
             {submitting
               ? 'Creating your account'
@@ -208,11 +207,11 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
         </button>
       </div>
       {/* A field people never see or reach. A value in it means a bot filled the form. */}
-      <div class="signup-decoy" aria-hidden="true">
+      <div className="signup-decoy" aria-hidden="true">
         <label htmlFor={`${id}-website`}>Leave this field empty</label>
-        <input ref={decoy} id={`${id}-website`} name="website" tabindex={-1} autocomplete="off" />
+        <input ref={decoy} id={`${id}-website`} name="website" tabIndex={-1} autoComplete="off" />
       </div>
-      <p id={errorId} class="signup-trouble" role="alert">
+      <p id={errorId} className="signup-trouble" role="alert">
         {trouble && (
           <>
             <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -240,7 +239,7 @@ interface ProfileProps {
 function ProfileStep({ saving, trouble, onSave, onSkip }: ProfileProps) {
   const id = useId();
 
-  function onSubmit(event: TargetedSubmitEvent<HTMLFormElement>) {
+  function onSubmit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     if (saving) return;
     const data = new FormData(event.currentTarget);
@@ -256,8 +255,8 @@ function ProfileStep({ saving, trouble, onSave, onSkip }: ProfileProps) {
   }
 
   return (
-    <form class="signup-profile" onSubmit={onSubmit}>
-      <p class="signup-note">
+    <form className="signup-profile" onSubmit={onSubmit}>
+      <p className="signup-note">
         Three optional questions, so your first session starts closer to how you trade.
       </p>
       <Choices
@@ -275,17 +274,17 @@ function ProfileStep({ saving, trouble, onSave, onSkip }: ProfileProps) {
         id={id}
       />
       <Choices legend="What brings you here?" name="goal" type="radio" values={GOALS} id={id} />
-      <p class="signup-trouble" role="alert">
+      <p className="signup-trouble" role="alert">
         {trouble === 'unavailable' &&
           'We could not save your answers. Your account is safe: try again.'}
         {trouble === 'expired' && 'This step has expired. Your account is safe: you can skip it.'}
       </p>
-      <div class="signup-actions">
+      <div className="signup-actions">
         <button type="submit" aria-busy={saving || undefined}>
-          {saving && <span class="signup-spinner" aria-hidden="true" />}
+          {saving && <span className="signup-spinner" aria-hidden="true" />}
           <span>{saving ? 'Saving' : 'Save and continue'}</span>
         </button>
-        <button type="button" class="signup-skip" onClick={onSkip}>
+        <button type="button" className="signup-skip" onClick={onSkip}>
           Skip
         </button>
       </div>
@@ -308,7 +307,7 @@ interface ChoicesProps {
 
 function Choices({ legend, name, type, values, id }: ChoicesProps) {
   return (
-    <fieldset class="signup-choices">
+    <fieldset className="signup-choices">
       <legend>{legend}</legend>
       <div>
         {values.map((value) => (
