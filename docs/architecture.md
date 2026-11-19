@@ -1,7 +1,7 @@
 # Architecture
 
 One deployable on Cloudflare: an Astro site whose pages are static files, and a small Worker
-that runs only where a request needs a decision. The page ships 82 KB of script, none of it
+that runs only where a request needs a decision. The page ships 90 KB of script, none of it
 from a third party.
 
 ```

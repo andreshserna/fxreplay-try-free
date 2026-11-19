@@ -13,7 +13,7 @@ median of five is there to absorb one slow run, not to hide a slow page.
 
 | Metric | Budget | Local Workers runtime | Deployed on Cloudflare |
 |---|---|---|---|
-| LCP | ≤ 2.0 s | 1.00 s | 1.00 s |
+| LCP | ≤ 2.0 s | 1.15 s | 1.07 s |
 | CLS | ≤ 0.05 | 0.001 | 0.001 |
 | TBT (lab stand-in for INP) | ≤ 150 ms | 0 ms | 0 ms |
 | Performance score | ≥ 95 | 100 | 100 |
@@ -21,8 +21,9 @@ median of five is there to absorb one slow run, not to hide a slow page.
 | Best practices | 100 | 100 | 100 |
 | SEO | 100 | 100, on a build with indexing on | 69: the demo ships `noindex` on purpose |
 
-Both arms measure the same within a few milliseconds. On the deployment the page is 13
-requests and 176 KiB, and the root document answered in 30 ms.
+Both arms measure the same within a few milliseconds. On the deployment the page is 14
+requests and 184 KiB. The root document's first byte, from one location over one day, took
+between 30 and 320 ms.
 
 **Field data: none yet.** No real visitor has seen the page. The targets are p75 LCP ≤ 2.5 s,
 INP ≤ 200 ms and CLS ≤ 0.1, and the page reports all three through the `web_vitals` event,
@@ -36,9 +37,9 @@ LCP and 300 ms INP at p75 on phones (Chrome UX Report, `docs/research/brief.md`,
 |---|---|
 | Every arm of the page is a prerendered document | Nothing is rendered per request. Time to first byte is the asset store's |
 | The largest element is text | LCP does not wait for an image. The hero illustration is inline SVG: no request, no decode |
-| CSS travels in the HTML | No render-blocking request. The HTML is 14 KB compressed |
+| CSS travels in the HTML | No render-blocking request. The HTML, with every illustration inline, is 21 KB compressed |
 | Fonts are self-hosted: two families, six files, 112 KB | Only the headline weight is preloaded: the headline settles into its face about 100 ms sooner. It does not move LCP, which is body text painted first in the fallback face. The fallbacks are metric-matched to Arial. Android ships no Arial and falls back to its own sans-serif unadjusted: measured with such a fallback at 360 px, CLS stayed at 0.0001, because the lines above the fold break in the same places |
-| One island | 82 KB of script, compressed, all of it deferred. Nothing blocks the first paint |
+| One island | 90 KB of script, compressed, all of it deferred: the island's 82 KB, and 8 KB of plain script for the tracker and the playable illustration. Nothing blocks the first paint |
 | No third-party script | The analytics tracker is 2.4 KB of our own code posting to our own origin ([ADR 0014](decisions/0014-first-party-event-collector.md)) |
 | The form reserves the space for its error message | A validation error does not move the page |
 | Motion is opacity and transform only, and off under `prefers-reduced-motion` | No layout work in the animation |
@@ -106,8 +107,8 @@ request was rejected: it would spend the Worker's CPU budget on HTML that never 
 | What | Cache-Control | Why |
 |---|---|---|
 | `/_astro/*` (scripts, fonts, images) | `public, max-age=31536000, immutable` | File names carry a content hash |
-| Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 15 KB at most |
-| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. The same holds: no validator reaches the browser, so a repeat view is 15 KB |
+| Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 21 KB at most |
+| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. The same holds: no validator reaches the browser, so a repeat view is 21 KB |
 | The API | `no-store` | Personal data and one-time answers |
 
 Everything is served from Cloudflare's edge. The one compromise is `/`: because the arm is
@@ -116,7 +117,8 @@ cache key that includes the arm.
 
 HTML leaves this host compressed and without an `ETag`, so a repeat view is never a 304.
 An `ETag` set by the Worker survived only with `no-transform`, which switched compression
-off: 55 KB in place of 15 KB (curl against the deployment, 2026-11-19). Compression was
+off: 55 KB in place of 15 KB, the page's size at the time (curl against the deployment,
+2026-11-19). Compression was
 kept.
 
 ## Production risks
