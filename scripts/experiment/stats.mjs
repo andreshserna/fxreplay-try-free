@@ -151,16 +151,18 @@ export function sampleSizePerArm({ baseline, relativeMde, alpha = 0.05, power = 
 
 /**
  * How long an experiment needs to run. Experiments run whole weeks only, so `weeks` is
- * rounded up and is at least 1.
+ * rounded up and is at least `minWeeks`, whatever the traffic.
  *
  * @param {object} options
  * @param {number} options.perArm visitors needed in each arm, a positive integer
  * @param {number} [options.arms] number of equal arms, an integer of at least 2
  * @param {number} options.dailyVisitors eligible visitors per day across all arms, positive
+ * @param {number} [options.minWeeks] the floor on the duration in whole weeks, a positive
+ *   integer (default 1)
  * @returns {{ days: number, weeks: number }}
  * @throws {RangeError} naming the invalid argument
  */
-export function duration({ perArm, arms = 2, dailyVisitors }) {
+export function duration({ perArm, arms = 2, dailyVisitors, minWeeks = 1 }) {
   if (!(Number.isInteger(perArm) && perArm > 0)) {
     throw new RangeError(`perArm must be a positive integer, got ${perArm}`);
   }
@@ -170,8 +172,11 @@ export function duration({ perArm, arms = 2, dailyVisitors }) {
   if (!(typeof dailyVisitors === 'number' && Number.isFinite(dailyVisitors) && dailyVisitors > 0)) {
     throw new RangeError(`dailyVisitors must be a positive number, got ${dailyVisitors}`);
   }
+  if (!(Number.isInteger(minWeeks) && minWeeks > 0)) {
+    throw new RangeError(`minWeeks must be a positive integer, got ${minWeeks}`);
+  }
   const days = Math.ceil((perArm * arms) / dailyVisitors);
-  return { days, weeks: Math.max(1, Math.ceil(days / 7)) };
+  return { days, weeks: Math.max(minWeeks, Math.ceil(days / 7)) };
 }
 
 /**

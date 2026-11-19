@@ -28,6 +28,18 @@ test('with --daily-visitors the text adds the days and the whole weeks', () => {
   assert.match(stdout, /Visitors per arm: +13807\n/);
   assert.match(stdout, /Days needed: +19\n/);
   assert.match(stdout, /Duration: +3 whole weeks\n/);
+  assert.match(stdout, /at least 2 whole weeks, whatever the traffic\n/);
+});
+
+test("the duration never drops below the plan's floor of two whole weeks", () => {
+  // The plan's numbers: 6690 per arm. 13380 / 5000 = 2.676 -> 3 days, which is one week by
+  // the traffic. The plan runs at least two whole weeks, whatever the traffic.
+  const { code, stdout } = run(['--baseline', '0.10', '--mde', '0.15', '--daily-visitors', '5000']);
+  assert.equal(code, 0);
+  assert.match(stdout, /Visitors per arm: +6690\n/);
+  assert.match(stdout, /Days needed: +3\n/);
+  assert.match(stdout, /Duration: +2 whole weeks\n/);
+  assert.match(stdout, /Floor: +at least 2 whole weeks, whatever the traffic\n/);
 });
 
 test('--json prints one object that matches the functions', () => {
@@ -59,8 +71,11 @@ test('--json prints one object that matches the functions', () => {
     perArm,
     total: perArm * 2,
     dailyVisitors: 2000,
-    ...duration({ perArm, dailyVisitors: 2000 }),
+    minWeeks: 2,
+    // 11706 / 2000 = 5.853 -> 6 days: one week by the traffic, two by the floor.
+    ...duration({ perArm, dailyVisitors: 2000, minWeeks: 2 }),
   });
+  assert.equal(result.weeks, 2);
 });
 
 test('--help prints the usage and succeeds', () => {

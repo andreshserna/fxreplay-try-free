@@ -16,6 +16,12 @@ import { duration, sampleSizePerArm } from './stats.mjs';
 
 const NAME = 'sample-size';
 
+/**
+ * The floor on the duration, in whole weeks, whatever the traffic: a trading audience behaves
+ * differently at weekends (docs/experiments/hero_signup.md, "Sample size and duration").
+ */
+export const MIN_WEEKS = 2;
+
 export const USAGE = `Usage: node scripts/experiment/sample-size.mjs --baseline <rate> --mde <relative> [options]
 
 Visitors needed in each of two equal arms for a two-sided two-proportion z-test.
@@ -24,7 +30,8 @@ Visitors needed in each of two equal arms for a two-sided two-proportion z-test.
   --mde <relative>         relative minimum detectable effect, e.g. 0.15 for +15%, -0.1 for a drop
   --alpha <level>          two-sided significance level (default 0.05)
   --power <power>          statistical power (default 0.8)
-  --daily-visitors <n>     eligible visitors per day across both arms; adds the duration
+  --daily-visitors <n>     eligible visitors per day across both arms; adds the duration,
+                           at least ${MIN_WEEKS} whole weeks whatever the traffic
   --json                   print one JSON object instead of text
   --help                   print this help
 `;
@@ -129,7 +136,12 @@ export function plan({ baseline, relativeMde, alpha, power, dailyVisitors }) {
     total: perArm * 2,
   };
   if (dailyVisitors === undefined) return result;
-  return { ...result, dailyVisitors, ...duration({ perArm, arms: 2, dailyVisitors }) };
+  return {
+    ...result,
+    dailyVisitors,
+    minWeeks: MIN_WEEKS,
+    ...duration({ perArm, arms: 2, dailyVisitors, minWeeks: MIN_WEEKS }),
+  };
 }
 
 /** @param {ReturnType<typeof plan>} result */
@@ -150,6 +162,7 @@ export function renderText(result) {
       `  Daily visitors:     ${result.dailyVisitors}`,
       `  Days needed:        ${result.days}`,
       `  Duration:           ${result.weeks} whole week${result.weeks === 1 ? '' : 's'}`,
+      `  Floor:              at least ${result.minWeeks} whole weeks, whatever the traffic`,
     );
   }
   return `${lines.join('\n')}\n`;

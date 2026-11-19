@@ -150,6 +150,21 @@ test('duration: exact division, rounding up, and a one-week minimum', () => {
   });
 });
 
+test('duration: a floor of whole weeks holds whatever the traffic', () => {
+  // The plan's numbers: 6690 per arm. At 5000 a day, 13380 / 5000 = 2.676 -> 3 days, which
+  // is 1 week by the traffic and 2 by the plan's floor.
+  assert.deepEqual(duration({ perArm: 6690, dailyVisitors: 5000 }), { days: 3, weeks: 1 });
+  assert.deepEqual(duration({ perArm: 6690, dailyVisitors: 5000, minWeeks: 2 }), {
+    days: 3,
+    weeks: 2,
+  });
+  // Above the floor the traffic decides: 13380 / 500 = 26.76 -> 27 days, 4 weeks.
+  assert.deepEqual(duration({ perArm: 6690, dailyVisitors: 500, minWeeks: 2 }), {
+    days: 27,
+    weeks: 4,
+  });
+});
+
 test('duration rejects each invalid argument by name', () => {
   const valid = { perArm: 1000, dailyVisitors: 100 };
   const cases = [
@@ -160,6 +175,8 @@ test('duration rejects each invalid argument by name', () => {
     [{ dailyVisitors: 0 }, /dailyVisitors/],
     [{ dailyVisitors: Infinity }, /dailyVisitors/],
     [{ dailyVisitors: undefined }, /dailyVisitors/],
+    [{ minWeeks: 0 }, /minWeeks/],
+    [{ minWeeks: 1.5 }, /minWeeks/],
   ];
   for (const [change, message] of cases) {
     assert.throws(

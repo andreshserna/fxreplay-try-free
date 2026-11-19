@@ -158,3 +158,21 @@ visitor had been exposed when they were written.
     disagree by a hair. The decision table keys on the interval.
 13. **Novelty is not ruled out.** The plan said there was none to wear off. A two-week run
     has returning visitors, so the lift is also reported by week.
+
+### 2026-11-19, still before any real data
+
+Found while making the analysis script follow the amendments above:
+
+14. **A speed regression must also be large enough to matter** (amendment 8): more than 10%
+    worse than the control and by more than a tenth of the target (250 ms of LCP, 20 ms of
+    INP, 0.01 of CLS). Without that floor a control CLS of exactly 0, which is common, would
+    turn any measurable shift into a breach.
+15. **A guardrail that cannot be computed is not a pass.** With no signup in an arm, the
+    ratios have no denominator, and "no guardrail breached" does not hold.
+16. **What the script enforces and what it leaves to the analyst.** `analyze.mjs` refuses a
+    period that has not ended, counts whole weeks from the dates, names the control from the
+    experiment registry, prints any override of the plan's numbers as a deviation, and shows
+    no effect when the run is invalid or early. It does not check that 7 days have passed
+    since the last exposure (amendment 3): the analyst does, against the query's cut-off.
+17. **`sample-size.mjs` now prints the two-week floor** as an extra line, so its output is
+    one line longer than the block quoted in this plan.
