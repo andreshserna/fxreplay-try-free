@@ -1,6 +1,6 @@
 # 0010. Every agent runs on Fable at the highest effort level; reviewers are read-only
 
-- **Status:** accepted
+- **Status:** superseded by 0012
 - **Date:** 2026-11-18
 - **Phase:** 0
 

@@ -174,3 +174,7 @@ project or is costly to reverse also has an ADR in this folder.
   limits than its card shows; "no card" is only safe to say about the free plan; and their
   marketing site is already Astro with React islands, so in production this page would be a
   route in that site, not a separate deployment.
+- **Models are chosen by kind of work.** Fable for decisions and critiques, Opus 5.5 for work
+  specified beforehand and checked by tests, through a new `implementer` agent. Replaces
+  "Fable everywhere", whose token cost interrupted a review.
+  [ADR 0012](0012-models-by-kind-of-work.md).

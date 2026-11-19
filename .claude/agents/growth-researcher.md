@@ -2,8 +2,8 @@
 name: growth-researcher
 description: Gathers evidence before design, copy or measurement decisions. Use in Phase 1, and whenever a factual claim about FX Replay or a competitor needs a source. Studies fxreplay.com (voice, claims, CTAs, funnel, tags, imagery) and two or three competitors' free-signup pages, then writes docs/research/brief.md with sources.
 tools: Read, Grep, Glob, WebSearch, WebFetch, Write, Edit, mcp__chrome-devtools__*
-model: fable
-effort: max
+model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Edit|Write"

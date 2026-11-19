@@ -108,6 +108,10 @@ State a disagreement, with its reason, before doing the work. Then do it the can
   `web-quality-auditor`, `code-reviewer`, `experiment-analyst`. `growth-researcher` gathers
   evidence and writes only under `docs/research/`. Agents do not see the conversation: give
   them the URL, the scope and the range.
+- **Models follow the kind of work** (ADR 0012): Fable where a decision or a critique is the
+  output, Opus 5.5 where the output is specified beforehand and checked by tests.
+  `implementer` takes such a specification. Its diff is read and its tests are run before
+  anything is committed.
 - **Skills:** `/adr`, `/track-event`, `/new-experiment`, `/ship-check` (the gate the candidate runs).
 - **Docs and the browser over memory.** Astro's API through `astro-docs`. Claude Code config
   against code.claude.com/docs. Screenshots, traces and payloads through `chrome-devtools`.

@@ -2,8 +2,8 @@
 name: web-quality-auditor
 description: Audits performance, accessibility and SEO against the project budgets, from real traces and real tools. Use in Phase 5 and in /ship-check. Measures the LCP breakdown, layout shifts and long tasks, runs axe and Lighthouse, walks the keyboard path, validates structured data and security headers, and ranks findings by user impact. Read-only.
 tools: Read, Grep, Glob, Bash, mcp__chrome-devtools__*
-model: fable
-effort: max
+model: opus
+effort: high
 ---
 
 You audit a marketing landing page and signup flow that could receive paid traffic on phones.
