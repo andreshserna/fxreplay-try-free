@@ -323,3 +323,27 @@ project or is costly to reverse also has an ADR in this folder.
     reasons. A value nothing emits is a promise the data cannot keep.
   - The tracker's request sends no referrer: the page's address can carry campaign
     parameters.
+- **Changes from the web quality audit** (`web-quality-auditor`, traces and Lighthouse on the
+  deployment, axe and a keyboard pass on every state):
+  - A 404 page of our own, with a way back to the offer. The framework's default was a dead
+    end for a visitor arriving from a mangled campaign link.
+  - "/" carries its own `ETag`, the release and the arm. On the host, the asset store's
+    validator did not reach the browser, so a repeat view downloaded the page again while
+    the performance review said it answered 304. Now it does, and a test over HTTP holds it.
+  - The step heading after the signup is an `h2`: as an `h3` it had no parent heading once
+    the closing section's own heading steps aside.
+  - A status region announces "Creating your account…": the button's label changes, but a
+    screen reader whose focus is in the field never hears it. Each form has a name.
+  - Internal pages (outcomes, problem types, the 404) declare no canonical address, and the
+    problem pages are never indexable. Before, they claimed "/" as canonical while `noindex`.
+  - Title and description shortened to fit a search result whole, with the demo's
+    disclaimer first. The structured data is one entity, not two for the same address.
+  - Not done, with the measurement: preloading the body font. LCP is recorded at the first
+    paint in the fallback face, so the preload would not move it and would compete with the
+    headline's. Hydrating the closing form on visibility instead of on idle: it would save
+    82 KB for visitors who never scroll, and cost a form that is not interactive for about
+    a second when they do. The plain-form path covers that second, but without the profile
+    step, so idle stays.
+  - The performance review said three things the audit could not confirm on the
+    deployment (the 304, the reason for the font preload, why CLS is low on Android).
+    Corrected to what was measured.

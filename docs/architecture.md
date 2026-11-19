@@ -75,7 +75,7 @@ for a browser that has not run the script, so the signup works before hydration 
 |---|---|---|
 | Hosting | Cloudflare Workers with static assets, free plan | The same model on a paid plan: higher CPU and request limits |
 | Deployment | `wrangler deploy`. D1 migrations are files applied by a command | Deploys from CI on merge, with a preview URL per pull request |
-| CI/CD | GitHub Actions on every push: format, lint, types, token and contrast rules, generated files, more than 300 unit and system tests, the build, the API contract over HTTP, 38 browser tests with axe, the Lighthouse budgets | The same checks gate the deploy. A failed budget fails the build |
+| CI/CD | GitHub Actions on every push: format, lint, types, token and contrast rules, generated files, more than 300 unit and system tests, the build, the API contract over HTTP, 44 browser tests with axe, the Lighthouse budgets | The same checks gate the deploy. A failed budget fails the build |
 | DNS | A `workers.dev` hostname | A route on their own zone (below) |
 | CDN and edge | Assets are served from the edge without running code. The Worker runs for `/` and the API | Cache the landing document per experiment arm |
 | Caching | Hashed files are immutable for a year. HTML revalidates. API answers are `no-store` | The same, plus the per-arm cache key |

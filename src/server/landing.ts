@@ -7,6 +7,7 @@
  * recorded here too, which means it is logged before the variant can render.
  */
 import { assign, EXPERIMENTS, formatAssignments } from '../lib/experiments/registry';
+import { RELEASE } from '../lib/release';
 import type { Defer, ServerEvents } from './analytics/emitter';
 import { looksAutomated, readVisitor, requestCountry, visitorCookie } from './http/visitor';
 
@@ -30,19 +31,23 @@ export async function serveLanding(
   const visitor = readVisitor(request);
   const variant = assign(EXPERIMENT, visitor.id);
 
-  // Conditional headers pass through, so an unchanged document still answers 304.
-  const document = await assets.fetch(
-    new Request(new URL(`/variants/${variant}/`, request.url), {
-      method: request.method,
-      headers: request.headers,
-    }),
-  );
+  // The document's own validator: the build and the arm. The asset store's validators do
+  // not survive every host's compression, and without one a repeat view downloads the
+  // whole page again. With it, an unchanged page answers 304 and no body. It is only as
+  // fresh as the release id, so a deploy is always built from a commit.
+  const etag = `W/"${RELEASE}-${variant}"`;
+  const unchanged = request.headers.get('If-None-Match') === etag;
+
+  const document = unchanged
+    ? new Response(null, { status: 304 })
+    : await assets.fetch(new Request(new URL(`/variants/${variant}/`, request.url)));
 
   const headers = new Headers(document.headers);
   // The document depends on the visitor, so no shared cache may keep it. The browser
-  // may, and revalidates: that is the cost of assigning at the edge, and it is small
-  // because the asset store answers from the same location.
+  // may, and revalidates: that is the cost of assigning at the edge.
   headers.set('Cache-Control', 'private, no-cache');
+  headers.set('ETag', etag);
+  headers.delete('Last-Modified');
   headers.append('Vary', 'Cookie');
   if (visitor.isNew) headers.append('Set-Cookie', visitorCookie(visitor.id));
 

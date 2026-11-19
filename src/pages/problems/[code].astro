@@ -21,7 +21,11 @@ const { code } = Astro.props;
 const { status, title, when } = PROBLEMS[code];
 ---
 
-<Base title={`${title} (${status})`} description={`The ${code} problem type of the Users API.`}>
+<Base
+  title={`${title} (${status})`}
+  description={`The ${code} problem type of the Users API.`}
+  indexable={false}
+>
   <main class="problem">
     <p class="kind">Users API problem type</p>
     <h1>{title}</h1>

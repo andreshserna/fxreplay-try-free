@@ -29,35 +29,28 @@ export const getStaticPaths = (() =>
 
 const variant = Astro.params.variant as VariantOf<'hero_signup'>;
 
-const TITLE = 'Try FX Replay Free: test your strategy on real market history (candidate demo)';
+// Short enough to show whole in a search result, with the disclaimer where it is not cut.
+const TITLE = 'Try FX Replay Free (candidate demo)';
 const DESCRIPTION =
-  'Replay real market history candle by candle and practise your strategy with simulated trades. Free plan, no credit card. A candidate challenge demo, not the official FX Replay site.';
+  'Candidate demo, not the official FX Replay site. Replay real market history candle by candle and practise your strategy with simulated trades. Free plan.';
 
-// What the page is, for a search engine: a page about FX Replay with its questions and
-// answers. It claims no publisher: this is a demo, and it does not speak for the company.
+// What the page is, for a search engine: one page about FX Replay that answers questions.
+// It claims no publisher: this is a demo, and it does not speak for the company.
 const url = new URL('/', Astro.site).href;
 const structuredData = {
   '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebPage',
-      '@id': `${url}#page`,
-      url,
-      name: TITLE,
-      description: DESCRIPTION,
-      inLanguage: 'en',
-      about: { '@type': 'Thing', name: 'FX Replay', url: 'https://fxreplay.com/' },
-    },
-    {
-      '@type': 'FAQPage',
-      '@id': `${url}#faq`,
-      mainEntity: QUESTIONS.map((item) => ({
-        '@type': 'Question',
-        name: item.q,
-        acceptedAnswer: { '@type': 'Answer', text: item.a },
-      })),
-    },
-  ],
+  '@type': ['WebPage', 'FAQPage'],
+  '@id': `${url}#page`,
+  url,
+  name: TITLE,
+  description: DESCRIPTION,
+  inLanguage: 'en',
+  about: { '@type': 'Thing', name: 'FX Replay', url: 'https://fxreplay.com/' },
+  mainEntity: QUESTIONS.map((item) => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
 };
 ---
 

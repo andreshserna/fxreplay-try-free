@@ -101,6 +101,19 @@ describe('the landing page at the edge', () => {
     expect(sink.events).toHaveLength(2);
   });
 
+  it('validates with the release and the arm, without asking the asset store', async () => {
+    const first = await visit({ Cookie: `${VISITOR_COOKIE}=visitor-a` });
+    const etag = first.headers.get('ETag') ?? '';
+    expect(etag).toContain(assign('hero_signup', 'visitor-a'));
+    requested = [];
+
+    await visit({ Cookie: `${VISITOR_COOKIE}=visitor-a`, 'If-None-Match': etag });
+    expect(requested).toHaveLength(0);
+    // The other arm's visitor holding this validator still gets their own document.
+    const other = await visit({ Cookie: `${VISITOR_COOKIE}=visitor-c`, 'If-None-Match': etag });
+    expect(other.status).toBe(200);
+  });
+
   it('does not count a prefetch as an exposure, and flags automated agents', async () => {
     await visit({ 'Sec-Purpose': 'prefetch;prerender' });
     expect(sink.events).toHaveLength(0);

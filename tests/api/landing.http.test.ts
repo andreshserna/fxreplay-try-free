@@ -36,4 +36,25 @@ describe('the landing page over HTTP', () => {
     expect(html).toContain('</html>');
     expect(html).toContain('<link rel="canonical"');
   });
+
+  it('answers a repeat view with 304 and no body, for the same arm only', async () => {
+    const id = randomUUID();
+    const headers = { Cookie: `fxr_aid=${id}` };
+    const first = await fetch(`${BASE_URL}/`, { headers });
+    const etag = first.headers.get('ETag') ?? '';
+    expect(etag).toContain(assign('hero_signup', id));
+
+    const again = await fetch(`${BASE_URL}/`, { headers: { ...headers, 'If-None-Match': etag } });
+    expect(again.status).toBe(304);
+    expect(await again.text()).toBe('');
+  });
+
+  it('answers an unknown address with a page that leads back to the offer', async () => {
+    const response = await fetch(`${BASE_URL}/no-such-page`);
+    expect(response.status).toBe(404);
+    const html = await response.text();
+    expect(html).toContain('href="/#signup"');
+    expect(html).toContain('noindex');
+    expect(html).not.toContain('rel="canonical"');
+  });
 });

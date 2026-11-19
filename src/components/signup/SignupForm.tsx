@@ -76,6 +76,7 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
   const input = useRef<HTMLInputElement>(null);
   const decoy = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const formName = location === 'hero' ? 'Sign up' : 'Sign up, at the end of the page';
   const previous = useRef(state);
 
   // Side effects of a transition: the request, the analytics events, and focus.
@@ -124,9 +125,9 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
   if (state.step === 'profile' || state.step === 'done') {
     return (
       <div className="signup signup-after">
-        <h3 ref={heading} tabIndex={-1} className="signup-title">
+        <h2 ref={heading} tabIndex={-1} className="signup-title">
           {state.step === 'profile' ? 'Your free account is ready.' : 'You are all set.'}
-        </h3>
+        </h2>
         {state.step === 'profile' ? (
           <ProfileStep
             saving={state.saving}
@@ -179,6 +180,7 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
       className={`signup signup-${layout}`}
       method="post"
       action="/signup"
+      aria-label={formName}
       onSubmit={onSubmit}
       noValidate
     >
@@ -213,6 +215,10 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
           </span>
         </button>
       </div>
+      {/* The button's own label changes, but a button that is not focused is not read out. */}
+      <p className="visually-hidden" role="status">
+        {submitting ? 'Creating your account…' : ''}
+      </p>
       {/* A field people never see or reach. A value in it means a bot filled the form. */}
       <div className="signup-decoy" aria-hidden="true">
         <label htmlFor={`${id}-website`}>Leave this field empty</label>

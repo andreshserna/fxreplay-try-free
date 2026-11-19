@@ -32,7 +32,7 @@ LCP and 300 ms INP at p75 on phones (Chrome UX Report, `docs/research/brief.md`,
 | Every arm of the page is a prerendered document | Nothing is rendered per request. Time to first byte is the asset store's |
 | The largest element is text | LCP does not wait for an image. The hero illustration is inline SVG: no request, no decode |
 | CSS travels in the HTML | No render-blocking request. The HTML is 14 KB compressed |
-| Fonts are self-hosted: two families, six files, 112 KB | Only the headline weight is preloaded. Fallbacks are metric-matched, which is why CLS is 0.001 |
+| Fonts are self-hosted: two families, six files, 112 KB | Only the headline weight is preloaded: the headline settles into its face about 100 ms sooner. It does not move LCP, which is body text painted first in the fallback face. The fallbacks are metric-matched to Arial. Android ships no Arial and falls back to its own sans-serif unadjusted: measured with such a fallback at 360 px, CLS stayed at 0.0001, because the lines above the fold break in the same places |
 | One island | 82 KB of script, compressed, all of it deferred. Nothing blocks the first paint |
 | No third-party script | The analytics tracker is 2.4 KB of our own code posting to our own origin ([ADR 0014](decisions/0014-first-party-event-collector.md)) |
 | The form reserves the space for its error message | A validation error does not move the page |
@@ -55,12 +55,16 @@ fit inside.
   landmarks, labelled sections, a list of steps as a list, the FAQ as native `details`.
 - **Technical:** both arms declare the same canonical URL, so an experiment never creates a
   duplicate page. Internal pages (form outcomes, problem pages) are never indexable.
-- **Structured data:** a `WebPage` and a `FAQPage`, built from the same list the FAQ renders.
+- **Structured data:** one entity that is both a `WebPage` and a `FAQPage`, built from the
+  same list the FAQ renders. Google shows FAQ rich results only for government and health
+  sites, so it is there for meaning, not for a richer listing.
+- **Title and description** fit a search result whole: 35 and 153 characters.
 - **Indexing is off by default** behind `ALLOW_INDEXING`, because the page carries another
   company's brand ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)). With the
   flag on, the SEO audit scores 100.
-- Not done: no `sitemap.xml` or `robots.txt`. One page does not need the first, and the
-  second would only matter once indexing is on.
+- Not done: the project ships no `sitemap.xml` or `robots.txt`. One page does not need the
+  first, and the second would only matter once indexing is on. (On the deployment the host
+  answers `/robots.txt` with a file of its own: comments, no directives.)
 
 ## Accessibility
 
@@ -73,8 +77,9 @@ Target: WCAG 2.2 AA.
 - **Forms:** a visible label, an error that is text plus an icon plus a border (never color
   alone), `aria-invalid`, the message tied to the field, focus moved to the field on a failed
   submit and to the heading when the step changes.
-- **The button is never disabled.** While a request is in flight it says so (`aria-busy`,
-  "Creating your account") and ignores a second press.
+- **The button is never disabled.** While a request is in flight its label says so, a status
+  region announces "Creating your account…" to a screen reader whose focus is in the field,
+  and a second press is ignored.
 - **Keyboard:** a skip link, a visible focus ring with an offset, native controls throughout.
 - **Targets:** controls are 52 px tall.
 - **Motion** stops under `prefers-reduced-motion`. The hero illustration has a text
@@ -96,8 +101,8 @@ request was rejected: it would spend the Worker's CPU budget on HTML that never 
 | What | Cache-Control | Why |
 |---|---|---|
 | `/_astro/*` (scripts, fonts, images) | `public, max-age=31536000, immutable` | File names carry a content hash |
-| Prerendered pages | `public, max-age=0, must-revalidate` | Always current, cheap to revalidate |
-| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. Answers 304 when unchanged |
+| Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 15 KB at most |
+| `/` | `private, no-cache`, `Vary: Cookie`, an `ETag` of the release and the arm | Decided per visitor. A repeat view answers 304 with no body |
 | The API | `no-store` | Personal data and one-time answers |
 
 Everything is served from Cloudflare's edge. The one compromise is `/`: because the arm is

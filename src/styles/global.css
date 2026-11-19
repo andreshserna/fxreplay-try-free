@@ -170,3 +170,14 @@ svg {
   border-radius: 50%;
   background: var(--chart-up);
 }
+
+/* Read by assistive technology, not drawn. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

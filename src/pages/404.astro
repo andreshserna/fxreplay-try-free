@@ -1,0 +1,58 @@
+---
+/** Any address that is not a page: say so, and lead back to the offer. */
+import wordmark from '../assets/brand/FXReplayLogo.svg';
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Page not found. Try FX Replay Free (candidate demo)"
+  description="This address is not a page of the demo."
+  indexable={false}
+>
+  <main>
+    <a href="/" aria-label="FX Replay, candidate demo: the landing page">
+      <img src={wordmark.src} width={wordmark.width} height={wordmark.height} alt="FX Replay" />
+    </a>
+    <h1>This page does not exist.</h1>
+    <p>The link may be mistyped or out of date. The free plan is still one email away.</p>
+    <p>
+      <a class="button" href="/#signup">
+        Start for free
+      </a>
+    </p>
+    <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
+  </main>
+</Base>
+
+<style>
+  main {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: var(--space-5);
+    min-height: 100svh;
+    max-width: 40rem;
+    margin-inline: auto;
+    padding: var(--space-6) var(--gutter);
+  }
+
+  img {
+    width: auto;
+    height: 1.375rem;
+  }
+
+  h1 {
+    font-size: var(--step-3);
+  }
+
+  p {
+    color: var(--text-secondary);
+  }
+
+  .notice {
+    justify-self: stretch;
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border-primary);
+    font-size: var(--step--1);
+  }
+</style>
