@@ -115,7 +115,7 @@ Ratios use the WCAG 2 formula. They are compared unrounded and shown truncated t
 
 ## What we added
 
-Five extension tokens, in `tokens/extensions.json` and `tokens/extensions.css`, kept apart
+Eleven extension tokens, in `tokens/extensions.json` and `tokens/extensions.css`, kept apart
 from the kit's files. Each aliases a value the kit already has. None introduces a color.
 
 | Token | Value | Why | Before | After |
@@ -125,17 +125,47 @@ from the kit's files. Each aliases a value the kit already has. None introduces 
 | `text-link` | `blue-500` | Body-size links on the ground need 4.5:1 | `text-brand` 4.02:1 | 5.26:1 |
 | `card-text-link` | `blue-400` | Links inside `bg-tertiary` surfaces | `blue-500` 4.44:1 | 5.90:1 |
 | `border-focus` | `blue-500` | Focus ring, 2px with a 2px offset, as your kit page draws it | Electric Blue 4.02:1 | 5.26:1 |
+| `btn-border-primary` | `blue-500` | A 1px edge on the primary button while hovered or pressed, so it keeps its shape | Hover fill 1.69:1 and pressed fill 1.31:1 against the ground | The edge is 5.26:1 against the ground and 3.09:1 against the hover fill |
 
 On the focus ring: your page uses Electric Blue, which passes 3:1 on the ground. We moved one
 step lighter so the ring stays distinct from the Electric Blue button it surrounds.
 
 Not changed, on purpose: Electric Blue as the primary CTA fill, and the dark ground.
 
-**Awaiting a decision.** `btn-bg-primary-hover` and `-pressed` are 1.69:1 and 1.31:1 against
-the ground, so the CTA loses its shape when hovered or pressed, although its label stays
-readable. A 1px edge in `blue-500` would keep the shape (3.09:1 against the hover fill,
-4.01:1 against the pressed fill). Both versions will be rendered side by side before one is
-chosen.
+The hover and pressed fills themselves are yours, unchanged. If you would rather not have the
+edge, the alternative is to define lighter hover and pressed fills in the kit.
+
+### The illustration's colors
+
+The hero's replay illustration is an original drawing, not a product screenshot. Its colors
+are five more aliases, so the drawing can be restyled from the token file:
+
+| Token | Value | Used for |
+|---|---|---|
+| `chart-up` | `blue-600` (Electric Blue) | Rising candles, the played part of the timeline, the glow |
+| `chart-down` | `neutral-200` | Falling candles |
+| `chart-grid` | `dark-700` | Grid lines |
+| `chart-future` | `dark-500` | Hatching over what has not been replayed yet |
+| `chart-playhead` | `blue-500` | The playhead |
+
+Candles are blue and near-white, not green and red. That keeps the picture inside your
+palette, and it avoids coloring a simulated trade as good or bad on a page that must not
+imply results. The drawing carries no text and no contrast requirement.
+
+### Scales
+
+The kit leaves sizing open, so the type, space and shape scales are ours:
+`src/styles/scale.css`. Type is fluid between a 360px and a 1440px viewport, with no
+breakpoints. Corners are 10px on controls and 12px on surfaces, inside the 9 to 12px your kit
+page uses.
+
+### Fonts
+
+Lato and Nunito Sans are self-hosted from the Fontsource packages (SIL Open Font License):
+three weights each, Latin subset, six files, only the heaviest Lato preloaded. The web build
+of Lato is version 1.104, the one your kit page loads from Google Fonts. Desktop
+distributions ship 2.015, which has slightly different metrics: a design tool with the
+desktop version installed will not match the browser to the pixel.
 
 ## Questions for the design team
 

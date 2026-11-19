@@ -279,3 +279,11 @@ project or is costly to reverse also has an ADR in this folder.
 - **No `style` attribute anywhere.** The first version of the illustration passed its numbers
   through style attributes, which the Content Security Policy blocks. The end-to-end test
   that fails on any policy violation caught it, and the geometry is now fixed in CSS.
+- **Metadata, structured data and the share image.** Open Graph and Twitter tags on every
+  page. A `WebPage` and a `FAQPage` in JSON-LD, built from the same list the FAQ section
+  renders, so the two cannot disagree. The page claims no publisher: it is a demo and does
+  not speak for the company. The share image is drawn from the tokens, the two families and
+  the wordmark as shipped (`npm run gen:og`) and committed, so a build needs no browser.
+- **The primary button keeps an edge when hovered or pressed** (`btn-border-primary`): the
+  kit's hover and pressed fills fade into the ground. Recorded in the brand notes as a
+  question for their design team.

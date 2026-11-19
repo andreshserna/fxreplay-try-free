@@ -30,7 +30,7 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 | `npm run test:e2e` | The signup states and the funnel in a real browser, with axe, against a running preview |
 | `npm run lighthouse` | The lab budgets on both experiment arms, against a running preview: median of three mobile runs |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
-| `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale) |
+| `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale). `gen:og` redraws the share image |
 | `npm run check:tokens`, `check:contrast`, `check:kit` | No color literals or primitive tokens in product code; every UI pair meets its WCAG threshold; `tokens.json` still matches the kit |
 
 A command that does not exist is "not available", never "passed".

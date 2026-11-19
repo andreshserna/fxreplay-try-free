@@ -11,6 +11,7 @@ import type { GetStaticPaths } from 'astro';
 
 import Audience from '../../components/landing/Audience.astro';
 import Closing from '../../components/landing/Closing.astro';
+import { QUESTIONS } from '../../components/landing/faq';
 import Faq from '../../components/landing/Faq.astro';
 import FreePlan from '../../components/landing/FreePlan.astro';
 import Hero from '../../components/landing/Hero.astro';
@@ -27,13 +28,50 @@ export const getStaticPaths = (() =>
   }))) satisfies GetStaticPaths;
 
 const variant = Astro.params.variant as VariantOf<'hero_signup'>;
+
+const TITLE = 'Try FX Replay Free: test your strategy on real market history (candidate demo)';
+const DESCRIPTION =
+  'Replay real market history candle by candle and practise your strategy with simulated trades. Free plan, no credit card. A candidate challenge demo, not the official FX Replay site.';
+
+// What the page is, for a search engine: a page about FX Replay with its questions and
+// answers. It claims no publisher: this is a demo, and it does not speak for the company.
+const url = new URL('/', Astro.site).href;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebPage',
+      '@id': `${url}#page`,
+      url,
+      name: TITLE,
+      description: DESCRIPTION,
+      inLanguage: 'en',
+      about: { '@type': 'Thing', name: 'FX Replay', url: 'https://fxreplay.com/' },
+    },
+    {
+      '@type': 'FAQPage',
+      '@id': `${url}#faq`,
+      mainEntity: QUESTIONS.map((item) => ({
+        '@type': 'Question',
+        name: item.q,
+        acceptedAnswer: { '@type': 'Answer', text: item.a },
+      })),
+    },
+  ],
+};
 ---
 
 <Base
   experiments={formatAssignments({ hero_signup: variant })}
-  title="Try FX Replay Free: test your strategy on real market history (candidate demo)"
-  description="Replay real market history candle by candle and practise your strategy with simulated trades. Free plan, no credit card. A candidate challenge demo, not the official FX Replay site."
+  title={TITLE}
+  description={DESCRIPTION}
 >
+  <script
+    slot="head"
+    type="application/ld+json"
+    is:inline
+    set:html={JSON.stringify(structuredData).replaceAll('<', '\\u003c')}
+  />
   <a class="skip" href="#signup">
     Skip to sign up
   </a>
