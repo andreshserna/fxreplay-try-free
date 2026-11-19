@@ -18,6 +18,13 @@
  * headless with its default mobile profile and simulated throttling. Single runs vary,
  * so each metric is judged on its median across the runs.
  *
+ * The CPU slowdown is calibrated to the machine. Lighthouse's 4x turns a high-end desktop
+ * into a mid-tier phone, and says to calibrate anywhere else (its docs/throttling.md). On
+ * a fixed 4x the same commit measured a total blocking time of 173 ms and of 36 ms on two
+ * shared CI runners, and 0 ms on a fast laptop: the number was the host's, not the page's.
+ * A first, unjudged run reads the host's benchmark, and the judged runs scale the
+ * slowdown by it, so every host simulates the same phone.
+ *
  * Budgets are compared on unrounded values. The table rounds against the budget (a
  * maximum up, a minimum down), so a displayed value never looks better than the real one.
  *
@@ -49,6 +56,21 @@ export const BUDGETS = {
 };
 
 export const METRICS = Object.keys(BUDGETS);
+
+/**
+ * Lighthouse's default slowdown, and the host it assumes: the middle of the "high-end
+ * desktop" bracket of its benchmark index (1500 to 2000). The linear scaling between
+ * brackets is this project's reading of that table, within the 1x to 10x it lists.
+ */
+export const DEFAULT_SLOWDOWN = 4;
+export const REFERENCE_BENCHMARK = 1750;
+
+/** The slowdown that makes this host simulate the phone a reference host simulates at 4x. */
+export function calibratedSlowdown(benchmarkIndex) {
+  if (!Number.isFinite(benchmarkIndex) || benchmarkIndex <= 0) return DEFAULT_SLOWDOWN;
+  const scaled = (DEFAULT_SLOWDOWN * benchmarkIndex) / REFERENCE_BENCHMARK;
+  return Math.min(10, Math.max(1, Math.round(scaled * 10) / 10));
+}
 
 const SEO_NOTE =
   'SEO is reported, not judged: the build ships noindex unless ALLOW_INDEXING=true, and Lighthouse scores that down by design. Judge it with --seo on an indexable build.';
@@ -210,7 +232,7 @@ async function serverAnswers(baseUrl) {
   }
 }
 
-async function auditArm({ lighthouse, port, url, visitorId, runs }) {
+async function auditArm({ lighthouse, port, url, visitorId, runs, slowdown }) {
   const results = [];
   for (let run = 0; run < runs; run += 1) {
     const result = await lighthouse(url, {
@@ -219,6 +241,7 @@ async function auditArm({ lighthouse, port, url, visitorId, runs }) {
       logLevel: 'error',
       onlyCategories: CATEGORIES,
       extraHeaders: { Cookie: `${VISITOR_COOKIE}=${visitorId}` },
+      throttling: { cpuSlowdownMultiplier: slowdown },
     });
     if (!result) throw new Error(`Lighthouse returned no result for ${url}`);
     const { lhr } = result;
@@ -276,13 +299,37 @@ async function main(argv) {
     runsPerArm: runs,
     seoJudged: flags.seo,
     budgets: BUDGETS,
+    hostBenchmarkIndex: undefined,
+    cpuSlowdownMultiplier: undefined,
     arms: {},
   };
 
   let failed = false;
   try {
+    // An unjudged run, to learn how fast this machine is.
+    const probe = await lighthouse(url, {
+      port: chrome.port,
+      output: 'json',
+      logLevel: 'error',
+      onlyCategories: ['performance'],
+    });
+    const benchmark = probe?.lhr.environment?.benchmarkIndex;
+    const slowdown = calibratedSlowdown(benchmark);
+    summaryFile.hostBenchmarkIndex = benchmark;
+    summaryFile.cpuSlowdownMultiplier = slowdown;
+    console.log(
+      `lighthouse: host benchmark ${Math.round(benchmark ?? 0)}, CPU slowdown ${slowdown}x (${DEFAULT_SLOWDOWN}x on a reference host of ${REFERENCE_BENCHMARK}).`,
+    );
+
     for (const [arm, visitorId] of arms) {
-      const results = await auditArm({ lighthouse, port: chrome.port, url, visitorId, runs });
+      const results = await auditArm({
+        lighthouse,
+        port: chrome.port,
+        url,
+        visitorId,
+        runs,
+        slowdown,
+      });
       const values = results.map((result) => result.values);
       const summary = summarize(values);
       const rows = judge(summary, BUDGETS, { seo: flags.seo });

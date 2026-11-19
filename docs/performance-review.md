@@ -4,16 +4,20 @@ Measured on 2026-11-19 with Lighthouse 13.6, mobile profile with simulated throt
 of three runs per experiment arm (`npm run lighthouse`). The same command runs in CI on every
 push, with five runs, and fails the build when a budget is missed.
 
-The lab is not equally quiet everywhere. Total blocking time is 0 ms on a development
-machine and on the deployment, and between 19 and 173 ms across six runs on GitHub's shared
-runners, where one push failed the 150 ms budget and passed unchanged on a second run. The
-median of five is there to absorb one slow run, not to hide a slow page.
+**The CPU slowdown is calibrated to the machine that runs the check.** Lighthouse's default
+4x turns a high-end desktop into a mid-tier phone and, by its own documentation, needs
+calibrating anywhere else. On a fixed 4x the same commit measured a total blocking time of
+173 ms and of 36 ms on two of GitHub's shared runners, and 0 ms on a fast laptop: the number
+was the host's, not the page's. The check now reads the host's benchmark in a first, unjudged
+run and scales the slowdown by it (4x at a benchmark of 1750, the middle of Lighthouse's
+"high-end desktop" bracket), so every host simulates the same phone. On the machine these
+numbers come from, that is 6.4x: harder than the default, not easier.
 
 ## Core Web Vitals
 
 | Metric | Budget | Local Workers runtime | Deployed on Cloudflare |
 |---|---|---|---|
-| LCP | ≤ 2.0 s | 1.15 s | 1.07 s |
+| LCP | ≤ 2.0 s | 1.18 s | 1.17 s |
 | CLS | ≤ 0.05 | 0.001 | 0.001 |
 | TBT (lab stand-in for INP) | ≤ 150 ms | 0 ms | 0 ms |
 | Performance score | ≥ 95 | 100 | 100 |

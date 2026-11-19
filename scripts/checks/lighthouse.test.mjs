@@ -5,6 +5,7 @@ import { assign, EXPERIMENTS } from '../../src/lib/experiments/registry.ts';
 import {
   BUDGETS,
   EXPERIMENT,
+  calibratedSlowdown,
   contributors,
   extract,
   findVisitorIds,
@@ -202,4 +203,18 @@ test('contributors lists the LCP element and its phases, and the top three scrip
     '  30 ms  c.js',
   ]);
   assert.deepEqual(contributors({ audits: {} }), []);
+});
+
+test('the slowdown is 4x on the reference host and scales with the host elsewhere', () => {
+  assert.equal(calibratedSlowdown(1750), 4);
+  // A slower runner needs less slowdown to simulate the same phone, a faster laptop more.
+  assert.equal(calibratedSlowdown(1300), 3);
+  assert.equal(calibratedSlowdown(2800), 6.4);
+});
+
+test('the slowdown stays within what Lighthouse lists, and falls back to its default', () => {
+  assert.equal(calibratedSlowdown(100), 1);
+  assert.equal(calibratedSlowdown(9000), 10);
+  assert.equal(calibratedSlowdown(undefined), 4);
+  assert.equal(calibratedSlowdown(Number.NaN), 4);
 });

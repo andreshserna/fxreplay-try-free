@@ -424,3 +424,11 @@ project or is costly to reverse also has an ADR in this folder.
 - **The footer ends the page the way a replay ends:** a tape of candles that stops at the
   playhead, then the wordmark and the two notices side by side. Decoration in the hero's
   language, inline SVG, no request.
+- **The Lighthouse check calibrates its CPU slowdown to the host.** Lighthouse's 4x assumes a
+  high-end desktop and its documentation says to calibrate elsewhere. With a fixed 4x one
+  commit measured a total blocking time of 173 ms and of 36 ms on two CI runners, and the
+  redesign failed the gate at 162 ms while measuring 0 ms locally. The budget is unchanged.
+  The check reads the host's benchmark and scales the slowdown (4x at 1750), which makes the
+  local run harder (6.4x) and a slow runner's fairer. Tried first and dropped:
+  `content-visibility` on the sections below the first screen cut layout work by a tenth and
+  needed a script to keep anchors exact.
