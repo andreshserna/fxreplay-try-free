@@ -1,4 +1,4 @@
-import type { Attribution, Profile } from '../../lib/api/schemas';
+import type { Attribution, Profile, ProfilePatch } from '../../lib/api/schemas';
 
 /** A user as stored: what the API returns, plus what only the list operation shows. */
 export interface UserRecord {
@@ -33,13 +33,23 @@ export interface UsersRepository {
   /**
    * Stores the user and its idempotency key together or not at all. Uniqueness of the
    * email and of the key is the store's job, so two concurrent requests cannot both win.
+   * A key created before `expiredBefore` no longer counts: it is replaced in the same
+   * transaction, so a request can only ever remove an expired key, never a fresh one.
    */
-  create(user: UserRecord, idempotencyKey: string, requestHash: string): Promise<CreateOutcome>;
+  create(
+    user: UserRecord,
+    idempotencyKey: string,
+    requestHash: string,
+    expiredBefore: string,
+  ): Promise<CreateOutcome>;
   findById(id: string): Promise<UserRecord | null>;
   findIdempotencyKey(key: string): Promise<IdempotencyRecord | null>;
-  deleteIdempotencyKey(key: string): Promise<void>;
-  /** Replaces the profile. Returns the updated user, or null when there is no such user. */
-  saveProfile(id: string, profile: Profile, updatedAt: string): Promise<UserRecord | null>;
+  /**
+   * Applies the patch in one step, so concurrent patches of different fields all land.
+   * An absent key leaves the field alone, null clears it, a value sets it. Returns the
+   * updated user, or null when there is no such user.
+   */
+  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<UserRecord | null>;
   /** Newest first. `before` is the id the previous page ended on. */
   list(limit: number, before?: string): Promise<UserRecord[]>;
 }

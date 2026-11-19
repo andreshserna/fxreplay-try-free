@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createApiClient, newIdempotencyKey } from '../../src/lib/api/client';
+import { createApiClient, HANDLED_PROBLEMS, newIdempotencyKey } from '../../src/lib/api/client';
+import { PROBLEMS } from '../../src/lib/api/problems';
 import { UsersApi } from '../../src/server/users/api';
 import { MemoryUsersRepository } from '../../src/server/users/memory-repository';
 import { UsersService } from '../../src/server/users/service';
@@ -155,7 +156,8 @@ describe('createUser', () => {
       'idempotency_key_reused',
     ],
     ['a 422 without field errors', problem(422, 'validation_failed'), 422, 'validation_failed'],
-    ['a code outside the registry', problem(409, 'teapot'), 409, null],
+    ['a code the client does not handle', problem(409, 'teapot'), 409, 'teapot'],
+    ['a code that is not shaped like one', problem(409, 'Not A Code!'), 409, null],
     ['a code on a status it does not belong to', problem(400, 'email_taken'), 400, 'email_taken'],
     ['a code in plain JSON, which is not read', json(409, { code: 'email_taken' }), 409, null],
     [
@@ -398,5 +400,13 @@ describe('against the real handlers', () => {
         },
       ],
     });
+  });
+});
+
+describe('the client and the problem registry', () => {
+  it('pair each handled code with the same status', () => {
+    for (const [code, status] of Object.entries(HANDLED_PROBLEMS)) {
+      expect(PROBLEMS[code as keyof typeof HANDLED_PROBLEMS].status).toBe(status);
+    }
   });
 });

@@ -17,6 +17,10 @@ implementation to it. Three operations, one resource, same origin as the site.
   first external consumer gets a `/v1` prefix.
 - Same origin only: no CORS headers. A request that carries the session cookie must also
   carry an `Origin` equal to the site's.
+- A cross-site request (by `Sec-Fetch-Site`, or else `Origin`) with a form content type
+  (`application/x-www-form-urlencoded`, `multipart/form-data`, `text/plain`) or none is
+  refused by the framework before the handlers run, with a plain 403 that carries no problem
+  body.
 
 ## The user
 
@@ -25,14 +29,15 @@ implementation to it. Three operations, one resource, same origin as the site.
   "id": "usr_01JD3K8Q9ZC4N7V2M5XW6T8RBE",
   "email": "ada@example.com",
   "profile": { "markets": ["forex", "indices"], "experience": "intermediate", "goal": "prop_firm" },
-  "created_at": "2026-11-18T23:29:22Z",
-  "updated_at": "2026-11-18T23:31:05Z"
+  "created_at": "2026-11-18T23:29:22.000Z",
+  "updated_at": "2026-11-18T23:31:05.000Z"
 }
 ```
 
 | Field | Rules |
 |---|---|
 | `id` | `usr_` plus a ULID. Opaque to clients, sortable by creation time |
+| `created_at`, `updated_at` | ISO 8601 in UTC, with milliseconds |
 | `email` | Trimmed and lowercased before storage, 254 characters at most, unique in the database. Checked for shape only: deliverability is a production concern |
 | `profile.markets` | Any of `forex`, `futures`, `stocks`, `crypto`, `indices`. Optional |
 | `profile.experience` | One of `beginner`, `intermediate`, `advanced`. Optional |
@@ -75,21 +80,23 @@ After the row is committed, and only then, the server emits the `signup_complete
 `__Host-session`, signed, `HttpOnly; Secure; SameSite=Lax; Path=/`, valid for one hour. It
 authorizes exactly one thing: updating this user's profile.
 
-**Idempotency.** A repeat of the same key with the same body returns the original response
-again, with `Idempotency-Replayed: true`. A retry after a timeout therefore never shows
-"already registered" to the person who just registered. Concurrent duplicates of one
-request get the same answer too: the database picks the winner and the rest replay it. Keys
-are kept for 24 hours.
+**Idempotency.** A repeat of the same key with the same body answers 201 again, with the
+user as it is now, a fresh session cookie and `Idempotency-Replayed: true`. It emits no event.
+A retry after a timeout therefore never shows "already registered" to the person who just
+registered. Concurrent duplicates of one request get the same answer too: the database picks
+the winner and the rest replay it. Keys are honored for 24 hours. After that a key counts as
+unused, and the request that reuses it replaces it in the same transaction that creates its
+user, so a fresh key is never erased.
 
 | Status | `code` | When |
 |---|---|---|
 | 400 | `invalid_json` | The body is not JSON |
 | 400 | `idempotency_key_missing` | No `Idempotency-Key`, or not in the allowed shape |
-| 409 | `email_taken` | The email already has an account. The UI offers the way to log in |
+| 409 | `email_taken` | The email already has an account. The UI offers the way to log in. Also a reused key past its 24 hours, when the email is the same |
 | 413 | `payload_too_large` | Body over 8 KB |
 | 415 | `unsupported_media_type` | Not `application/json` |
 | 422 | `validation_failed` | A field is invalid. `errors` lists each one |
-| 422 | `idempotency_key_reused` | The key was used before with a different body |
+| 422 | `idempotency_key_reused` | The key was used in the last 24 hours with a different body |
 | 429 | `rate_limited` | Too many attempts. `Retry-After` in seconds |
 | 500 | `internal_error` | Unexpected. Safe to retry with the same key |
 | 503 | `service_unavailable` | The database is unreachable. `Retry-After`. Safe to retry with the same key |
@@ -111,13 +118,17 @@ gets a useful next step, and rate limiting bounds enumeration. In production the
 would answer neutrally and send an email instead, which needs the email delivery this demo
 leaves out.
 
-A request with a filled honeypot is answered like a success and discarded: no row, no event.
+A request with a filled honeypot is answered like a success and discarded: no row, no event,
+no session cookie. The server logs `signup discarded: honeypot` with the request id, and
+nothing else.
 
 ## Update a user
 
 `PATCH /api/users/{id}`. Authorized by the session cookie issued at creation, and only for
-that user. The body is a partial `profile`. A field set to `null` is cleared. Unknown fields
-are rejected.
+that user. The body is a partial `profile`. A field that is absent is left alone, a field set
+to `null` is cleared, and repeated markets are stored once. Unknown fields are rejected. The
+database applies the patch in one statement, so concurrent updates of different fields all
+land.
 
 ```json
 { "markets": ["forex", "indices"], "experience": "intermediate", "goal": "prop_firm" }
@@ -129,10 +140,12 @@ are rejected.
 |---|---|---|
 | 400 | `invalid_json` | The body is not JSON |
 | 401 | `unauthenticated` | No session cookie, or it is expired or tampered with |
-| 403 | `forbidden` | The session belongs to another user, or the `Origin` is not the site's |
-| 404 | `not_found` | No such user |
+| 403 | `forbidden` | The session belongs to another user, or the `Origin` is missing or not the site's |
+| 404 | `not_found` | The session is valid, but its own user no longer exists |
+| 413 | `payload_too_large` | Body over 8 KB |
+| 415 | `unsupported_media_type` | Not `application/json` |
 | 422 | `validation_failed` | A field is invalid. `errors` lists each one |
-| 429 | `rate_limited` | Too many updates. `Retry-After` in seconds |
+| 429 | `rate_limited` | Too many updates from this session. `Retry-After` in seconds |
 | 500, 503 | as above | `PATCH` is idempotent, so it is safe to retry |
 
 ## List users
@@ -154,8 +167,8 @@ are rejected.
       "anonymous_id": "0b5c1b0e-6a54-4d0f-9d43-2f6f0e7a9c11",
       "attribution": { "first_touch": { "source": "instagram", "medium": "paid_social", "landing_path": "/", "at": "2026-11-17T14:02:11Z" }, "last_touch": null },
       "experiments": { "hero_signup": "inline_email" },
-      "created_at": "2026-11-18T23:29:22Z",
-      "updated_at": "2026-11-18T23:31:05Z"
+      "created_at": "2026-11-18T23:29:22.000Z",
+      "updated_at": "2026-11-18T23:31:05.000Z"
     }
   ],
   "next_cursor": "dXNyXzAxSkQzSzhROVpDNE43VjJNNVhXNlQ4UkJF"
@@ -169,7 +182,7 @@ is `null` on the last page.
 |---|---|---|
 | 401 | `unauthenticated` | Missing or wrong token. `WWW-Authenticate: Bearer` |
 | 422 | `validation_failed` | `limit` or `cursor` is invalid |
-| 429 | `rate_limited` | `Retry-After` in seconds |
+| 429 | `rate_limited` | Too many requests from this address, checked before the token. `Retry-After` in seconds |
 
 Any other method on these paths answers **405** `method_not_allowed` with an `Allow` header.
 
@@ -177,10 +190,11 @@ Any other method on these paths answers **405** `method_not_allowed` with an `Al
 
 | Control | Where |
 |---|---|
-| Rate limit on create, per client IP | At the edge, before the database is touched |
-| Rate limit on update, per session | Same |
+| Rate limit on create, per client IP | First thing in the handler, before the database is touched |
+| Rate limit on update, per session | After the session and `Origin` checks, before the body is read |
+| Rate limit on list, per client IP | Before the token is checked, so it also bounds guessing the token |
 | Honeypot field | In the create handler |
-| Body size, content type, strict schemas | First thing in every handler |
+| Content type, body size, strict schemas | After the rate limit and authorization, before anything is stored. The size limit stops reading at 8 KB, so a larger body is never buffered |
 | Unique email | In the database, so two concurrent requests cannot both win |
 
 Limits are approximate by design: they stop abuse, they are not quotas.

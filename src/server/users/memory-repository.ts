@@ -1,4 +1,4 @@
-import type { Profile } from '../../lib/api/schemas';
+import type { ProfilePatch } from '../../lib/api/schemas';
 import type { CreateOutcome, IdempotencyRecord, UserRecord, UsersRepository } from './repository';
 
 /** The repository for tests: same rules as the database, nothing to set up. */
@@ -10,12 +10,17 @@ export class MemoryUsersRepository implements UsersRepository {
     user: UserRecord,
     idempotencyKey: string,
     requestHash: string,
+    expiredBefore: string,
   ): Promise<CreateOutcome> {
-    // Same order as the database: the user row is written first, then the key.
+    // Same order as the database: the user row is written first, then the key. An expired
+    // key does not count, and it is replaced only when the whole create succeeds.
     for (const existing of this.#users.values()) {
       if (existing.email === user.email) return { ok: false, reason: 'email_taken' };
     }
-    if (this.#keys.has(idempotencyKey)) return { ok: false, reason: 'key_exists' };
+    const existingKey = this.#keys.get(idempotencyKey);
+    if (existingKey && existingKey.createdAt >= expiredBefore) {
+      return { ok: false, reason: 'key_exists' };
+    }
     this.#users.set(user.id, structuredClone(user));
     this.#keys.set(idempotencyKey, { requestHash, userId: user.id, createdAt: user.created_at });
     return { ok: true };
@@ -27,17 +32,26 @@ export class MemoryUsersRepository implements UsersRepository {
   }
 
   async findIdempotencyKey(key: string): Promise<IdempotencyRecord | null> {
-    return this.#keys.get(key) ?? null;
+    const record = this.#keys.get(key);
+    return record ? { ...record } : null;
   }
 
-  async deleteIdempotencyKey(key: string): Promise<void> {
-    this.#keys.delete(key);
-  }
-
-  async saveProfile(id: string, profile: Profile, updatedAt: string): Promise<UserRecord | null> {
+  async patchProfile(
+    id: string,
+    patch: ProfilePatch,
+    updatedAt: string,
+  ): Promise<UserRecord | null> {
+    // No await between the read and the write: one step, like the database's single UPDATE.
     const user = this.#users.get(id);
     if (!user) return null;
-    const updated = { ...user, profile: structuredClone(profile), updated_at: updatedAt };
+    const profile = structuredClone(user.profile);
+    if (patch.markets === null) delete profile.markets;
+    else if (patch.markets !== undefined) profile.markets = [...patch.markets];
+    if (patch.experience === null) delete profile.experience;
+    else if (patch.experience !== undefined) profile.experience = patch.experience;
+    if (patch.goal === null) delete profile.goal;
+    else if (patch.goal !== undefined) profile.goal = patch.goal;
+    const updated = { ...user, profile, updated_at: updatedAt };
     this.#users.set(id, updated);
     return structuredClone(updated);
   }

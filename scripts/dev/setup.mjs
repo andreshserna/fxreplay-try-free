@@ -36,12 +36,11 @@ const migrate = spawnSync(
   ['d1', 'migrations', 'apply', 'DB', '--local'],
   { cwd: root, encoding: 'utf8', env: { ...process.env, CI: '1' } },
 );
-if (migrate.status !== 0) {
+if (migrate.error || migrate.status !== 0) {
+  // `error` is set when wrangler could not be started at all, for example when it is missing.
+  if (migrate.error) console.error(migrate.error);
   console.error(`${migrate.stdout ?? ''}${migrate.stderr ?? ''}`.trim());
   console.error('setup: applying the local D1 migrations failed');
   process.exit(1);
 }
-const summary = /No migrations to apply|✅|applied/i.test(migrate.stdout ?? '')
-  ? 'local D1 migrations are applied'
-  : 'local D1 migrations ran';
-console.log(`setup: ${summary}`);
+console.log('setup: local D1 migrations are applied');

@@ -22,6 +22,7 @@ let repository: MemoryUsersRepository;
 let api: UsersApi;
 let sink: MemorySink;
 const logged: Record<string, unknown>[] = [];
+const messages: string[] = [];
 
 const tick = (milliseconds: number) => {
   clock = new Date(clock.getTime() + milliseconds);
@@ -37,13 +38,17 @@ function build(limiters: { create?: RateLimiter; update?: RateLimiter; list?: Ra
     sessionSecret: SECRET,
     adminToken: ADMIN,
     now: () => clock,
-    log: (_message, detail) => logged.push(detail),
+    log: (message, detail) => {
+      messages.push(message);
+      logged.push(detail);
+    },
   });
 }
 
 beforeEach(() => {
   clock = new Date('2026-11-18T23:29:22.000Z');
   logged.length = 0;
+  messages.length = 0;
   build();
 });
 
@@ -67,6 +72,8 @@ function patch(id: string, body: unknown, headers: Record<string, string> = {}) 
     id,
   );
 }
+
+const refuse: RateLimiter = { limit: async () => ({ success: false }) };
 
 const list = (query = '', token: string | null = ADMIN) =>
   api.list(
@@ -233,6 +240,80 @@ describe('POST /api/users', () => {
     await expectProblem(await post({ email: 'ada@example.com' }), 409, 'email_taken');
   });
 
+  it('honors a key for exactly 24 hours', async () => {
+    const { user } = await signUp('ada@example.com');
+    tick(23 * 60 * 60 * 1000 + 59 * 60 * 1000);
+    const replay = await post({ email: 'ada@example.com' });
+    expect(replay.status).toBe(201);
+    expect(replay.headers.get('Idempotency-Replayed')).toBe('true');
+    expect(((await replay.json()) as User).id).toBe(user.id);
+
+    tick(2 * 60 * 1000); // 24 h 1 min after the key was created
+    await expectProblem(await post({ email: 'ada@example.com' }), 409, 'email_taken');
+  });
+
+  it('never lets a request that saw an expired key erase the key that replaced it', async () => {
+    await signUp('ada@example.com');
+    tick(24 * 60 * 60 * 1000 + 1);
+    const stale = await repository.findIdempotencyKey(KEY);
+
+    // The second request reads the expired key, and acts on it only after the first request
+    // has replaced it with a fresh one: the interleaving that used to delete the fresh key.
+    const lookup = repository.findIdempotencyKey.bind(repository);
+    const create = repository.create.bind(repository);
+    let lookups = 0;
+    let replaced!: () => void;
+    const replacement = new Promise<void>((resolve) => (replaced = resolve));
+    repository.create = async (...args) => {
+      const outcome = await create(...args);
+      if (outcome.ok) replaced();
+      return outcome;
+    };
+    repository.findIdempotencyKey = async (key) => {
+      lookups += 1;
+      if (lookups !== 2) return lookup(key);
+      await replacement;
+      return stale;
+    };
+
+    const [first, second] = await Promise.all([
+      post({ email: 'grace@example.com' }),
+      post({ email: 'grace@example.com' }),
+    ]);
+    expect([first.status, second.status]).toEqual([201, 201]);
+    const [a, b] = (await Promise.all([first.json(), second.json()])) as User[];
+    expect(a?.id).toBe(b?.id);
+
+    const later = await post({ email: 'grace@example.com' });
+    expect(later.status).toBe(201);
+    expect(later.headers.get('Idempotency-Replayed')).toBe('true');
+    expect(((await later.json()) as User).id).toBe(a?.id);
+  });
+
+  it('gives concurrent duplicates that both miss the first lookup the same answer', async () => {
+    // Both requests look the key up before either inserts: the race the re-check exists for.
+    const lookup = repository.findIdempotencyKey.bind(repository);
+    let waiting = 0;
+    let open!: () => void;
+    const bothLookedUp = new Promise<void>((resolve) => (open = resolve));
+    repository.findIdempotencyKey = async (key) => {
+      const result = await lookup(key);
+      waiting += 1;
+      if (waiting === 2) open();
+      if (waiting <= 2) await bothLookedUp;
+      return result;
+    };
+
+    const [first, second] = await Promise.all([
+      post({ email: 'ada@example.com' }),
+      post({ email: 'ada@example.com' }),
+    ]);
+    expect([first.status, second.status]).toEqual([201, 201]);
+    const [a, b] = (await Promise.all([first.json(), second.json()])) as User[];
+    expect(a?.id).toBe(b?.id);
+    expect((await repository.list(10)).length).toBe(1);
+  });
+
   it('reports an email that already has an account, whatever its case', async () => {
     await signUp('ada@example.com');
     const response = await post({ email: 'ADA@example.com' }, { 'Idempotency-Key': `${KEY}b` });
@@ -244,6 +325,9 @@ describe('POST /api/users', () => {
     expect(response.status).toBe(201);
     expect(response.headers.get('Set-Cookie')).toBeNull();
     expect(await repository.list(10)).toEqual([]);
+    // Discarded, but not silently: the request id is logged, and nothing else.
+    expect(messages).toEqual(['signup discarded: honeypot']);
+    expect(logged).toEqual([{ request_id: response.headers.get('X-Request-Id') }]);
   });
 
   it('lists every invalid field once, with a stable code', async () => {
@@ -288,6 +372,19 @@ describe('POST /api/users', () => {
       'payload_too_large',
     );
     expect(await repository.list(10)).toEqual([]);
+  });
+
+  it('accepts an Idempotency-Key of 16 characters and refuses one of 15', async () => {
+    await expectProblem(
+      await post({ email: 'ada@example.com' }, { 'Idempotency-Key': 'k'.repeat(15) }),
+      400,
+      'idempotency_key_missing',
+    );
+    const accepted = await post(
+      { email: 'ada@example.com' },
+      { 'Idempotency-Key': 'k'.repeat(16) },
+    );
+    expect(accepted.status).toBe(201);
   });
 
   it('stops at the rate limit before touching the store, per client address', async () => {
@@ -357,6 +454,59 @@ describe('PATCH /api/users/{id}', () => {
     });
   });
 
+  it('keeps every field when single-field patches arrive at the same time', async () => {
+    const { user, cookie } = await signUp('ada@example.com');
+    const session = { Cookie: cookie };
+    // The worst schedule: if an update reads the user before writing it, all three reads
+    // happen before any write. A read-then-write update loses two of the three answers here.
+    const read = repository.findById.bind(repository);
+    let reads = 0;
+    let allRead!: () => void;
+    const barrier = new Promise<void>((resolve) => (allRead = resolve));
+    repository.findById = async (id) => {
+      const found = await read(id);
+      reads += 1;
+      if (reads === 3) allRead();
+      if (reads <= 3) await barrier;
+      return found;
+    };
+
+    const responses = await Promise.all([
+      patch(user.id, { markets: ['crypto'] }, session),
+      patch(user.id, { experience: 'beginner' }, session),
+      patch(user.id, { goal: 'practice' }, session),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+    expect((await read(user.id))?.profile).toEqual({
+      markets: ['crypto'],
+      experience: 'beginner',
+      goal: 'practice',
+    });
+  });
+
+  it('stops at the rate limit, per session', async () => {
+    build({ update: refuse });
+    const { user, cookie } = await signUp('ada@example.com');
+    const limited = await patch(user.id, { goal: 'practice' }, { Cookie: cookie });
+    await expectProblem(limited, 429, 'rate_limited');
+    expect(limited.headers.get('Retry-After')).toBe('60');
+    expect((await repository.findById(user.id))?.profile).toEqual({});
+  });
+
+  it('refuses a request with a valid session and no Origin', async () => {
+    const { user, cookie } = await signUp('ada@example.com');
+    const response = await api.update(
+      new Request(`${ORIGIN}/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Cookie: cookie },
+        body: JSON.stringify({ goal: 'practice' }),
+      }),
+      user.id,
+    );
+    await expectProblem(response, 403, 'forbidden');
+    expect((await repository.findById(user.id))?.profile).toEqual({});
+  });
+
   it('requires a valid, unexpired, untampered session', async () => {
     const { user, cookie } = await signUp('ada@example.com');
     const body = { goal: 'practice' };
@@ -404,7 +554,7 @@ describe('PATCH /api/users/{id}', () => {
       { field: 'email', code: 'unknown_field', message: 'This field is not accepted.' },
     ]);
 
-    repository.findById = async () => null;
+    repository.patchProfile = async () => null;
     await expectProblem(
       await patch(user.id, { goal: 'practice' }, { Cookie: cookie }),
       404,
@@ -438,6 +588,15 @@ describe('GET /api/users', () => {
       await expectProblem(await list('', 'undefined'), 401, 'unauthenticated');
     },
   );
+
+  it('stops at the rate limit before the token is checked, so guessing it is bounded too', async () => {
+    build({ list: refuse });
+    for (const token of [ADMIN, 'wrong']) {
+      const limited = await list('', token);
+      await expectProblem(limited, 429, 'rate_limited');
+      expect(limited.headers.get('Retry-After')).toBe('60');
+    }
+  });
 
   it('pages newest first by key, without repeating or skipping anyone', async () => {
     for (let index = 0; index < 5; index += 1) {

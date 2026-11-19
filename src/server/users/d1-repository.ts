@@ -1,4 +1,4 @@
-import type { Attribution, Profile } from '../../lib/api/schemas';
+import type { Attribution, Profile, ProfilePatch } from '../../lib/api/schemas';
 import {
   StorageUnavailableError,
   type CreateOutcome,
@@ -55,10 +55,15 @@ export class D1UsersRepository implements UsersRepository {
     user: UserRecord,
     idempotencyKey: string,
     requestHash: string,
+    expiredBefore: string,
   ): Promise<CreateOutcome> {
     try {
       // A batch is one transaction: the user and its key are written together or not at all.
+      // It first removes the key only if it has expired, so a fresh key is never erased.
       await this.#db.batch([
+        this.#db
+          .prepare('DELETE FROM idempotency_keys WHERE key = ?1 AND created_at < ?2')
+          .bind(idempotencyKey, expiredBefore),
         this.#db
           .prepare(
             `INSERT INTO users (${COLUMNS}) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`,
@@ -116,24 +121,28 @@ export class D1UsersRepository implements UsersRepository {
     });
   }
 
-  deleteIdempotencyKey(key: string): Promise<void> {
-    return this.#run(async () => {
-      await this.#db.prepare('DELETE FROM idempotency_keys WHERE key = ?1').bind(key).run();
-    });
-  }
-
-  saveProfile(id: string, profile: Profile, updatedAt: string): Promise<UserRecord | null> {
+  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<UserRecord | null> {
+    // One statement, so concurrent patches of different fields cannot overwrite each other.
+    // For each field: a flag says whether the patch has it, the value sets it (null clears).
+    const field = <T>(value: T | null | undefined, encode: (present: T) => string) =>
+      value === undefined ? [0, null] : [1, value === null ? null : encode(value)];
     return this.#run(async () => {
       const row = await this.#db
         .prepare(
-          `UPDATE users SET markets = ?2, experience = ?3, goal = ?4, updated_at = ?5 WHERE id = ?1 RETURNING ${COLUMNS}`,
+          `UPDATE users SET
+             markets = CASE WHEN ?3 THEN ?4 ELSE markets END,
+             experience = CASE WHEN ?5 THEN ?6 ELSE experience END,
+             goal = CASE WHEN ?7 THEN ?8 ELSE goal END,
+             updated_at = ?2
+           WHERE id = ?1
+           RETURNING ${COLUMNS}`,
         )
         .bind(
           id,
-          profile.markets ? JSON.stringify(profile.markets) : null,
-          profile.experience ?? null,
-          profile.goal ?? null,
           updatedAt,
+          ...field(patch.markets, (markets) => JSON.stringify(markets)),
+          ...field(patch.experience, String),
+          ...field(patch.goal, String),
         )
         .first<UserRow>();
       return row ? toRecord(row) : null;

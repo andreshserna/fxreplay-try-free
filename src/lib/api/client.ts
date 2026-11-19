@@ -11,7 +11,7 @@
  *
  * It imports only types from schemas.ts, so zod stays out of the island's bundle.
  */
-import { isProblemCode, PROBLEMS, type FieldError, type ProblemCode } from './problems';
+import type { FieldError, ProblemCode } from './problems';
 import type { CreateUserInput, ProfilePatch, User } from './schemas';
 
 type Invalid = { kind: 'invalid'; errors: FieldError[] };
@@ -21,7 +21,7 @@ type Unavailable = {
   reason: 'offline' | 'timeout' | 'network' | 'server';
 };
 /** An answer the contract does not list. Shown like `unavailable`, logged as a violation. */
-type Unexpected = { kind: 'unexpected'; status: number; code: ProblemCode | null };
+type Unexpected = { kind: 'unexpected'; status: number; code: string | null };
 
 export type CreateUserResult =
   | { kind: 'created'; user: User; replayed: boolean }
@@ -68,6 +68,22 @@ interface ApiClient {
 }
 
 const RETRYABLE_STATUSES = new Set([500, 502, 503, 504]);
+
+/**
+ * The answers this client acts on, each with the status the contract pairs it with.
+ * Its own short table: importing the problem registry would ship every title and
+ * description to the browser. A test holds the two in step.
+ */
+export const HANDLED_PROBLEMS = {
+  email_taken: 409,
+  validation_failed: 422,
+  unauthenticated: 401,
+  forbidden: 403,
+  not_found: 404,
+} as const satisfies Partial<Record<ProblemCode, number>>;
+
+/** Every code in the contract, to tell a known code from a stray string. */
+const CODE_SHAPE = /^[a-z]+(?:_[a-z]+)*$/;
 const DEFAULT_RETRY_AFTER_SECONDS = 60;
 
 /** What one attempt produced: an answer from the server, or no answer at all. */
@@ -76,7 +92,7 @@ type Received =
   | { kind: 'no_answer'; reason: 'offline' | 'timeout' | 'network' };
 
 /** A problem body that parsed. `code` is null when it is not one the registry knows. */
-type ProblemBody = { code: ProblemCode | null; errors: unknown };
+type ProblemBody = { code: string | null; errors: unknown };
 
 export const newIdempotencyKey = (): string => crypto.randomUUID();
 
@@ -107,12 +123,16 @@ function readProblem(answer: Extract<Received, { kind: 'answer' }>): ProblemBody
   if (mediaType?.toLowerCase() !== 'application/problem+json') return null;
   const body = parseJson(answer.text);
   if (!isRecord(body)) return null;
-  return { code: isProblemCode(body.code) ? body.code : null, errors: body.errors };
+  const code = typeof body.code === 'string' && CODE_SHAPE.test(body.code) ? body.code : null;
+  return { code, errors: body.errors };
 }
 
 /** True when the answer is the contract's pairing of this code with its status. */
-const isAnswer = (status: number, problem: ProblemBody | null, code: ProblemCode): boolean =>
-  problem?.code === code && status === PROBLEMS[code].status;
+const isAnswer = (
+  status: number,
+  problem: ProblemBody | null,
+  code: keyof typeof HANDLED_PROBLEMS,
+): boolean => problem?.code === code && status === HANDLED_PROBLEMS[code];
 
 function readFieldErrors(value: unknown): FieldError[] | null {
   if (!Array.isArray(value)) return null;

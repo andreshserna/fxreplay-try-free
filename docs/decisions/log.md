@@ -156,8 +156,7 @@ project or is costly to reverse also has an ADR in this folder.
   only the profile update. The API refuses to start with an empty signing secret.
 - **The contract is tested at two levels.** In Node against the in-memory repository (every
   status code), and over HTTP against the real Worker with a real D1 (uniqueness under
-  concurrent requests, double submit, the rate limit). Nine deliberate breaks of the rules
-  were each caught by at least one test.
+  concurrent requests, double submit, concurrent profile updates, the rate limit).
 - **`npm run dev` works on a fresh clone with no account.** A setup step writes random local
   secrets to `.dev.vars` and applies the D1 migrations to a local database. The database id
   is left out of `wrangler.jsonc`: Wrangler provisions the remote one on the first deploy.
@@ -204,3 +203,17 @@ project or is costly to reverse also has an ADR in this folder.
   by the type system and again by the collector.
 - **Automated traffic is flagged, not dropped.** Events from agents that look automated carry
   `is_bot`, so the filter is a choice made in analysis and can be audited.
+- **Findings of the Phase 2 review, all fixed.** The user list was open when the admin token
+  was not set: the guard refused an empty string, and a missing secret is `undefined`. A
+  profile update is now one SQL statement, so concurrent updates cannot overwrite each other.
+  An expired idempotency key is removed inside the create transaction, so a fresh one is
+  never erased. The body limit applies while the body is read, not after. An over-long email
+  never reaches the shape check. The list's rate limit runs before the token check, so it
+  bounds token guessing. A filled honeypot is logged, without the email.
+- **Every rule the review could break without a test failing now has a test:** the re-check
+  after a failed insert, the key's 24 hours, the limiters on update and list, the `Origin`
+  on update, the key's shape, and the 405 of each route.
+- **Tests do not depend on chance or skip silently.** HTTP tests take client addresses from
+  a counter with a random start, and fail, not skip, when the admin token is missing.
+- **The browser client has its own five-line table of the problems it handles,** held to
+  the registry by a test, so the registry's prose is not shipped to the browser.

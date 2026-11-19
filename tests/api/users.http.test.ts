@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-import { randomUUID } from 'node:crypto';
+import { randomInt, randomUUID } from 'node:crypto';
 
 import { describe, expect, it } from 'vitest';
 
@@ -28,12 +28,13 @@ if (!ADMIN_TOKEN) {
 
 /**
  * A distinct client address per call, so one test never spends another's rate limit.
- * From a counter seeded by the clock: two runs within the limiter's minute do not collide.
+ * Each run starts at a random point of a 16 million address space and counts up, so
+ * neither two calls in a run nor two runs in the same minute share an address.
  */
-let addressCounter = Math.floor(Date.now() / 1000) % 60000;
+let addressCounter = randomInt(0, 2 ** 24);
 const address = () => {
-  addressCounter += 1;
-  return `10.${200 + (addressCounter >> 16)}.${(addressCounter >> 8) & 255}.${addressCounter & 255}`;
+  addressCounter = (addressCounter + 1) % 2 ** 24;
+  return `10.${addressCounter >> 16}.${(addressCounter >> 8) & 255}.${addressCounter & 255}`;
 };
 const uniqueEmail = () => `contract-${randomUUID()}@example.com`;
 const key = () => randomUUID();
@@ -101,6 +102,60 @@ describe('Users API over HTTP', () => {
       goal: 'prop_firm',
     });
     expect((await patch(other.id, sessionOf(first))).status).toBe(403);
+  });
+
+  it('keeps every field when single-field patches for one user arrive at the same time', async () => {
+    const email = uniqueEmail();
+    const created = await create(email, key());
+    expect(created.status).toBe(201);
+    const user = (await created.json()) as User;
+    const patch = (body: unknown) =>
+      fetch(`${BASE_URL}/api/users/${user.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: BASE_URL,
+          Cookie: sessionOf(created),
+        },
+        body: JSON.stringify(body),
+      });
+
+    const responses = await Promise.all([
+      patch({ markets: ['crypto'] }),
+      patch({ experience: 'beginner' }),
+      patch({ goal: 'practice' }),
+    ]);
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+
+    const listed = await fetch(`${BASE_URL}/api/users?limit=100`, {
+      headers: { Authorization: `Bearer ${ADMIN_TOKEN}`, 'CF-Connecting-IP': address() },
+    });
+    expect(listed.status).toBe(200);
+    const page = (await listed.json()) as { data: User[] };
+    expect(page.data.find((stored) => stored.id === user.id)?.profile).toEqual({
+      markets: ['crypto'],
+      experience: 'beginner',
+      goal: 'practice',
+    });
+  });
+
+  it('answers other methods with 405 and the methods that are allowed', async () => {
+    const collection = await fetch(`${BASE_URL}/api/users`, {
+      method: 'DELETE',
+      headers: { 'CF-Connecting-IP': address() },
+    });
+    expect(collection.status).toBe(405);
+    expect(collection.headers.get('Allow')).toBe('GET, POST');
+    expect(((await collection.json()) as Problem).code).toBe('method_not_allowed');
+
+    const member = await fetch(`${BASE_URL}/api/users/usr_01JD3K8Q9ZC4N7V2M5XW6T8RBE`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': address() },
+      body: JSON.stringify({ goal: 'practice' }),
+    });
+    expect(member.status).toBe(405);
+    expect(member.headers.get('Allow')).toBe('PATCH');
+    expect(((await member.json()) as Problem).code).toBe('method_not_allowed');
   });
 
   it('pages through users newest first without repeats', async () => {

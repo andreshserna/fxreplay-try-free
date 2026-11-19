@@ -8,6 +8,7 @@ import type { FieldError, Problem, ProblemCode } from '../../lib/api/problems';
 import { parseCreateUser, parseProfilePatch, type User } from '../../lib/api/schemas';
 import { assignAll, formatAssignments } from '../../lib/experiments/registry';
 import type { Defer, ServerEvents, VisitorContext } from '../analytics/emitter';
+import { readBodyText } from '../http/body';
 import {
   clientKey,
   jsonResponse,
@@ -194,14 +195,15 @@ export class UsersApi {
   /** GET /api/users */
   list(request: Request): Promise<Response> {
     return this.#handle(request, async (context) => {
+      // The limit comes before the token check, so it also bounds guessing the token.
+      if (!(await this.#allowed(this.#options.limiters?.list, clientKey(request)))) {
+        return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
+      }
       const [scheme, token] = (request.headers.get('Authorization') ?? '').split(' ');
       const authorized =
         scheme === 'Bearer' && (await secretsMatch(token ?? '', this.#options.adminToken));
       if (!authorized) {
         return this.#problem(context, 'unauthenticated', { 'WWW-Authenticate': 'Bearer' });
-      }
-      if (!(await this.#allowed(this.#options.limiters?.list, clientKey(request)))) {
-        return this.#problem(context, 'rate_limited', { 'Retry-After': RETRY_AFTER_RATE_LIMIT });
       }
 
       const errors: FieldError[] = [];
@@ -263,8 +265,12 @@ export class UsersApi {
     return (await limiter.limit({ key })).success;
   }
 
-  /** A filled honeypot gets an answer shaped like success. Nothing is stored. */
+  /**
+   * A filled honeypot gets an answer shaped like success. Nothing is stored, and only the
+   * fact is logged, so a real person caught by it can be found by request id. Never the email.
+   */
   #decoy(context: Context, email: string): Response {
+    this.#options.log?.('signup discarded: honeypot', { request_id: context.requestId });
     const now = this.#now();
     const timestamp = now.toISOString();
     const user: User = {
@@ -329,13 +335,10 @@ async function readJson(request: Request): Promise<BodyResult> {
   if (contentType.split(';')[0]?.trim().toLowerCase() !== 'application/json') {
     return { ok: false, code: 'unsupported_media_type' };
   }
-  if (Number(request.headers.get('Content-Length') ?? 0) > MAX_BODY_BYTES) {
-    return { ok: false, code: 'payload_too_large' };
-  }
-  const text = await request.text();
-  if (encoder.encode(text).length > MAX_BODY_BYTES) return { ok: false, code: 'payload_too_large' };
+  const body = await readBodyText(request, MAX_BODY_BYTES);
+  if (!body.ok) return { ok: false, code: 'payload_too_large' };
   try {
-    return { ok: true, value: JSON.parse(text) };
+    return { ok: true, value: JSON.parse(body.text) };
   } catch {
     return { ok: false, code: 'invalid_json' };
   }

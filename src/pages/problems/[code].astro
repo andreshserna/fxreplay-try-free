@@ -18,13 +18,14 @@ interface Props {
 }
 
 const { code } = Astro.props;
-const { status, title } = PROBLEMS[code];
+const { status, title, when } = PROBLEMS[code];
 ---
 
 <Base title={`${title} (${status})`} description={`The ${code} problem type of the Users API.`}>
   <main class="problem">
     <p class="kind">Users API problem type</p>
     <h1>{title}</h1>
+    <p>{when}</p>
     <dl>
       <dt>Status</dt>
       <dd>{status}</dd>

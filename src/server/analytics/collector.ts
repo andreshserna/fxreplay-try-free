@@ -9,6 +9,7 @@
  */
 import { EVENTS, isEventName } from '../../lib/analytics/registry';
 import { checkContext, checkProperties } from '../../lib/analytics/validate';
+import { readBodyText } from '../http/body';
 import { clientKey, jsonResponse, problemResponse, requestContext } from '../http/respond';
 import { looksAutomated, readVisitor, requestCountry, visitorCookie } from '../http/visitor';
 import type { Defer, Log } from './emitter';
@@ -53,13 +54,11 @@ export class Collector {
     }
 
     // navigator.sendBeacon posts text/plain unless told otherwise. Both are accepted.
-    const text = await request.text();
-    if (new TextEncoder().encode(text).length > MAX_BODY_BYTES) {
-      return problemResponse(context, 'payload_too_large');
-    }
+    const text = await readBodyText(request, MAX_BODY_BYTES);
+    if (!text.ok) return problemResponse(context, 'payload_too_large');
     let body: unknown;
     try {
-      body = JSON.parse(text);
+      body = JSON.parse(text.text);
     } catch {
       return problemResponse(context, 'invalid_json');
     }

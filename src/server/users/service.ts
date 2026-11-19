@@ -1,7 +1,8 @@
-import type { CreateUserInput, Profile, ProfilePatch } from '../../lib/api/schemas';
+import type { CreateUserInput, ProfilePatch } from '../../lib/api/schemas';
 import { newUserId, USER_ID_PATTERN } from '../ids';
 import type { UserRecord, UsersRepository } from './repository';
 
+/** How long an idempotency key is honored. */
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
 export const LIST_DEFAULT_LIMIT = 20;
 export const LIST_MAX_LIMIT = 100;
@@ -47,18 +48,6 @@ export function decodeCursor(cursor: string): string | null {
   }
 }
 
-/** Applies a patch to a profile. A null clears the field, an absent key leaves it alone. */
-export function applyProfilePatch(profile: Profile, patch: ProfilePatch): Profile {
-  const next: Profile = { ...profile };
-  if (patch.markets === null) delete next.markets;
-  else if (patch.markets !== undefined) next.markets = [...new Set(patch.markets)];
-  if (patch.experience === null) delete next.experience;
-  else if (patch.experience !== undefined) next.experience = patch.experience;
-  if (patch.goal === null) delete next.goal;
-  else if (patch.goal !== undefined) next.goal = patch.goal;
-  return next;
-}
-
 /** The rules of the Users API, free of HTTP and of any particular store. */
 /** What the server knows about the visitor who is signing up. Never read from the body. */
 export type VisitorOfRecord = Pick<UserRecord, 'anonymous_id' | 'experiments'>;
@@ -99,7 +88,8 @@ export class UsersService {
       updated_at: timestamp,
     };
 
-    const outcome = await this.#repository.create(user, idempotencyKey, hash);
+    const expiredBefore = new Date(now.getTime() - IDEMPOTENCY_TTL_MS).toISOString();
+    const outcome = await this.#repository.create(user, idempotencyKey, hash, expiredBefore);
     if (outcome.ok) return { kind: 'created', user };
 
     // A concurrent duplicate of this same request may have won between the lookup and the
@@ -111,21 +101,18 @@ export class UsersService {
 
   async #replay(key: string, hash: string, now: Date): Promise<CreateResult | null> {
     const record = await this.#repository.findIdempotencyKey(key);
-    if (!record) return null;
-    if (now.getTime() - Date.parse(record.createdAt) > IDEMPOTENCY_TTL_MS) {
-      await this.#repository.deleteIdempotencyKey(key);
-      return null;
-    }
+    // An expired key counts as absent. It is not deleted here: only `create` replaces it,
+    // in the same transaction as the new user, so a fresh key can never be erased.
+    if (!record || now.getTime() - Date.parse(record.createdAt) > IDEMPOTENCY_TTL_MS) return null;
     if (record.requestHash !== hash) return { kind: 'key_reused' };
     const user = await this.#repository.findById(record.userId);
     return user ? { kind: 'replayed', user } : null;
   }
 
-  async updateProfile(id: string, patch: ProfilePatch): Promise<UserRecord | null> {
-    const user = await this.#repository.findById(id);
-    if (!user) return null;
-    const profile = applyProfilePatch(user.profile, patch);
-    return this.#repository.saveProfile(id, profile, this.#now().toISOString());
+  /** The store applies the patch in one step. Repeated markets are stored once. */
+  updateProfile(id: string, patch: ProfilePatch): Promise<UserRecord | null> {
+    const markets = patch.markets ? { markets: [...new Set(patch.markets)] } : {};
+    return this.#repository.patchProfile(id, { ...patch, ...markets }, this.#now().toISOString());
   }
 
   /** One page, newest first. `before` is a decoded cursor. */
