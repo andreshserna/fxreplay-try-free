@@ -27,11 +27,12 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 | `npm run typecheck`, `lint`, `format` | `wrangler types` and `astro check`; ESLint and Prettier's check; Prettier's write |
 | `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
 | `npm run test:api` | The API contract, the collector and edge assignment over HTTP against a running preview: the real Worker and a real D1 |
+| `npm run test:e2e` | The signup states and the funnel in a real browser, with axe, against a running preview |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
 | `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale) |
 | `npm run check:tokens`, `check:contrast`, `check:kit` | No color literals or primitive tokens in product code; every UI pair meets its WCAG threshold; `tokens.json` still matches the kit |
 
-Still to come: `test:e2e`, `lighthouse`. A command that does not exist yet is "not available",
+Still to come: `lighthouse`. A command that does not exist yet is "not available",
 never "passed".
 
 ## Map
@@ -46,7 +47,7 @@ never "passed".
 | `src/server/` | `runtime.ts` (the only file that knows bindings), `landing.ts`, `users/`, `analytics/` (collector, sink, server events), `http/` (session, visitor cookie, responses) |
 | `migrations/`, `wrangler.jsonc`, `astro.config.mjs` | D1 schema; bindings; adapter, fonts and build settings |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
-| `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/` and `api/` tests |
+| `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/`, `api/` and `e2e/` tests |
 | `docs/` | `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
 | `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
 
@@ -54,8 +55,7 @@ Planned, not built yet. Update this table when each lands:
 
 | Path | What will live there |
 |---|---|
-| `src/components/` | Page sections, and the signup form: the only island that hydrates |
-| `tests/e2e/` | End-to-end tests of the signup states and the funnel, with axe |
+| `src/components/` (more) | The page sections. `signup/` exists: the state machine and the form, the only island |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.
 

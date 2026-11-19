@@ -1,0 +1,229 @@
+/*
+ * The signup form and what follows it. Plain classes, because the form is a Preact
+ * island and Astro's scoped styles do not reach inside it.
+ */
+.signup {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.signup label {
+  color: var(--text-secondary);
+  font-size: var(--step--1);
+  font-weight: 600;
+}
+
+.signup-controls {
+  display: grid;
+  gap: var(--space-3);
+}
+
+@media (width >= 30rem) {
+  .signup-row .signup-controls {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}
+
+.signup input[type='email'] {
+  width: 100%;
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-control);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 1rem;
+}
+
+.signup input::placeholder {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+/* An error is never color alone: the border, an icon and a message change together. */
+.signup input[aria-invalid='true'] {
+  border-color: var(--border-field-error);
+}
+
+.signup button[type='submit'],
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: 0 var(--space-5);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: var(--btn-bg-primary-active);
+  color: var(--btn-text);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* The kit's hover and pressed fills fade into the ground, so the button keeps an edge. */
+.signup button[type='submit']:hover,
+.button:hover {
+  background: var(--btn-bg-primary-hover);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+.signup button[type='submit']:active,
+.button:active {
+  background: var(--btn-bg-primary-pressed);
+  box-shadow: inset 0 0 0 1px var(--border-focus);
+}
+
+/* Busy is said, not hidden: the button stays on its fill and never becomes disabled. */
+.signup button[aria-busy='true'] {
+  cursor: progress;
+}
+
+.signup-spinner {
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid var(--btn-text);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: signup-spin 0.7s linear infinite;
+}
+
+@keyframes signup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The space for a message is always there, so showing one never moves the page. */
+.signup-trouble {
+  display: flex;
+  gap: var(--space-2);
+  align-items: flex-start;
+  min-height: 1.5rem;
+  color: var(--text-error);
+  font-size: var(--step--1);
+  line-height: 1.5;
+}
+
+.signup-trouble svg {
+  flex: none;
+  width: 1rem;
+  margin-top: 0.2em;
+  fill: var(--icon-error);
+}
+
+.signup-trouble a {
+  color: var(--text-primary);
+}
+
+/* After the account exists. */
+.signup-after {
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: 1px solid var(--border-success);
+  border-radius: var(--radius-surface);
+  background: var(--bg-card);
+}
+
+.signup-title {
+  color: var(--text-success);
+  font-size: var(--step-2);
+}
+
+.signup-title:focus-visible {
+  outline-offset: 4px;
+}
+
+.signup-note {
+  color: var(--text-secondary);
+}
+
+.signup-profile {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.signup-choices {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.signup-choices legend {
+  padding: 0 0 var(--space-2);
+  font-weight: 700;
+}
+
+.signup-choices > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.signup-choices label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 2.75rem;
+  padding: 0 var(--space-4);
+  border: 1px solid var(--border-field);
+  border-radius: var(--radius-control);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 400;
+  cursor: pointer;
+}
+
+.signup-choices input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--btn-bg-primary-active);
+}
+
+.signup-choices label:has(input:checked) {
+  border-color: var(--border-focus);
+  background: var(--bg-secondary);
+}
+
+.signup-choices label:has(input:focus-visible) {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.signup-choices input:focus-visible {
+  outline: none;
+}
+
+.signup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+
+.signup-skip {
+  min-height: var(--control-height);
+  padding: 0 var(--space-4);
+  border: 1px solid var(--btn-border-outline);
+  border-radius: var(--radius-control);
+  background: var(--btn-bg-outline-active);
+  color: var(--btn-text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.signup-skip:hover {
+  background: var(--btn-bg-outline-hover);
+}
+
+.signup-skip:active {
+  background: var(--btn-bg-outline-pressed);
+}

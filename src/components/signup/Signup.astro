@@ -1,0 +1,22 @@
+---
+/**
+ * The signup form's place on the page. The form itself is the only island:
+ * it is rendered into the HTML at build time and hydrated in the browser.
+ */
+import SignupForm from './SignupForm';
+import './signup.css';
+
+interface Props {
+  location: 'hero' | 'closing';
+  cta: string;
+  layout?: 'row' | 'stack';
+}
+
+const { location, cta, layout = 'row' } = Astro.props;
+---
+
+{location === 'hero' ? (
+  <SignupForm client:load location={location} cta={cta} layout={layout} />
+) : (
+  <SignupForm client:visible location={location} cta={cta} layout={layout} />
+)}

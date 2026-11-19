@@ -217,3 +217,13 @@ project or is costly to reverse also has an ADR in this folder.
   a counter with a random start, and fail, not skip, when the admin token is missing.
 - **The browser client has its own five-line table of the problems it handles,** held to
   the registry by a test, so the registry's prose is not shipped to the browser.
+- **The island runs on Preact:** 25 KB of script instead of 84, measured, with the same
+  end-to-end tests green on both. [ADR 0016](0016-preact-for-the-island.md).
+- **The signup flow is a pure state machine with a thin component around it.** Every state
+  and transition is tested without a browser, and 16 end-to-end tests then drive the real
+  page on desktop and phone: the funnel events exactly once, each error state, a retry with
+  the same key, a double submit, and axe at every step.
+- **End-to-end tests run against the preview, like the HTTP tests,** with Playwright and
+  axe. Locally they use the installed Chrome.
+- **Our own type, space and shape scales live in `src/styles/scale.css`,** apart from the
+  kit's color tokens: the kit leaves sizing open, and plain CSS needs no generator.

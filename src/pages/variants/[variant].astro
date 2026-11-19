@@ -6,6 +6,7 @@
 import type { GetStaticPaths } from 'astro';
 
 import wordmark from '../../assets/brand/FXReplayLogo.svg';
+import Signup from '../../components/signup/Signup.astro';
 import Base from '../../layouts/Base.astro';
 import { EXPERIMENTS, formatAssignments, type VariantOf } from '../../lib/experiments/registry';
 
@@ -31,10 +32,44 @@ const variant = Astro.params.variant as VariantOf<'hero_signup'>;
       alt="FX Replay"
     />
     <h1>Try FX Replay Free</h1>
-    <p class="status">This page is being built.</p>
+    <p class="status">This page is being built. The signup below is real.</p>
+    {variant === 'inline_email' ? (
+      <Signup location="hero" cta="Start for free" />
+    ) : (
+      <a class="button" href="#signup" data-cta="hero">
+        Start for free
+      </a>
+    )}
+    <section id="signup" class="closing" aria-labelledby="signup-heading">
+      <h2 id="signup-heading">Create your free account</h2>
+      <Signup location="closing" cta="Start for free" />
+    </section>
     <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
   </main>
 </Base>
+
+<script>
+  // Not an island: a few lines that report the page view, clicks on calls to action and
+  // field performance. They load after the page and can fail without affecting it.
+  import type { EventProperties } from '../../lib/analytics/registry';
+  import { track } from '../../lib/analytics/track';
+  import { reportWebVitals } from '../../lib/analytics/vitals';
+
+  // A type-only import: the registry's text stays out of the page's script.
+  type CtaLocation = EventProperties<'cta_clicked'>['cta_location'];
+  const locations = ['hero', 'proof', 'plan', 'faq', 'closing'] as const satisfies CtaLocation[];
+  const isLocation = (value: string | undefined): value is CtaLocation =>
+    (locations as readonly (string | undefined)[]).includes(value);
+
+  track('landing_viewed');
+  reportWebVitals();
+  document.addEventListener('click', (event) => {
+    const target = event.target instanceof Element ? event.target.closest('[data-cta]') : null;
+    const location = target instanceof HTMLElement ? target.dataset.cta : undefined;
+    if (isLocation(location))
+      track('cta_clicked', { cta_name: 'start_free', cta_location: location });
+  });
+</script>
 
 <style>
   .skeleton {
@@ -55,6 +90,14 @@ const variant = Astro.params.variant as VariantOf<'hero_signup'>;
 
   h1 {
     font-size: clamp(2.25rem, 1.5rem + 3.5vw, 4rem);
+  }
+
+  .closing {
+    display: grid;
+    gap: 1rem;
+    width: 100%;
+    padding-top: 3rem;
+    scroll-margin-top: 2rem;
   }
 
   .status {
