@@ -10,9 +10,13 @@
     "binding": "ASSETS",
     "directory": "./dist",
   },
+  // Declared, never stored here: `wrangler secret put` in production, `.dev.vars` locally.
+  // A deploy fails if one is missing, and `wrangler types` reads the names from this list.
+  "secrets": {
+    "required": ["SESSION_SECRET", "ADMIN_TOKEN"],
+  },
   // No database id: Wrangler creates a local database for development and provisions the
-  // remote one on the first deploy. Secrets (SESSION_SECRET, ADMIN_TOKEN) are never in this
-  // file: `wrangler secret put` in production, `.dev.vars` locally.
+  // remote one on the first deploy.
   "d1_databases": [
     {
       "binding": "DB",

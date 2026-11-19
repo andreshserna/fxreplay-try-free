@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASTRO_TELEMETRY_DISABLED: 1
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+
+      # Static checks: formatting, lint, types, and the project's own rules.
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run check:tokens
+      - run: npm run check:contrast
+      - run: npm run gen:check
+
+      # Tests: the AI system's hooks and checkers, then the API contract in Node.
+      - run: npm run test:system
+      - run: npm test
+
+      - run: npm run build
+
+      # The same contract over HTTP, against the built Worker and a real local D1.
+      - name: Contract tests against the running build
+        run: |
+          npm run preview -- --port 4321 --host 127.0.0.1
+          curl --silent --show-error --retry 20 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4321/
+          npm run test:api
+          npx astro preview stop

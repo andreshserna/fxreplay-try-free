@@ -162,3 +162,10 @@ project or is costly to reverse also has an ADR in this folder.
   secrets to `.dev.vars` and applies the D1 migrations to a local database. The database id
   is left out of `wrangler.jsonc`: Wrangler provisions the remote one on the first deploy.
 - **Wrangler's usage metrics are off.**
+- **The secrets the Worker needs are declared in `wrangler.jsonc`** (`secrets.required`),
+  never their values. A deploy fails when one is missing, and type generation no longer
+  depends on a local secrets file.
+- **CI runs every check a machine can make:** formatting and lint, types, the token and
+  contrast rules, generated files, the system's own tests, the API contract in Node, the
+  build, and the same contract over HTTP against the built Worker. End-to-end, axe and
+  Lighthouse budgets join it with the page. Actions are pinned to their current major.
