@@ -26,14 +26,16 @@ same build, same calibration (2026-11-19):
 | 4 | 10 ms, 0 ms |
 | 2 | 109 ms, 122 ms |
 | GitHub's shared runner, 2 cores | 193 ms, 215 ms |
+| GitHub's shared runner, 4 cores | 13 ms, 7 ms |
 
 Lighthouse asks for dedicated cores, recommends four and calls free CI environments
 volatile (its `docs/variability.md`). Below four the check prints and
 stores the number and does not judge it. Every other budget is judged on every push. This
-gives something up: on the current CI runner a real regression in blocking time would not
-fail the build. It is caught where it is judged, by `npm run lighthouse` on a machine with
-four cores or more, and in the field by INP. The cores, the benchmark and the slowdown are
-printed with every run, and CI publishes the table and the full reports with each run.
+repository's CI runner has four cores, so blocking time is judged there too: the last row
+is its first run. On a two-core host a regression in blocking time would not fail the
+check: it is caught where it is judged, and in the field by INP. The cores, the benchmark
+and the slowdown are printed with every run, and CI publishes the table and the full
+reports with each run.
 
 ## Core Web Vitals
 

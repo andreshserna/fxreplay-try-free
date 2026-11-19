@@ -29,9 +29,9 @@
  * time on the main thread, and with fewer cores Chrome's own processes stretch it by
  * competing for them, which the benchmark does not see: one machine, one benchmark, and
  * 0 ms on twelve cores, 0 to 10 ms with Chrome and the server pinned to four, 72 to 122 ms
- * pinned to two. A shared two-core CI runner measured about 190 ms. Lighthouse (its docs/variability.md) asks for
- * dedicated cores and recommends four. Below that the number is printed and stored, not
- * judged.
+ * pinned to two. A shared two-core CI runner measured about 190 ms, a four-core one 13 ms.
+ * Lighthouse (its docs/variability.md) asks for dedicated cores and recommends four. Below
+ * that the number is printed and stored, not judged.
  *
  * Budgets are compared on unrounded values. The table rounds against the budget (a
  * maximum up, a minimum down), so a displayed value never looks better than the real one.

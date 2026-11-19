@@ -448,3 +448,6 @@ project or is costly to reverse also has an ADR in this folder.
   screenshot shows that the pipeline counted once. A dashboard lets a reviewer see it count:
   the funnel, the experiment by arm, exposures per arm, field Web Vitals, failures by reason
   and the bot flag. It holds aggregates only and is labelled as test traffic.
+- **The four-core rule held on its first judged CI run.** On a four-core shared runner the
+  same commit that measured 193 and 215 ms on two cores measured 13 and 7 ms, judged and
+  passing. Blocking time is judged in CI again.
