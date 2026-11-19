@@ -5,7 +5,12 @@
  */
 import { toContext } from '../../lib/analytics/attribution';
 import type { FieldError, Problem, ProblemCode } from '../../lib/api/problems';
-import { parseCreateUser, parseProfilePatch, type User } from '../../lib/api/schemas';
+import {
+  parseCreateUser,
+  parseProfilePatch,
+  type CreateUserInput,
+  type User,
+} from '../../lib/api/schemas';
 import { assignAll, formatAssignments } from '../../lib/experiments/registry';
 import type { Defer, ServerEvents, VisitorContext } from '../analytics/emitter';
 import { readBodyText } from '../http/body';
@@ -53,6 +58,10 @@ export interface UsersApiOptions {
 }
 
 type Context = RequestContext;
+
+/** The pages a form signup can end on: src/pages/signup/[outcome].astro. */
+export const FORM_OUTCOMES = ['done', 'email-taken', 'invalid', 'try-again'] as const;
+type FormOutcome = (typeof FORM_OUTCOMES)[number];
 
 /** Without a runtime to hand work to, it simply runs: its own errors are already caught. */
 const runNow: Defer = (work) => void work;
@@ -116,38 +125,105 @@ export class UsersApi {
       const { website, ...input } = parsed.data;
       if (website) return this.#decoy(context, input.email);
 
-      // The visitor and the experiment arms come from the server's own cookie, never from
-      // the body, so they cannot be forged or forgotten by a client.
-      const visitor = readVisitor(request);
-      const experiments = assignAll(visitor.id);
-      const result = await this.#options.service.create(input, idempotencyKey, {
-        anonymous_id: visitor.id,
-        experiments,
-      });
+      const result = await this.#register(request, input, idempotencyKey, defer);
       if (result.kind === 'email_taken') return this.#problem(context, 'email_taken');
       if (result.kind === 'key_reused') return this.#problem(context, 'idempotency_key_reused');
 
-      // The conversion: emitted only now, after the row is committed, and never for a replay.
-      if (result.kind === 'created' && this.#options.events) {
-        defer(
-          this.#options.events.emit(
-            'signup_completed',
-            { user_id: result.user.id },
-            visitorContext(request, result.user),
-          ),
-        );
-      }
-
-      const expiresAt = Math.floor(this.#now().getTime() / 1000) + SESSION_TTL_SECONDS;
-      const session = await signSession(this.#options.sessionSecret, result.user.id, expiresAt);
       const response = this.#json(context, 201, publicUser(result.user), {
         Location: `/api/users/${result.user.id}`,
-        'Set-Cookie': sessionCookie(session),
         ...(result.kind === 'replayed' ? { 'Idempotency-Replayed': 'true' } : {}),
       });
-      if (visitor.isNew) response.headers.append('Set-Cookie', visitorCookie(visitor.id));
+      for (const cookie of result.cookies) response.headers.append('Set-Cookie', cookie);
       return response;
     });
+  }
+
+  /**
+   * POST /signup: the same signup from a plain HTML form, for a visitor whose browser has
+   * not run the page's script (it failed to load, or they pressed Enter before it did).
+   * It answers with a redirect to a page that says what happened.
+   */
+  createFromForm(request: Request, defer: Defer = runNow): Promise<Response> {
+    const redirect = (outcome: FormOutcome, cookies: string[] = []) => {
+      const headers = new Headers({ Location: `/signup/${outcome}/`, 'Cache-Control': 'no-store' });
+      for (const cookie of cookies) headers.append('Set-Cookie', cookie);
+      return new Response(null, { status: 303, headers });
+    };
+    return this.#handle(request, async () => {
+      if (!(await this.#allowed(this.#options.limiters?.create, clientKey(request)))) {
+        return redirect('try-again');
+      }
+      const body = await readBodyText(request, MAX_BODY_BYTES);
+      if (!body.ok) return redirect('invalid');
+      const fields = new URLSearchParams(body.text);
+      const parsed = parseCreateUser({
+        email: fields.get('email') ?? '',
+        website: fields.get('website') ?? '',
+      });
+      if (!parsed.ok) return redirect('invalid');
+      const { website, ...input } = parsed.data;
+      if (website) {
+        this.#options.log?.('signup discarded: honeypot', {
+          request_id: requestContext(request).requestId,
+        });
+        return redirect('done');
+      }
+
+      // A form has no idempotency header. The key is derived from who is asking and for
+      // what, so a refresh or a second press repeats the same request instead of a new one.
+      const visitor = readVisitor(request);
+      const digest = await crypto.subtle.digest(
+        'SHA-256',
+        encoder.encode(`form:${visitor.id}:${input.email}`),
+      );
+      const key = Array.from(new Uint8Array(digest).slice(0, 16), (byte) =>
+        byte.toString(16).padStart(2, '0'),
+      ).join('');
+
+      const result = await this.#register(request, input, `form_${key}`, defer);
+      if (result.kind === 'email_taken') return redirect('email-taken');
+      if (result.kind === 'key_reused') return redirect('try-again');
+      return redirect('done', result.cookies);
+    }).then((response) => (response.status >= 500 ? redirect('try-again') : response));
+  }
+
+  /** Creates the user, emits the conversion, and prepares the cookies of the answer. */
+  async #register(
+    request: Request,
+    input: CreateUserInput,
+    idempotencyKey: string,
+    defer: Defer,
+  ): Promise<
+    | { kind: 'email_taken' }
+    | { kind: 'key_reused' }
+    | { kind: 'created' | 'replayed'; user: UserRecord; cookies: string[] }
+  > {
+    // The visitor and the experiment arms come from the server's own cookie, never from
+    // the body, so they cannot be forged or forgotten by a client.
+    const visitor = readVisitor(request);
+    const result = await this.#options.service.create(input, idempotencyKey, {
+      anonymous_id: visitor.id,
+      experiments: assignAll(visitor.id),
+    });
+    if (result.kind === 'email_taken' || result.kind === 'key_reused') return result;
+
+    // The conversion: emitted only now, after the row is committed, and never for a replay.
+    if (result.kind === 'created' && this.#options.events) {
+      defer(
+        this.#options.events.emit(
+          'signup_completed',
+          { user_id: result.user.id },
+          visitorContext(request, result.user),
+        ),
+      );
+    }
+    const expiresAt = Math.floor(this.#now().getTime() / 1000) + SESSION_TTL_SECONDS;
+    const session = await signSession(this.#options.sessionSecret, result.user.id, expiresAt);
+    return {
+      kind: result.kind,
+      user: result.user,
+      cookies: [sessionCookie(session), ...(visitor.isNew ? [visitorCookie(visitor.id)] : [])],
+    };
   }
 
   /** PATCH /api/users/{id} */

@@ -70,6 +70,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
   const [state, dispatch] = useReducer(reduce, initialState);
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
+  const decoy = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
   const started = useRef(false);
   const previous = useRef(state);
@@ -86,7 +87,11 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
       const given = attribution();
       void apiClient
         .createUser(
-          { email, ...(given.first_touch || given.last_touch ? { attribution: given } : {}) },
+          {
+            email,
+            ...(given.first_touch || given.last_touch ? { attribution: given } : {}),
+            ...(decoy.current?.value ? { website: decoy.current.value } : {}),
+          },
           { idempotencyKey: key },
         )
         .then((result) => dispatch({ type: 'answered', result }));
@@ -159,7 +164,14 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
   }
 
   return (
-    <form class={`signup signup-${layout}`} onSubmit={onSubmit} noValidate>
+    // Before this script runs, the form still works: it posts to /signup as plain HTML.
+    <form
+      class={`signup signup-${layout}`}
+      method="post"
+      action="/signup"
+      onSubmit={onSubmit}
+      noValidate
+    >
       <label htmlFor={id}>Email</label>
       <div class="signup-controls">
         <input
@@ -194,6 +206,11 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
                 : cta}
           </span>
         </button>
+      </div>
+      {/* A field people never see or reach. A value in it means a bot filled the form. */}
+      <div class="signup-decoy" aria-hidden="true">
+        <label htmlFor={`${id}-website`}>Leave this field empty</label>
+        <input ref={decoy} id={`${id}-website`} name="website" tabindex={-1} autocomplete="off" />
       </div>
       <p id={errorId} class="signup-trouble" role="alert">
         {trouble && (

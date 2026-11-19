@@ -227,3 +227,11 @@ project or is costly to reverse also has an ADR in this folder.
   axe. Locally they use the installed Chrome.
 - **Our own type, space and shape scales live in `src/styles/scale.css`,** apart from the
   kit's color tokens: the kit leaves sizing open, and plain CSS needs no generator.
+- **The signup works without JavaScript.** The form is a real form that posts to `/signup`,
+  which creates the account through the same code path and redirects to a static page per
+  outcome. It earned its place for a reason found in testing: a visitor who presses Enter
+  before the script has loaded used to submit a form that did nothing useful. Now that press
+  creates the account. The idempotency key of a plain form is derived from the visitor and
+  the email, so a refresh or a second press is the same request.
+- **The form further down the page hydrates when the browser is idle,** not when it scrolls
+  into view, so it is ready before a visitor can reach it.

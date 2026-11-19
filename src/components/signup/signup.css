@@ -227,3 +227,12 @@
 .signup-skip:active {
   background: var(--btn-bg-outline-pressed);
 }
+
+/* Off the page, not `display: none`: a bot that skips hidden fields still fills it. */
+.signup-decoy {
+  position: absolute;
+  left: -200vw;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}

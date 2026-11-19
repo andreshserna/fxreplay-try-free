@@ -41,7 +41,7 @@ never "passed".
 |---|---|
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
-| `src/pages/` | `index.ts` ("/" decided at the edge), `variants/` (one prerendered document per experiment arm), `api/` (thin endpoints: `users/`, `events`), `problems/` (one page per error type) |
+| `src/pages/` | `index.ts` ("/" decided at the edge), `variants/` (one prerendered document per experiment arm), `api/` (thin endpoints: `users/`, `events`), `signup` (the plain-form path and its outcome pages), `problems/` (one page per error type) |
 | `src/lib/api/` | The contract in code: shared schemas, the problem registry, the typed client |
 | `src/lib/analytics/`, `src/lib/experiments/` | The event registry, validation, attribution, the browser tracker; the experiment registry and assignment |
 | `src/server/` | `runtime.ts` (the only file that knows bindings), `landing.ts`, `users/`, `analytics/` (collector, sink, server events), `http/` (session, visitor cookie, responses) |

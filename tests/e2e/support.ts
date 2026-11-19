@@ -24,7 +24,12 @@ export const clientAddress = () =>
   `10.${randomInt(1, 255)}.${randomInt(0, 256)}.${randomInt(1, 255)}`;
 
 /** Opens the landing page as a visitor in the given arm. */
-export async function openAs(page: Page, baseURL: string | undefined, arm: Arm): Promise<void> {
+export async function openAs(
+  page: Page,
+  baseURL: string | undefined,
+  arm: Arm,
+  { scripted = true } = {},
+): Promise<void> {
   const url = baseURL ?? 'http://127.0.0.1:4321';
   await page
     .context()
@@ -32,6 +37,8 @@ export async function openAs(page: Page, baseURL: string | undefined, arm: Arm):
   await page.setExtraHTTPHeaders({ 'CF-Connecting-IP': clientAddress() });
   await page.goto('/');
   await expect(page.locator('html')).toHaveAttribute('data-experiments', `hero_signup:${arm}`);
+  // These tests are about the hydrated form. The plain form has its own, without JavaScript.
+  if (scripted) await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
 }
 
 export const uniqueEmail = () => `e2e-${randomUUID()}@example.com`;

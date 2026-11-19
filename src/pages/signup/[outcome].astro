@@ -1,0 +1,100 @@
+---
+/**
+ * Where a plain form signup lands (POST /signup). One static page per outcome, so the
+ * signup works, and explains itself, without any script.
+ */
+import type { GetStaticPaths } from 'astro';
+
+import wordmark from '../../assets/brand/FXReplayLogo.svg';
+import Base from '../../layouts/Base.astro';
+import { FORM_OUTCOMES } from '../../server/users/api';
+
+export const getStaticPaths = (() =>
+  FORM_OUTCOMES.map((outcome) => ({ params: { outcome } }))) satisfies GetStaticPaths;
+
+const outcome = Astro.params.outcome as (typeof FORM_OUTCOMES)[number];
+
+const PAGES = {
+  done: {
+    title: 'Your free account is ready.',
+    text: 'This demo ends here. On the real site, your first replay session would open now.',
+    good: true,
+  },
+  'email-taken': {
+    title: 'This email already has an account.',
+    text: 'Use another email, or log in with the one you have.',
+    good: false,
+  },
+  invalid: {
+    title: 'That email address does not look right.',
+    text: 'It should look like name@example.com.',
+    good: false,
+  },
+  'try-again': {
+    title: 'We could not create your account just now.',
+    text: 'Nothing was lost. Wait a minute and try again.',
+    good: false,
+  },
+} as const;
+
+const page = PAGES[outcome];
+---
+
+<Base title={`${page.title} FX Replay (candidate demo)`} description={page.text} indexable={false}>
+  <main>
+    <img src={wordmark.src} width={wordmark.width} height={wordmark.height} alt="FX Replay" />
+    <h1 class:list={{ good: page.good }}>{page.title}</h1>
+    <p>{page.text}</p>
+    <p>
+      {page.good ? (
+        <a href="/">Back to the page</a>
+      ) : (
+        <a class="button" href="/#signup">
+          Try again
+        </a>
+      )}
+      {outcome === 'email-taken' && <a href="https://app.fxreplay.com/">Log in instead</a>}
+    </p>
+    <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
+  </main>
+</Base>
+
+<style>
+  main {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: var(--space-5);
+    min-height: 100svh;
+    max-width: 40rem;
+    margin-inline: auto;
+    padding: var(--space-6) var(--gutter);
+  }
+
+  img {
+    width: min(11rem, 60vw);
+    height: auto;
+  }
+
+  h1 {
+    font-size: var(--step-3);
+  }
+
+  h1.good {
+    color: var(--text-success);
+  }
+
+  p {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    align-items: center;
+    color: var(--text-secondary);
+  }
+
+  .notice {
+    padding-top: var(--space-5);
+    border-top: 1px solid var(--border-primary);
+    font-size: var(--step--1);
+  }
+</style>

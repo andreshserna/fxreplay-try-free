@@ -1,7 +1,9 @@
 ---
 /**
- * The signup form's place on the page. The form itself is the only island:
- * it is rendered into the HTML at build time and hydrated in the browser.
+ * The signup form's place on the page. The form itself is the only island: it is
+ * rendered into the HTML at build time and hydrated in the browser, at once in the
+ * hero and when the browser is idle further down. Until then it is a plain form that
+ * posts to /signup, so an early press of Enter still creates the account.
  */
 import SignupForm from './SignupForm';
 import './signup.css';
@@ -18,5 +20,5 @@ const { location, cta, layout = 'row' } = Astro.props;
 {location === 'hero' ? (
   <SignupForm client:load location={location} cta={cta} layout={layout} />
 ) : (
-  <SignupForm client:visible location={location} cta={cta} layout={layout} />
+  <SignupForm client:idle location={location} cta={cta} layout={layout} />
 )}

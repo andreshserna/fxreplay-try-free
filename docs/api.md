@@ -122,6 +122,15 @@ A request with a filled honeypot is answered like a success and discarded: no ro
 no session cookie. The server logs `signup discarded: honeypot` with the request id, and
 nothing else.
 
+### The same signup from a plain form
+
+`POST /signup`, `application/x-www-form-urlencoded`, field `email`. For a browser that has not
+run the page's script. It creates the user through the same code and the same rules, sets the
+same cookies, and answers `303 See Other` to a static page: `/signup/done/`,
+`/signup/email-taken/`, `/signup/invalid/` or `/signup/try-again/`. It has no idempotency
+header, so the key is derived from the visitor and the email: repeating the form repeats the
+request.
+
 ## Update a user
 
 `PATCH /api/users/{id}`. Authorized by the session cookie issued at creation, and only for

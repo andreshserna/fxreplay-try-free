@@ -652,3 +652,67 @@ describe('other methods', () => {
     expect(response.headers.get('Allow')).toBe('GET, POST');
   });
 });
+
+describe('POST /signup (the plain form)', () => {
+  const submit = (fields: Record<string, string>, headers: Record<string, string> = {}) =>
+    api.createFromForm(
+      new Request(`${ORIGIN}/signup`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Origin: ORIGIN,
+          ...headers,
+        },
+        body: new URLSearchParams(fields).toString(),
+      }),
+    );
+  const visitor = { Cookie: `${VISITOR_COOKIE}=visitor-1` };
+  const landedOn = (response: Response) => response.headers.get('Location');
+
+  it('creates the account, sets the session and redirects to the page that says so', async () => {
+    const response = await submit({ email: ' Ada@Example.com ' }, visitor);
+    expect(response.status).toBe(303);
+    expect(landedOn(response)).toBe('/signup/done/');
+    expect(response.headers.getSetCookie().join()).toContain(SESSION_COOKIE);
+
+    const page = (await (await list()).json()) as ListResult;
+    expect(page.data).toHaveLength(1);
+    expect(page.data[0]).toMatchObject({ email: 'ada@example.com', anonymous_id: 'visitor-1' });
+    expect(sink.events.map((event) => event.name)).toEqual(['signup_completed']);
+  });
+
+  it('repeats harmlessly: a refresh or a second press is the same request', async () => {
+    await submit({ email: 'ada@example.com' }, visitor);
+    const again = await submit({ email: 'ada@example.com' }, visitor);
+    expect(landedOn(again)).toBe('/signup/done/');
+    expect(((await (await list()).json()) as ListResult).data).toHaveLength(1);
+    expect(sink.events).toHaveLength(1);
+  });
+
+  it('sends each problem to the page that explains it', async () => {
+    await submit({ email: 'ada@example.com' }, visitor);
+    const other = { Cookie: `${VISITOR_COOKIE}=visitor-2` };
+    expect(landedOn(await submit({ email: 'ada@example.com' }, other))).toBe(
+      '/signup/email-taken/',
+    );
+    expect(landedOn(await submit({ email: 'not-an-email' }, other))).toBe('/signup/invalid/');
+    expect(landedOn(await submit({}, other))).toBe('/signup/invalid/');
+
+    build({ create: { limit: () => Promise.resolve({ success: false }) } });
+    expect(landedOn(await submit({ email: 'eve@example.com' }))).toBe('/signup/try-again/');
+  });
+
+  it('answers a filled honeypot like a success and stores nothing', async () => {
+    const response = await submit({ email: 'bot@example.com', website: 'https://spam.example' });
+    expect(landedOn(response)).toBe('/signup/done/');
+    expect(response.headers.getSetCookie()).toEqual([]);
+    expect(((await (await list()).json()) as ListResult).data).toHaveLength(0);
+  });
+
+  it('redirects to "try again" when storage is down, never to an error page', async () => {
+    repository.create = () => Promise.reject(new StorageUnavailableError('down'));
+    const response = await submit({ email: 'ada@example.com' }, visitor);
+    expect(response.status).toBe(303);
+    expect(landedOn(response)).toBe('/signup/try-again/');
+  });
+});

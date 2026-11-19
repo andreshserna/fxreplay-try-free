@@ -7,15 +7,17 @@ interface Props {
   description: string;
   /** The experiment arms this document was rendered for, as the analytics context carries them. */
   experiments?: string;
+  /** False for pages that are never a search result, whatever the indexing flag says. */
+  indexable?: boolean;
 }
 
-const { title, description, experiments } = Astro.props;
+const { title, description, experiments, indexable = true } = Astro.props;
 // Every arm is the same page to a search engine: the one at the site root.
 const canonical = new URL('/', Astro.site);
 
 // The demo carries someone else's brand, so it stays out of search unless
 // indexing is switched on at build time (ADR 0009).
-const allowIndexing = import.meta.env.ALLOW_INDEXING === 'true';
+const allowIndexing = indexable && import.meta.env.ALLOW_INDEXING === 'true';
 ---
 
 <!doctype html>

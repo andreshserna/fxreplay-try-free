@@ -207,3 +207,47 @@ test.describe('the control: a button that leads to the form', () => {
     });
   });
 });
+
+test.describe('without JavaScript', () => {
+  test.use({ javaScriptEnabled: false });
+
+  test('the form still creates the account and says so', async ({ page, baseURL }) => {
+    await openAs(page, baseURL, 'inline_email', { scripted: false });
+    const email = uniqueEmail();
+    await page.getByLabel('Email').first().fill(email);
+    await page.getByRole('button', { name: 'Start for free' }).first().click();
+    await expect(page).toHaveURL(/\/signup\/done\/$/);
+    await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
+
+    // The same visitor submitting again is the same request. Someone else is told why not.
+    await page.goto('/');
+    await page.getByLabel('Email').first().fill(email);
+    await page.getByLabel('Email').first().press('Enter');
+    await expect(page).toHaveURL(/\/signup\/done\/$/);
+
+    await page.context().clearCookies();
+    await openAs(page, baseURL, 'inline_email', { scripted: false });
+    await page.getByLabel('Email').first().fill(email);
+    await page.getByLabel('Email').first().press('Enter');
+    await expect(page).toHaveURL(/\/signup\/email-taken\/$/);
+    await expect(page.getByRole('link', { name: 'Log in instead' })).toBeVisible();
+  });
+
+  test('a bad email lands on a page that explains it and leads back', async ({ page, baseURL }) => {
+    await openAs(page, baseURL, 'cta_button', { scripted: false });
+    await page.getByRole('link', { name: 'Start for free' }).click();
+    await page.getByLabel('Email').fill('ada@');
+    await page.getByLabel('Email').press('Enter');
+    await expect(page).toHaveURL(/\/signup\/invalid\/$/);
+    await page.getByRole('link', { name: 'Try again' }).click();
+    await expect(page).toHaveURL(/\/#signup$/);
+  });
+});
+
+test('the pages a plain form signup lands on are accessible', async ({ page }) => {
+  for (const outcome of ['done', 'email-taken', 'invalid', 'try-again']) {
+    await page.goto(`/signup/${outcome}/`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expectAccessible(page);
+  }
+});
