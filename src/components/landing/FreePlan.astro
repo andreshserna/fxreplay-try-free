@@ -30,6 +30,10 @@ const notIncluded = ['Futures and CME data', 'Seconds data', 'Several charts at 
     </p>
   </div>
 
+  <a class="button cta" href="#signup" data-cta="plan">
+    Start for free
+  </a>
+
   <div class="card">
     <dl class="numbers">
       {included.map(([value, label]) => (
@@ -85,11 +89,34 @@ const notIncluded = ['Futures and CME data', 'Seconds data', 'Several charts at 
     line-height: 1.5;
   }
 
+  /* On a phone the button follows the limits. Beside the card it sits under the lede. */
+  .cta {
+    order: 1;
+    justify-self: stretch;
+  }
+
+  @media (width >= 30rem) {
+    .cta {
+      justify-self: start;
+      min-width: 12rem;
+    }
+  }
+
   @media (width >= 62rem) {
     .plan {
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
-      gap: var(--space-8);
+      grid-template-rows: auto 1fr;
+      gap: var(--space-5) var(--space-8);
       align-items: start;
+    }
+
+    .card {
+      grid-area: 1 / 2 / 3 / 3;
+    }
+
+    .cta {
+      grid-area: 2 / 1;
+      order: 0;
     }
   }
 
@@ -98,7 +125,7 @@ const notIncluded = ['Futures and CME data', 'Seconds data', 'Several charts at 
     gap: var(--space-5);
     padding: clamp(1.25rem, 0.9rem + 1.6vw, 2.25rem);
     border: 1px solid var(--border-secondary);
-    border-radius: 1rem;
+    border-radius: var(--radius-surface);
     background:
       radial-gradient(
         120% 90% at 100% 0%,

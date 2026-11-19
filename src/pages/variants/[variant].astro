@@ -106,7 +106,11 @@ const structuredData = {
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-cta]') : null;
     const location = target instanceof HTMLElement ? target.dataset.cta : undefined;
-    if (isLocation(location))
-      track('cta_clicked', { cta_name: 'start_free', cta_location: location });
+    if (!isLocation(location)) return;
+    track('cta_clicked', { cta_name: 'start_free', cta_location: location });
+    // The link jumps to the form. Put the cursor in it too, so one tap is enough. The
+    // jump itself is the browser's and works without this script.
+    const field = document.querySelector<HTMLInputElement>('#signup input[type="email"]');
+    requestAnimationFrame(() => field?.focus({ preventScroll: true }));
   });
 </script>

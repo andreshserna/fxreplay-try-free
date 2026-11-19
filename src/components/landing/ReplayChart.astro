@@ -154,11 +154,6 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
   </svg>
 
   <div class="transport" aria-hidden="true">
-    <span class="key">
-      <svg viewBox="0 0 16 16">
-        <path d="M3 3h2v10H3zM13 3v10L6 8z"></path>
-      </svg>
-    </span>
     <span class="key play">
       <svg viewBox="0 0 16 16">
         <path d="M4.5 2.5v11l9-5.5z"></path>
@@ -330,12 +325,11 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
   }
 
   .key.play {
-    border-color: transparent;
-    background: var(--btn-bg-primary-active);
+    border-color: var(--chart-playhead);
   }
 
   .key.play svg {
-    fill: var(--btn-text);
+    fill: var(--chart-playhead);
   }
 
   .track {

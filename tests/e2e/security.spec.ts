@@ -107,7 +107,8 @@ test.describe('the policy breaks nothing', () => {
       const { messages, collected } = await watch(page);
       await openAs(page, baseURL, arm);
 
-      if (arm === 'cta_button') await page.getByRole('link', { name: 'Start for free' }).click();
+      if (arm === 'cta_button')
+        await page.getByRole('link', { name: 'Start for free' }).first().click();
       const field = page.getByLabel('Email', { exact: true }).first();
       await field.fill(uniqueEmail());
       await page.getByRole('button', { name: 'Start for free' }).first().click();

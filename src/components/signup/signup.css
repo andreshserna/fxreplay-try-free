@@ -22,6 +22,11 @@
   .signup-row .signup-controls {
     grid-template-columns: minmax(0, 1fr) auto;
   }
+
+  /* Wide enough for every label it shows, so the field beside it never changes width. */
+  .signup-row button[type='submit'] {
+    min-width: 9.5rem;
+  }
 }
 
 .signup input[type='email'] {
@@ -46,39 +51,6 @@
   border-color: var(--border-field-error);
 }
 
-.signup button[type='submit'],
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  min-height: var(--control-height);
-  padding: 0 var(--space-5);
-  border: 0;
-  border-radius: var(--radius-control);
-  background: var(--btn-bg-primary-active);
-  color: var(--btn-text);
-  font: inherit;
-  font-size: 1rem;
-  font-weight: 700;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-/* The kit's hover and pressed fills fade into the ground, so the button keeps an edge. */
-.signup button[type='submit']:hover,
-.button:hover {
-  background: var(--btn-bg-primary-hover);
-  box-shadow: inset 0 0 0 1px var(--btn-border-primary);
-}
-
-.signup button[type='submit']:active,
-.button:active {
-  background: var(--btn-bg-primary-pressed);
-  box-shadow: inset 0 0 0 1px var(--btn-border-primary);
-}
-
 /* Busy is said, not hidden: the button stays on its fill and never becomes disabled. */
 .signup button[aria-busy='true'] {
   cursor: progress;
@@ -99,12 +71,25 @@
   }
 }
 
-/* The space for a message is always there, so showing one never moves the page. */
+/* One slot under the button holds the reassurance or the message, never both, at a fixed
+   minimum height: showing a message does not move the page. */
+.signup .promises,
+.signup-trouble {
+  min-height: 1.5rem;
+}
+
+.signup-trouble:empty {
+  display: none;
+}
+
+.signup:not(:has(.promises)) > .signup-trouble:empty {
+  display: flex;
+}
+
 .signup-trouble {
   display: flex;
   gap: var(--space-2);
   align-items: flex-start;
-  min-height: 1.5rem;
   color: var(--text-error);
   font-size: var(--step--1);
   line-height: 1.5;
@@ -121,6 +106,11 @@
   color: var(--text-primary);
 }
 
+/* The profile step keeps no empty line for a message it rarely shows. */
+.signup-profile .signup-trouble:empty {
+  display: none;
+}
+
 /* After the account exists. */
 .signup-after {
   gap: var(--space-4);
@@ -135,8 +125,10 @@
   font-size: var(--step-2);
 }
 
+/* Focus lands here so a screen reader announces the new step. It is not a control, and
+   the green card around it already shows where the page changed. */
 .signup-title:focus-visible {
-  outline-offset: 4px;
+  outline: none;
 }
 
 .signup-note {
@@ -161,13 +153,13 @@
 }
 
 .signup-choices > div {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
   gap: var(--space-2);
 }
 
 .signup-choices label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: var(--space-2);
   min-height: 2.75rem;
@@ -181,6 +173,7 @@
 }
 
 .signup-choices input {
+  flex: none;
   width: 1rem;
   height: 1rem;
   margin: 0;
@@ -220,8 +213,10 @@
   cursor: pointer;
 }
 
-.signup-skip:hover {
-  background: var(--btn-bg-outline-hover);
+@media (hover: hover) {
+  .signup-skip:hover {
+    background: var(--btn-bg-outline-hover);
+  }
 }
 
 .signup-skip:active {

@@ -24,6 +24,8 @@ interface Props {
   location: 'hero' | 'closing';
   cta: string;
   layout?: 'row' | 'stack';
+  /** Shown under the button, in the slot an error message takes when there is one. */
+  promises?: string[];
 }
 
 const LABELS: Record<string, string> = {
@@ -65,7 +67,7 @@ function troubleMessage(trouble: Trouble): string {
   }
 }
 
-export default function SignupForm({ location, cta, layout = 'row' }: Props) {
+export default function SignupForm({ location, cta, layout = 'row', promises = [] }: Props) {
   const [state, dispatch] = useReducer(reduce, initialState);
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
@@ -136,9 +138,16 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
             }}
           />
         ) : (
-          <p className="signup-note">
-            This demo ends here. On the real site, your first replay session would open now.
-          </p>
+          <>
+            <p className="signup-note">
+              This demo ends here. On the real site, your first replay session would open now.
+            </p>
+            <p>
+              <a className="button" href="https://fxreplay.com/">
+                See the real FX Replay
+              </a>
+            </p>
+          </>
         )}
       </div>
     );
@@ -198,11 +207,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
         <button type="submit" aria-busy={submitting || undefined}>
           {submitting && <span className="signup-spinner" aria-hidden="true" />}
           <span>
-            {submitting
-              ? 'Creating your account'
-              : trouble?.kind === 'unavailable'
-                ? 'Try again'
-                : cta}
+            {submitting ? 'Creating…' : trouble?.kind === 'unavailable' ? 'Try again' : cta}
           </span>
         </button>
       </div>
@@ -211,6 +216,15 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
         <label htmlFor={`${id}-website`}>Leave this field empty</label>
         <input ref={decoy} id={`${id}-website`} name="website" tabIndex={-1} autoComplete="off" />
       </div>
+      {/* One slot under the button: the reassurance, or the message when something is wrong.
+          Its height is reserved, so neither moves the page. */}
+      {!trouble && promises.length > 0 && (
+        <ul className="promises">
+          {promises.map((promise) => (
+            <li key={promise}>{promise}</li>
+          ))}
+        </ul>
+      )}
       <p id={errorId} className="signup-trouble" role="alert">
         {trouble && (
           <>
@@ -219,7 +233,7 @@ export default function SignupForm({ location, cta, layout = 'row' }: Props) {
             </svg>
             <span>
               {troubleMessage(trouble)}{' '}
-              {trouble.kind === 'email_taken' && <a href={LOGIN_URL}>Log in instead</a>}
+              {trouble.kind === 'email_taken' && <a href={LOGIN_URL}>Log in on the real site</a>}
             </span>
           </>
         )}

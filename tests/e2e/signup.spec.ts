@@ -95,7 +95,7 @@ test.describe('the variant: an email field in the hero', () => {
     await page.getByLabel('Email', { exact: true }).first().press('Enter');
 
     await expect(page.getByRole('alert').first()).toContainText('already has an account');
-    await expect(page.getByRole('link', { name: 'Log in instead' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Log in on the real site' })).toBeVisible();
     await expect(page.getByLabel('Email', { exact: true }).first()).toHaveValue(email);
   });
 
@@ -151,7 +151,7 @@ test.describe('the variant: an email field in the hero', () => {
     const field = page.getByLabel('Email', { exact: true }).first();
     await field.fill(uniqueEmail());
     await field.press('Enter');
-    const busy = page.getByRole('button', { name: 'Creating your account' });
+    const busy = page.getByRole('button', { name: 'Creating…' });
     await expect(busy).toHaveAttribute('aria-busy', 'true');
     await expect(busy).toBeEnabled();
     await busy.click();
@@ -184,7 +184,7 @@ test.describe('the control: a button that leads to the form', () => {
     await openAs(page, baseURL, 'cta_button');
     await expect(page.getByLabel('Email', { exact: true })).toHaveCount(1);
 
-    await page.getByRole('link', { name: 'Start for free' }).click();
+    await page.getByRole('link', { name: 'Start for free' }).first().click();
     await expect(page).toHaveURL(/#signup$/);
     await expect(page.getByLabel('Email', { exact: true })).toBeInViewport();
     await expectAccessible(page);
@@ -230,12 +230,12 @@ test.describe('without JavaScript', () => {
     await page.getByLabel('Email', { exact: true }).first().fill(email);
     await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page).toHaveURL(/\/signup\/email-taken\/$/);
-    await expect(page.getByRole('link', { name: 'Log in instead' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Log in on the real site' })).toBeVisible();
   });
 
   test('a bad email lands on a page that explains it and leads back', async ({ page, baseURL }) => {
     await openAs(page, baseURL, 'cta_button', { scripted: false });
-    await page.getByRole('link', { name: 'Start for free' }).click();
+    await page.getByRole('link', { name: 'Start for free' }).first().click();
     await page.getByLabel('Email', { exact: true }).fill('ada@');
     await page.getByLabel('Email', { exact: true }).press('Enter');
     await expect(page).toHaveURL(/\/signup\/invalid\/$/);

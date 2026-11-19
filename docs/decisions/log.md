@@ -290,3 +290,23 @@ project or is costly to reverse also has an ADR in this folder.
 - **`npm run dev` serves the landing page too.** The development server has no asset store
   to stream a prerendered arm from, so there "/" redirects to the visitor's arm. Found by
   running the command a reviewer would run first.
+- **Changes from the design critique of the live page** (`design-critic`, with its own
+  screenshots at three widths, both arms):
+  - The risk reversal and the error message now share one slot under the button. Before,
+    a line reserved for errors pushed "Free plan, no credit card" 44px away from the button
+    on one arm and 12px on the other, so the arms differed in more than the element under
+    test.
+  - The moment of conversion is designed: the button keeps its width while busy, the hero
+    illustration stays put when the form grows into the profile step, the copy that asked
+    for the signup steps aside once the account exists, and the final state has a next
+    action.
+  - A call to action after the free plan's limits, the page's strongest argument. Until
+    then the page had one button and one form, five phone screens apart.
+  - The primary button's styles moved to the global stylesheet: the outcome pages of the
+    plain form used the class without them and showed a bare link.
+  - "Years of market days" became "A month of market days": the free plan replays one month
+    per session, and the page's own plan card said so two sections later.
+  - In the illustration, the play key is outlined, not filled like a second primary button,
+    and the "step back" key is gone: rewind is a paid feature.
+- **Hover styles apply only where a pointer can hover,** so a tapped button on a phone does
+  not stay on its dark hover fill.

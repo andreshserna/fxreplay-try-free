@@ -53,7 +53,7 @@ const page = PAGES[outcome];
           Try again
         </a>
       )}
-      {outcome === 'email-taken' && <a href="https://app.fxreplay.com/">Log in instead</a>}
+      {outcome === 'email-taken' && <a href="https://app.fxreplay.com/">Log in on the real site</a>}
     </p>
     <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
   </main>
@@ -93,6 +93,7 @@ const page = PAGES[outcome];
   }
 
   .notice {
+    justify-self: stretch;
     padding-top: var(--space-5);
     border-top: 1px solid var(--border-primary);
     font-size: var(--step--1);

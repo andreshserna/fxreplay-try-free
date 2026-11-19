@@ -60,6 +60,17 @@ import { QUESTIONS } from './faq';
     list-style: none;
   }
 
+  summary:focus-visible {
+    outline-offset: 4px;
+    border-radius: var(--radius-control);
+  }
+
+  @media (hover: hover) {
+    summary:hover {
+      color: var(--text-link);
+    }
+  }
+
   summary::-webkit-details-marker {
     display: none;
   }

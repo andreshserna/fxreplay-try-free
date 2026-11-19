@@ -12,13 +12,14 @@ interface Props {
   location: 'hero' | 'closing';
   cta: string;
   layout?: 'row' | 'stack';
+  promises?: string[];
 }
 
-const { location, cta, layout = 'row' } = Astro.props;
+const { location, cta, layout = 'row', promises = [] } = Astro.props;
 ---
 
 {location === 'hero' ? (
-  <SignupForm client:load location={location} cta={cta} layout={layout} />
+  <SignupForm client:load location={location} cta={cta} layout={layout} promises={promises} />
 ) : (
-  <SignupForm client:idle location={location} cta={cta} layout={layout} />
+  <SignupForm client:idle location={location} cta={cta} layout={layout} promises={promises} />
 )}

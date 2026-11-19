@@ -1,8 +1,8 @@
 # Brand notes
 
 How this project implements the FX Replay brand kit, written for the design team that made
-it. Status: started in Phase 1. The type scale, the spacing scale, the fonts and the logo
-files are still to come and are listed at the end.
+it. It covers the color tokens, the contrast audit, what we added, the scales, the fonts and
+the logo files.
 
 ## What we received, and what we rebuilt
 
@@ -191,7 +191,10 @@ desktop version installed will not match the browser to the pixel.
    for its captions. We treat Lato and Nunito Sans as the brand's two families and do not
    ship the mono.
 
-## Still to come
+## The logo files
 
-The fluid type scale and the spacing scale (ours, kept apart from your tokens), self-hosted
-fonts, and the logo files optimized without altering their shapes.
+Used as shipped: the wordmark in the header and on the share image, the two isotypes as the
+browser-tab icon (the white one where the browser's own interface is dark, the black one
+where it is light). None is recolored, stretched or given an effect. The wordmark file is an
+unminified export of 19.7 KB. It is served as it came. Optimizing it without altering a shape
+is possible and was left alone, so the file in the repository is byte for byte yours.
