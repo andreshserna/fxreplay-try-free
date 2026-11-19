@@ -28,14 +28,14 @@ export async function openAs(
   page: Page,
   baseURL: string | undefined,
   arm: Arm,
-  { scripted = true } = {},
+  { scripted = true, waitUntil = 'load' as 'load' | 'commit' } = {},
 ): Promise<void> {
   const url = baseURL ?? 'http://127.0.0.1:4321';
   await page
     .context()
     .addCookies([{ name: 'fxr_aid', value: visitorFor(arm), url, httpOnly: true }]);
   await page.setExtraHTTPHeaders({ 'CF-Connecting-IP': clientAddress() });
-  await page.goto('/');
+  await page.goto('/', { waitUntil });
   await expect(page.locator('html')).toHaveAttribute('data-experiments', `hero_signup:${arm}`);
   // These tests are about the hydrated form. The plain form has its own, without JavaScript.
   if (scripted) await expect(page.locator('astro-island[ssr]')).toHaveCount(0);

@@ -94,7 +94,14 @@ const structuredData = {
   const isLocation = (value: string | undefined): value is CtaLocation =>
     (locations as readonly (string | undefined)[]).includes(value);
 
-  track('landing_viewed');
+  // A browser may render the page ahead of a visit. The view counts when it is shown,
+  // which is also when the edge would have counted the exposure.
+  const prerendering = (document as Document & { prerendering?: boolean }).prerendering;
+  if (prerendering) {
+    document.addEventListener('prerenderingchange', () => track('landing_viewed'), { once: true });
+  } else {
+    track('landing_viewed');
+  }
   reportWebVitals();
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-cta]') : null;

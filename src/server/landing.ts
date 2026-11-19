@@ -6,9 +6,18 @@
  * no flicker, no layout shift and no rendering work per request. The exposure is
  * recorded here too, which means it is logged before the variant can render.
  */
+import { readTouch, toContext } from '../lib/analytics/attribution';
 import { assign, EXPERIMENTS, formatAssignments } from '../lib/experiments/registry';
 import type { Defer, ServerEvents } from './analytics/emitter';
-import { looksAutomated, readVisitor, requestCountry, visitorCookie } from './http/visitor';
+import { clientKey } from './http/respond';
+import {
+  isPageView,
+  looksAutomated,
+  readVisitor,
+  requestCountry,
+  visitorCookie,
+} from './http/visitor';
+import type { RateLimiter } from './users/api';
 
 /** The part of the static-assets binding this code uses. */
 export interface Assets {
@@ -18,13 +27,16 @@ export interface Assets {
 interface LandingOptions {
   assets: Assets;
   events?: ServerEvents;
+  /** A ceiling on exposures from one address. The page is served either way. */
+  limiter?: RateLimiter;
+  now?: () => Date;
 }
 
 const EXPERIMENT = 'hero_signup';
 
 export async function serveLanding(
   request: Request,
-  { assets, events }: LandingOptions,
+  { assets, events, limiter, now }: LandingOptions,
   defer: Defer,
 ): Promise<Response> {
   const visitor = readVisitor(request);
@@ -47,22 +59,35 @@ export async function serveLanding(
   headers.append('Vary', 'Cookie');
   if (visitor.isNew) headers.append('Set-Cookie', visitorCookie(visitor.id));
 
-  // A browser that only prefetches has shown the page to no one.
-  const prefetch = /prefetch|prerender/i.test(request.headers.get('Sec-Purpose') ?? '');
-  if (events && EXPERIMENTS[EXPERIMENT].enabled && document.status < 400 && !prefetch) {
+  // An exposure is a document on its way to a person: not a prefetch, a HEAD, an image
+  // tag on another site, or an error page.
+  if (events && EXPERIMENTS[EXPERIMENT].enabled && document.status < 400 && isPageView(request)) {
     const country = requestCountry(request);
+    // The campaign is in the address the server was asked for, so the exposure carries it
+    // without waiting for the browser: internal traffic can be excluded on this event alone.
+    const touch = readTouch(
+      new URL(request.url),
+      request.headers.get('Referer') ?? '',
+      now?.() ?? new Date(),
+    );
+    const exposure = {
+      anonymous_id: visitor.id,
+      page_path: '/',
+      experiments: formatAssignments({ [EXPERIMENT]: variant }),
+      is_bot: looksAutomated(request),
+      ...(country ? { country } : {}),
+      ...(touch ? toContext({ last_touch: touch }) : {}),
+    };
     defer(
-      events.emit(
-        'experiment_exposed',
-        { experiment: EXPERIMENT, variant },
-        {
-          anonymous_id: visitor.id,
-          page_path: '/',
-          experiments: formatAssignments({ [EXPERIMENT]: variant }),
-          is_bot: looksAutomated(request),
-          ...(country ? { country } : {}),
-        },
-      ),
+      (async () => {
+        // One address in a loop must not spend the destination's quota. The check runs
+        // after the response is on its way, so it costs the visitor nothing.
+        if (limiter) {
+          const { success } = await limiter.limit({ key: `exposure:${clientKey(request)}` });
+          if (!success) return;
+        }
+        await events.emit('experiment_exposed', { experiment: EXPERIMENT, variant }, exposure);
+      })().catch(() => undefined),
     );
   }
   return new Response(document.body, { status: document.status, headers });

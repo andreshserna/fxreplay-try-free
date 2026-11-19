@@ -350,3 +350,22 @@ project or is costly to reverse also has an ADR in this folder.
   - The performance review said three things the audit could not confirm on the
     deployment (the 304, the reason for the font preload, why CLS is low on Android).
     Corrected to what was measured.
+- **Changes from the code review of the measurement and signup work** (`code-reviewer`, on an
+  export of the commit, with its own build and browser):
+  - An email typed before the form's script has loaded is kept. The script used to write
+    its empty state over the field, and the hero form, the arm under test, is the one a
+    visitor can reach that early. A browser test holds the scripts back to prove it.
+  - The plain form's idempotency key is signed with the server's secret and has a shape the
+    API's header cannot present. As a plain digest of the visitor id and the email it could
+    be computed and replayed for a session cookie.
+  - The plain form refuses another site's Origin and any body that is not a form, in its
+    own code and with a test. Before, only a framework default stood there.
+  - An exposure is a GET for a document, not a HEAD, a prefetch or an image tag on another
+    site, and one address cannot mint them without a ceiling. More automated agents are
+    flagged, including a request that names none.
+  - The exposure and a plain-form signup carry the campaign from the address the server
+    saw, so internal traffic can be excluded without the browser's events.
+  - The tracker has one transport, `fetch` with `keepalive` and no referrer. The beacon it
+    used on page hide could not drop the referrer.
+  - Assignment is pinned by a test: four ids and their arms. A change to the hash would
+    have moved every running visitor with all tests passing.

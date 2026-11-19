@@ -120,6 +120,19 @@ describe('runtime validation', () => {
 describe('experiment assignment', () => {
   const ids = Array.from({ length: 20000 }, (_, index) => `visitor-${index}`);
 
+  it('keeps a visitor in their arm across releases: these ids are pinned', () => {
+    // Changing the hash or its input moves every running visitor to a coin flip. If this
+    // fails, the experiment's data up to that release is no longer comparable.
+    expect(
+      [
+        'visitor-a',
+        'visitor-c',
+        '00000000-0000-4000-8000-000000000001',
+        '5f1c2a9e-3b7d-4c11-9a52-0d8e6f4b2c10',
+      ].map((id) => assign('hero_signup', id)),
+    ).toEqual(['cta_button', 'inline_email', 'cta_button', 'inline_email']);
+  });
+
   it('always gives the same visitor the same variant', () => {
     for (const id of ids.slice(0, 200)) {
       expect(assign('hero_signup', id)).toBe(assign('hero_signup', id));

@@ -303,3 +303,37 @@ test.describe('what the tracker records', () => {
     await expect.poll(() => received.join()).toContain('"reason":"offline"');
   });
 });
+
+test.describe('before the script takes over', () => {
+  test('an email typed while the script is still loading is kept, and signs up', async ({
+    page,
+    baseURL,
+  }) => {
+    const sent = recordEvents(page);
+    let release = (): void => undefined;
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/_astro/*.js', async (route) => {
+      await held;
+      await route.continue();
+    });
+    // The load event waits for the scripts held above, so the test does not wait for it.
+    await openAs(page, baseURL, 'inline_email', { scripted: false, waitUntil: 'commit' });
+
+    const field = page.getByLabel('Email', { exact: true }).first();
+    const email = uniqueEmail();
+    await field.fill(email);
+    release();
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
+
+    await expect(field).toHaveValue(email);
+    await field.press('Enter');
+    await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
+    await flushEvents(page);
+    expect(sent.events.map((event) => event.name)).toEqual(
+      expect.arrayContaining(['signup_started', 'signup_submitted']),
+    );
+    expect(sent.events.some((event) => event.name === 'signup_failed')).toBe(false);
+  });
+});

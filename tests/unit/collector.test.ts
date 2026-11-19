@@ -38,11 +38,19 @@ beforeEach(() => {
   collector = new Collector({ sink, now: () => NOW });
 });
 
+const BROWSER =
+  'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36';
+
 async function send(body: unknown, headers: Record<string, string> = {}) {
   const response = await collector.collect(
     new Request(`${ORIGIN}/api/events`, {
       method: 'POST',
-      headers: { Origin: ORIGIN, Cookie: `${VISITOR_COOKIE}=visitor-1`, ...headers },
+      headers: {
+        Origin: ORIGIN,
+        Cookie: `${VISITOR_COOKIE}=visitor-1`,
+        'User-Agent': BROWSER,
+        ...headers,
+      },
       body: typeof body === 'string' ? body : JSON.stringify(body),
     }),
     (work) => deferred.push(work),
@@ -245,5 +253,29 @@ describe('the PostHog sink', () => {
     await expect(sinkToPostHog.send([analyticsEvent])).rejects.toThrow('503');
     await sinkToPostHog.send([]);
     expect(requests).toHaveLength(2);
+  });
+
+  it('takes the country from the edge, never from the body, and flags a request with no agent', async () => {
+    await send({ context: { ...shared, country: 'zz' }, events: [event('landing_viewed')] });
+    expect(sink.events[0]?.context.country).toBeUndefined();
+    await send({ context: shared, events: [event('landing_viewed')] }, { 'User-Agent': '' });
+    expect(sink.events[1]?.context.is_bot).toBe(true);
+  });
+
+  it('refuses a timestamp from the future, beyond a clock that is a little fast', async () => {
+    const at = (ms: number) => new Date(NOW.getTime() + ms).toISOString();
+    const response = await send({
+      context: shared,
+      events: [
+        { ...event('landing_viewed'), occurred_at: at(4 * 60 * 1000) },
+        { ...event('landing_viewed'), occurred_at: at(6 * 60 * 1000) },
+      ],
+    });
+    expect(await response.json()).toEqual({ accepted: 2, rejected: 0 });
+    // The first keeps its time. The second gets the server's.
+    expect(sink.events.map((item) => item.context.occurred_at)).toEqual([
+      at(4 * 60 * 1000),
+      NOW.toISOString(),
+    ]);
   });
 });

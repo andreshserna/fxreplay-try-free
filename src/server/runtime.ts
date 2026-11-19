@@ -55,10 +55,19 @@ export function collector(): Collector {
 
 /** "/": the visitor's arm of the page, straight from the asset store. */
 export const landingPage = (request: Request, defer: Defer): Promise<Response> =>
-  serveLanding(request, { assets: env.ASSETS, events: serverEvents() }, defer);
+  serveLanding(
+    request,
+    { assets: env.ASSETS, events: serverEvents(), limiter: env.EVENTS_LIMITER },
+    defer,
+  );
 
 /** Lets work outlive the response: analytics is sent after the visitor has their answer. */
 export const deferOn =
   (locals: App.Locals): Defer =>
-  (work) =>
-    locals.cfContext.waitUntil(work);
+  (work) => {
+    try {
+      locals.cfContext.waitUntil(work);
+    } catch {
+      // The work still runs. Analytics never turn an answer into an error.
+    }
+  };

@@ -27,7 +27,7 @@ export interface TrackerDeps {
   page: { url: URL; referrer: string; viewportWidth: number; experiments: string | undefined };
   sessionStorage: StorageLike;
   localStorage: StorageLike;
-  send(body: string, urgent: boolean): void;
+  send(body: string): void;
   now(): Date;
   randomId(): string;
   setTimer(callback: () => void, ms: number): unknown;
@@ -45,7 +45,7 @@ export type TrackArgs<Name extends ClientEventName> = keyof EventProperties<Name
 
 export interface Tracker {
   track<Name extends ClientEventName>(name: Name, ...args: TrackArgs<Name>): void;
-  flush(urgent?: boolean): void;
+  flush(): void;
   attribution(): Attribution;
 }
 
@@ -139,7 +139,7 @@ export function createTracker(deps: TrackerDeps): Tracker {
     return id;
   }
 
-  function flush(urgent = false): void {
+  function flush(): void {
     try {
       if (timer !== undefined) {
         const handle = timer;
@@ -149,7 +149,7 @@ export function createTracker(deps: TrackerDeps): Tracker {
       if (queue.length === 0 || !shared) return;
       const body = JSON.stringify({ context: { ...shared, session_id: sessionId }, events: queue });
       queue = [];
-      deps.send(body, urgent);
+      deps.send(body);
     } catch {
       // The batch is lost. The page carries on.
     }
@@ -233,12 +233,8 @@ function resend(): void {
   for (const body of undelivered.splice(0)) post(body);
 }
 
-function sendToCollector(body: string, urgent: boolean): void {
-  try {
-    if (urgent && navigator.sendBeacon(ENDPOINT, body)) return;
-  } catch {
-    // Fall through to fetch.
-  }
+/** One transport for every batch: `keepalive` lets it finish after the page is gone. */
+function sendToCollector(body: string): void {
   resend();
   post(body);
 }
@@ -291,9 +287,9 @@ function browserTracker(): Tracker | undefined {
   });
   instance = tracker;
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') tracker.flush(true);
+    if (document.visibilityState === 'hidden') tracker.flush();
   });
-  window.addEventListener('pagehide', () => tracker.flush(true));
+  window.addEventListener('pagehide', () => tracker.flush());
   window.addEventListener('online', resend);
   return tracker;
 }
@@ -302,15 +298,6 @@ function browserTracker(): Tracker | undefined {
 export function track<Name extends ClientEventName>(name: Name, ...args: TrackArgs<Name>): void {
   try {
     browserTracker()?.track(name, ...args);
-  } catch {
-    // Analytics never break the page.
-  }
-}
-
-/** Sends what is queued now. `urgent` uses a beacon, for a page that is going away. */
-export function flush(urgent = false): void {
-  try {
-    browserTracker()?.flush(urgent);
   } catch {
     // Analytics never break the page.
   }

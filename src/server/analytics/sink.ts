@@ -74,6 +74,8 @@ export class PostHogSink implements EventSink {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ api_key: this.#options.key, batch: events.map(toPostHog) }),
+      // A destination that hangs is an error with a log line, not work cut off in silence.
+      signal: AbortSignal.timeout(5000),
     });
     if (!response.ok) throw new Error(`PostHog answered ${response.status}`);
   }

@@ -3,7 +3,7 @@
  * Astro or Cloudflare, so the whole contract (docs/api.md) is testable with a fake clock,
  * an in-memory repository and no network.
  */
-import { toContext } from '../../lib/analytics/attribution';
+import { readTouch, toContext, type Touch } from '../../lib/analytics/attribution';
 import type { FieldError, Problem, ProblemCode } from '../../lib/api/problems';
 import {
   parseCreateUser,
@@ -21,13 +21,20 @@ import {
   requestContext,
   type RequestContext,
 } from '../http/respond';
-import { looksAutomated, readVisitor, requestCountry, visitorCookie } from '../http/visitor';
+import {
+  looksAutomated,
+  readVisitor,
+  requestCountry,
+  visitorCookie,
+  type Visitor,
+} from '../http/visitor';
 import { newUserId } from '../ids';
 import {
   readCookie,
   SESSION_COOKIE,
   SESSION_TTL_SECONDS,
   sessionCookie,
+  sign,
   signSession,
   verifySession,
 } from '../http/session';
@@ -36,6 +43,7 @@ import { decodeCursor, LIST_DEFAULT_LIMIT, LIST_MAX_LIMIT, type UsersService } f
 
 const MAX_BODY_BYTES = 8 * 1024;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9_-]{16,64}$/;
+const FORM_CONTENT_TYPE = 'application/x-www-form-urlencoded';
 const RETRY_AFTER_RATE_LIMIT = '60';
 const RETRY_AFTER_UNAVAILABLE = '5';
 
@@ -149,7 +157,18 @@ export class UsersApi {
       for (const cookie of cookies) headers.append('Set-Cookie', cookie);
       return new Response(null, { status: 303, headers });
     };
-    return this.#handle(request, async () => {
+    return this.#handle(request, async (context) => {
+      // A form on another site must not create an account here in the visitor's name.
+      // Browsers send Origin on every cross-site POST. The framework refuses these too,
+      // before this code runs: this is the rule stated where it can be read and tested.
+      const origin = request.headers.get('Origin');
+      if (origin !== null && origin !== context.url.origin) {
+        return this.#problem(context, 'forbidden');
+      }
+      const contentType = request.headers.get('Content-Type') ?? '';
+      if (contentType.split(';')[0]?.trim().toLowerCase() !== FORM_CONTENT_TYPE) {
+        return redirect('invalid');
+      }
       if (!(await this.#allowed(this.#options.limiters?.create, clientKey(request)))) {
         return redirect('try-again');
       }
@@ -171,16 +190,20 @@ export class UsersApi {
 
       // A form has no idempotency header. The key is derived from who is asking and for
       // what, so a refresh or a second press repeats the same request instead of a new one.
+      // It is signed with the server's secret and carries a colon, which the header's
+      // pattern does not allow: nobody can compute it, and nobody can present it to the API.
+      // Without the visitor cookie there is no "who", and a repeat is a new request.
       const visitor = readVisitor(request);
-      const digest = await crypto.subtle.digest(
-        'SHA-256',
-        encoder.encode(`form:${visitor.id}:${input.email}`),
-      );
-      const key = Array.from(new Uint8Array(digest).slice(0, 16), (byte) =>
-        byte.toString(16).padStart(2, '0'),
-      ).join('');
+      const key = `form:${await sign(this.#options.sessionSecret, `form:${visitor.id}:${input.email}`)}`;
 
-      const result = await this.#register(request, input, `form_${key}`, defer);
+      // The form cannot send what the page's script would. The campaign is in the address
+      // of the page it was posted from, so the account still records where it came from.
+      const touch = touchOf(request, context.url, this.#now());
+      const attributed = touch
+        ? { ...input, attribution: { first_touch: touch, last_touch: touch } }
+        : input;
+
+      const result = await this.#register(request, attributed, key, defer, visitor);
       if (result.kind === 'email_taken') return redirect('email-taken');
       if (result.kind === 'key_reused') return redirect('try-again');
       return redirect('done', result.cookies);
@@ -193,6 +216,7 @@ export class UsersApi {
     input: CreateUserInput,
     idempotencyKey: string,
     defer: Defer,
+    visitor: Visitor = readVisitor(request),
   ): Promise<
     | { kind: 'email_taken' }
     | { kind: 'key_reused' }
@@ -200,7 +224,6 @@ export class UsersApi {
   > {
     // The visitor and the experiment arms come from the server's own cookie, never from
     // the body, so they cannot be forged or forgotten by a client.
-    const visitor = readVisitor(request);
     const result = await this.#options.service.create(input, idempotencyKey, {
       anonymous_id: visitor.id,
       experiments: assignAll(visitor.id),
@@ -395,6 +418,16 @@ export class UsersApi {
  * The analytics context of a server event about this user: the visitor as stored with
  * the user at signup, so the profile event joins the same visitor as the conversion.
  */
+/** The campaign touch in the address of the page a form was posted from, if it is ours. */
+function touchOf(request: Request, own: URL, now: Date): Touch | null {
+  try {
+    const page = new URL(request.headers.get('Referer') ?? '');
+    return page.origin === own.origin ? readTouch(page, '', now) : null;
+  } catch {
+    return null;
+  }
+}
+
 function visitorContext(request: Request, user: UserRecord): VisitorContext {
   const country = requestCountry(request);
   return {

@@ -230,4 +230,33 @@ describe('Users API over HTTP', () => {
 
     expect((await create(uniqueEmail(), key())).status).toBe(201);
   });
+
+  it('refuses a signup form posted from another site, and creates nothing', async () => {
+    const email = uniqueEmail();
+    const form = (headers: Record<string, string>) =>
+      fetch(`${BASE_URL}/signup`, {
+        method: 'POST',
+        redirect: 'manual',
+        headers: { 'CF-Connecting-IP': address(), ...headers },
+        body: new URLSearchParams({ email }).toString(),
+      });
+
+    const crossSite = await form({
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Origin: 'https://evil.example',
+    });
+    expect(crossSite.status).toBe(403);
+    expect(crossSite.headers.get('Set-Cookie')).toBeNull();
+
+    // A type a browser form cannot send without a preflight is not a form.
+    const asJson = await form({
+      'Content-Type': 'application/json',
+      Origin: 'https://evil.example',
+    });
+    expect(asJson.headers.get('Set-Cookie')).toBeNull();
+    expect(asJson.headers.get('Location') ?? '').not.toContain('/signup/done/');
+
+    // Nothing was stored: the address is still free.
+    expect((await create(email, key())).status).toBe(201);
+  });
 });

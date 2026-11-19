@@ -36,10 +36,16 @@ beforeEach(() => {
   deferred = [];
 });
 
-async function visit(headers: Record<string, string> = {}) {
+const BROWSER =
+  'Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 Chrome/131.0 Mobile Safari/537.36';
+
+async function visit(
+  headers: Record<string, string> = {},
+  { method = 'GET', query = '', options = {} as Partial<Parameters<typeof serveLanding>[1]> } = {},
+) {
   const response = await serveLanding(
-    new Request(`${ORIGIN}/?utm_source=instagram`, { headers }),
-    { assets, events },
+    new Request(`${ORIGIN}/${query}`, { method, headers: { 'User-Agent': BROWSER, ...headers } }),
+    { assets, events, ...options },
     (work) => deferred.push(work),
   );
   await Promise.all(deferred);
@@ -63,6 +69,8 @@ describe('the landing page at the edge', () => {
     const cookie = response.headers.get('Set-Cookie') ?? '';
     const id = /fxr_aid=([^;]+)/.exec(cookie)?.[1] ?? '';
     expect(cookie).toContain('HttpOnly');
+    expect(cookie).toContain('SameSite=Lax');
+    expect(cookie).toContain('Secure');
     expect(await response.text()).toContain(`/variants/${assign('hero_signup', id)}/`);
     expect((await visit({ Cookie: `${VISITOR_COOKIE}=${id}` })).headers.has('Set-Cookie')).toBe(
       false,
@@ -101,11 +109,68 @@ describe('the landing page at the edge', () => {
     expect(sink.events).toHaveLength(2);
   });
 
-  it('does not count a prefetch as an exposure, and flags automated agents', async () => {
+  it('counts only a document on its way to a person', async () => {
     await visit({ 'Sec-Purpose': 'prefetch;prerender' });
+    await visit({}, { method: 'HEAD' });
+    // An image tag on another site, pointed at the page.
+    await visit({ 'Sec-Fetch-Dest': 'image', 'Sec-Fetch-Site': 'cross-site' });
     expect(sink.events).toHaveLength(0);
-    await visit({ 'User-Agent': 'Mozilla/5.0 (compatible; bingbot/2.0)' });
-    expect(sink.events[0]?.context.is_bot).toBe(true);
+
+    await visit({ 'Sec-Fetch-Dest': 'document' });
+    expect(sink.events).toHaveLength(1);
+  });
+
+  it('counts nothing for a page the asset store could not serve', async () => {
+    const missing: Assets = { fetch: () => Promise.resolve(new Response(null, { status: 404 })) };
+    const response = await visit({}, { options: { assets: missing } });
+    expect(response.status).toBe(404);
+    expect(sink.events).toHaveLength(0);
+  });
+
+  it('flags automated agents: crawlers, link previews, and no agent at all', async () => {
+    for (const agent of [
+      'Mozilla/5.0 (compatible; bingbot/2.0)',
+      'facebookexternalhit/1.1',
+      'WhatsApp/2.23',
+      'python-requests/2.32',
+      '',
+    ]) {
+      await visit({ 'User-Agent': agent });
+    }
+    expect(sink.events.map((event) => event.context.is_bot)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
+  });
+
+  it('puts the campaign of the address on the exposure, so it stands without the browser', async () => {
+    await visit({}, { query: '?utm_source=instagram&utm_medium=paid_social&aff=internal' });
+    expect(sink.events[0]?.context).toMatchObject({
+      last_source: 'instagram',
+      last_medium: 'paid_social',
+      aff: 'internal',
+    });
+    expect(sink.events[0]?.context).not.toHaveProperty('first_source');
+
+    await visit();
+    expect(sink.events[1]?.context).not.toHaveProperty('last_source');
+  });
+
+  it('stops counting exposures from one address past the ceiling, and still serves the page', async () => {
+    const keys: string[] = [];
+    const limiter = {
+      limit: ({ key }: { key: string }) => {
+        keys.push(key);
+        return Promise.resolve({ success: false });
+      },
+    };
+    const response = await visit({ 'CF-Connecting-IP': '203.0.113.9' }, { options: { limiter } });
+    expect(response.status).toBe(200);
+    expect(keys).toEqual(['exposure:203.0.113.9']);
+    expect(sink.events).toHaveLength(0);
   });
 
   it('still serves the page when the analytics destination fails', async () => {

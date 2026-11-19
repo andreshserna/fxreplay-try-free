@@ -702,6 +702,67 @@ describe('POST /signup (the plain form)', () => {
     expect(landedOn(await submit({ email: 'eve@example.com' }))).toBe('/signup/try-again/');
   });
 
+  it('refuses a form posted from another site, and anything that is not a form', async () => {
+    const crossSite = await submit(
+      { email: 'ada@example.com' },
+      { Origin: 'https://evil.example' },
+    );
+    await expectProblem(crossSite, 403, 'forbidden');
+    expect(crossSite.headers.getSetCookie()).toEqual([]);
+
+    const asJson = await submit(
+      { email: 'ada@example.com' },
+      { 'Content-Type': 'application/json' },
+    );
+    expect(landedOn(asJson)).toBe('/signup/invalid/');
+    expect(((await (await list()).json()) as ListResult).data).toHaveLength(0);
+    expect(sink.events).toHaveLength(0);
+  });
+
+  it('derives a key nobody else can compute or present to the API', async () => {
+    await submit({ email: 'ada@example.com' }, visitor);
+    // What the key would be if it were a plain digest of public values.
+    const digest = await crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode('form:visitor-1:ada@example.com'),
+    );
+    const guess = Array.from(new Uint8Array(digest).slice(0, 16), (byte) =>
+      byte.toString(16).padStart(2, '0'),
+    ).join('');
+    const replay = await post({ email: 'ada@example.com' }, { 'Idempotency-Key': `form_${guess}` });
+    await expectProblem(replay, 409, 'email_taken');
+    expect(replay.headers.getSetCookie()).toEqual([]);
+  });
+
+  it('cannot repeat without the visitor cookie: the second press finds the account', async () => {
+    await submit({ email: 'ada@example.com' });
+    expect(landedOn(await submit({ email: 'ada@example.com' }))).toBe('/signup/email-taken/');
+    expect(sink.events).toHaveLength(1);
+  });
+
+  it('records the campaign from the address of the page the form was posted from', async () => {
+    await submit(
+      { email: 'ada@example.com' },
+      {
+        ...visitor,
+        Referer: `${ORIGIN}/?utm_source=instagram&utm_medium=paid_social&aff=internal`,
+      },
+    );
+    await submit(
+      { email: 'bob@example.com' },
+      { Referer: 'https://elsewhere.example/?utm_source=forged' },
+    );
+    const users = ((await (await list()).json()) as ListResult).data;
+    const byEmail = (email: string) => users.find((user) => user.email === email);
+    expect(byEmail('ada@example.com')?.attribution?.first_touch).toMatchObject({
+      source: 'instagram',
+      medium: 'paid_social',
+      aff: 'internal',
+    });
+    expect(byEmail('bob@example.com')?.attribution).toBeNull();
+    expect(sink.events[0]?.context).toMatchObject({ last_source: 'instagram', aff: 'internal' });
+  });
+
   it('answers a filled honeypot like a success and stores nothing', async () => {
     const response = await submit({ email: 'bot@example.com', website: 'https://spam.example' });
     expect(landedOn(response)).toBe('/signup/done/');

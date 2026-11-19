@@ -56,7 +56,7 @@ function setup(
     deps?: Partial<TrackerDeps>;
   } = {},
 ) {
-  const raw: { body: string; urgent: boolean }[] = [];
+  const raw: { body: string }[] = [];
   const sessionStorage = memoryStorage();
   const localStorage = memoryStorage();
   const deps: TrackerDeps = {
@@ -68,7 +68,7 @@ function setup(
     },
     sessionStorage,
     localStorage,
-    send: (body, urgent) => void raw.push({ body, urgent }),
+    send: (body) => void raw.push({ body }),
     now: () => new Date(),
     randomId: () => `id-${(ids += 1)}`,
     setTimer: (callback, ms) => setTimeout(callback, ms),
@@ -142,16 +142,15 @@ describe('the tracker', () => {
     expect(batches()).toHaveLength(1);
   });
 
-  it('sends nothing when flushed with an empty queue, and passes urgency to the transport', () => {
+  it('sends nothing when flushed with an empty queue, and a batch only once', () => {
     const { tracker, raw } = setup();
     tracker.flush();
-    tracker.flush(true);
     expect(raw).toHaveLength(0);
 
     tracker.track('landing_viewed');
-    tracker.flush(true);
-    tracker.flush(true);
-    expect(raw.map(({ urgent }) => urgent)).toEqual([true]);
+    tracker.flush();
+    tracker.flush();
+    expect(raw).toHaveLength(1);
   });
 
   it.each([
@@ -314,7 +313,7 @@ describe('the tracker', () => {
       },
     });
     expect(() => tracker.track('landing_viewed')).not.toThrow();
-    expect(() => tracker.flush(true)).not.toThrow();
+    expect(() => tracker.flush()).not.toThrow();
     expect(tracker.attribution()).toEqual({});
   });
 
@@ -384,7 +383,12 @@ describe('the tracker and the collector', () => {
     const response = await collector.collect(
       new Request(`${SITE}/api/events`, {
         method: 'POST',
-        headers: { Origin: SITE, Cookie: `${VISITOR_COOKIE}=visitor-1` },
+        headers: {
+          Origin: SITE,
+          Cookie: `${VISITOR_COOKIE}=visitor-1`,
+          'User-Agent':
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36',
+        },
         body: raw[0]?.body ?? '',
       }),
       (work) => deferred.push(work),

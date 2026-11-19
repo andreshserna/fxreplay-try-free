@@ -79,6 +79,23 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
   const formName = location === 'hero' ? 'Sign up' : 'Sign up, at the end of the page';
   const previous = useRef(state);
 
+  const noteStarted = () => {
+    if (started) return;
+    started = true;
+    track('signup_started', { form_location: location });
+  };
+
+  // The form is usable before this script runs. What the visitor typed by then is in the
+  // field and not in the state, and the first render after it would write the empty state
+  // back over it. Take it in.
+  useEffect(() => {
+    const typed = input.current?.value;
+    if (!typed) return;
+    noteStarted();
+    dispatch({ type: 'typed', email: typed });
+    // Once, when the script takes over the form.
+  }, []);
+
   // Side effects of a transition: the request, the analytics events, and focus.
   useEffect(() => {
     const before = previous.current;
@@ -200,10 +217,7 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
           aria-invalid={fieldTrouble || undefined}
           aria-describedby={trouble ? errorId : undefined}
           onChange={(event) => {
-            if (!started) {
-              started = true;
-              track('signup_started', { form_location: location });
-            }
+            noteStarted();
             dispatch({ type: 'typed', email: event.currentTarget.value });
           }}
           onBlur={() => dispatch({ type: 'blurred', error: emailError(state.email) })}

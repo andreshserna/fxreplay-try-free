@@ -28,14 +28,19 @@ const hmacKey = (secret: string): Promise<CryptoKey> =>
     'verify',
   ]);
 
+/** The HMAC-SHA256 of a message under the server's secret, in base64url. */
+export async function sign(secret: string, message: string): Promise<string> {
+  const mac = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(message));
+  return toBase64Url(mac);
+}
+
 export async function signSession(
   secret: string,
   userId: string,
   expiresAt: number,
 ): Promise<string> {
   const payload = `${userId}.${expiresAt}`;
-  const mac = await crypto.subtle.sign('HMAC', await hmacKey(secret), encoder.encode(payload));
-  return `${payload}.${toBase64Url(mac)}`;
+  return `${payload}.${await sign(secret, payload)}`;
 }
 
 /** Returns the user id the session was issued for, or null if it is forged or expired. */

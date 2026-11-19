@@ -27,11 +27,29 @@ export function readVisitor(request: Request): Visitor {
 export const visitorCookie = (id: string): string =>
   `${VISITOR_COOKIE}=${id}; Path=/; Max-Age=${ONE_YEAR_SECONDS}; HttpOnly; Secure; SameSite=Lax`;
 
-const AUTOMATED = /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|monitor|curl|wget/i;
+const AUTOMATED =
+  /bot|crawl|spider|slurp|headless|lighthouse|pagespeed|preview|monitor|curl|wget|externalhit|whatsapp|python|go-http|okhttp|axios|node-fetch|http-?client/i;
 
-/** A cheap first filter. Events from automated agents are kept and flagged, not dropped. */
-export const looksAutomated = (request: Request): boolean =>
-  AUTOMATED.test(request.headers.get('User-Agent') ?? '');
+/**
+ * A cheap first filter: link crawlers, monitors, scripts, and a request that names no
+ * agent at all. Events from automated agents are kept and flagged, not dropped.
+ */
+export const looksAutomated = (request: Request): boolean => {
+  const agent = request.headers.get('User-Agent') ?? '';
+  return agent === '' || AUTOMATED.test(agent);
+};
+
+/**
+ * Whether a request is a browser about to show the document to a person: a GET, not a
+ * prefetch, and not a fetch for something else (an image tag on another site pointed at
+ * the page). Browsers that send no fetch metadata are given the benefit of the doubt.
+ */
+export function isPageView(request: Request): boolean {
+  if (request.method !== 'GET') return false;
+  if (/prefetch|prerender/i.test(request.headers.get('Sec-Purpose') ?? '')) return false;
+  const destination = request.headers.get('Sec-Fetch-Dest');
+  return destination === null || destination === 'document';
+}
 
 /** The country Cloudflare resolved for the request, as a lowercase label. */
 export function requestCountry(request: Request): string | undefined {

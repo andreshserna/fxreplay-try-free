@@ -53,7 +53,7 @@ export class Collector {
       if (!success) return problemResponse(context, 'rate_limited', { 'Retry-After': '60' });
     }
 
-    // navigator.sendBeacon posts text/plain unless told otherwise. Both are accepted.
+    // The body is read as text whatever its declared type, and must parse as JSON.
     const text = await readBodyText(request, MAX_BODY_BYTES);
     if (!text.ok) return problemResponse(context, 'payload_too_large');
     let body: unknown;
