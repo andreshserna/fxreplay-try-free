@@ -188,3 +188,19 @@ project or is costly to reverse also has an ADR in this folder.
 - **The first experiment is `hero_signup`:** a button that leads to the form (what their site
   does today) against an email field in the hero (this page's bet).
   [ADR 0015](0015-first-experiment-hero-signup.md).
+- **Each arm of the page is a prerendered document, and "/" picks one at the edge.** The
+  Worker hashes the visitor's id, streams that arm from the asset store and records the
+  exposure. No rendering per request, so the free plan's CPU limit is never in play, and no
+  flicker, because the browser only ever receives one arm. The price: the document is
+  `private, no-cache`, so it is revalidated instead of served from a shared cache.
+- **The visitor id is an `HttpOnly` cookie set and read by the server.** Scripts never see it.
+  The collector, the signup and the landing page attach it themselves, so the signup body no
+  longer carries a visitor id or experiment arms, and neither can be forged.
+- **Assignment stores nothing.** The arm is a hash of the visitor id and the experiment key,
+  so it is the same at the edge, in the API and in a test, and experiments are independent
+  of each other.
+- **The registry has no free-text type.** A property is an enum, a number, a boolean or a
+  narrow string shape that an email address cannot fit, so "no PII in analytics" is enforced
+  by the type system and again by the collector.
+- **Automated traffic is flagged, not dropped.** Events from agents that look automated carry
+  `is_bot`, so the filter is a choice made in analysis and can be audited.

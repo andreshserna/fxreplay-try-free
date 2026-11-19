@@ -1,9 +1,24 @@
 ---
-import wordmark from '../assets/brand/FXReplayLogo.svg';
-import Base from '../layouts/Base.astro';
+/**
+ * The landing page, prerendered once per arm of the hero experiment. Visitors never
+ * request these paths: the edge serves the right one at "/" (src/server/landing.ts).
+ */
+import type { GetStaticPaths } from 'astro';
+
+import wordmark from '../../assets/brand/FXReplayLogo.svg';
+import Base from '../../layouts/Base.astro';
+import { EXPERIMENTS, formatAssignments, type VariantOf } from '../../lib/experiments/registry';
+
+export const getStaticPaths = (() =>
+  EXPERIMENTS.hero_signup.variants.map((variant) => ({
+    params: { variant },
+  }))) satisfies GetStaticPaths;
+
+const variant = Astro.params.variant as VariantOf<'hero_signup'>;
 ---
 
 <Base
+  experiments={formatAssignments({ hero_signup: variant })}
   title="Try FX Replay Free (candidate demo)"
   description="A candidate challenge demo of a Try FX Replay Free landing page. Not the official FX Replay site."
 >

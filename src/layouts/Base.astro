@@ -5,9 +5,13 @@ import '../styles/global.css';
 interface Props {
   title: string;
   description: string;
+  /** The experiment arms this document was rendered for, as the analytics context carries them. */
+  experiments?: string;
 }
 
-const { title, description } = Astro.props;
+const { title, description, experiments } = Astro.props;
+// Every arm is the same page to a search engine: the one at the site root.
+const canonical = new URL('/', Astro.site);
 
 // The demo carries someone else's brand, so it stays out of search unless
 // indexing is switched on at build time (ADR 0009).
@@ -15,12 +19,13 @@ const allowIndexing = import.meta.env.ALLOW_INDEXING === 'true';
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en" data-experiments={experiments}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     {!allowIndexing && <meta name="robots" content="noindex, nofollow" />}
     {/* Only the headline face is preloaded: it paints the largest text on the page. */}
     <Font cssVariable="--font-display" preload={[{ weight: 900 }]} />

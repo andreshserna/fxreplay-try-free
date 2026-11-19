@@ -8,6 +8,7 @@ import { RELEASE } from '../lib/release';
 import { Collector } from './analytics/collector';
 import { ServerEvents, type Defer, type Log } from './analytics/emitter';
 import { discardSink, PostHogSink, type EventSink } from './analytics/sink';
+import { serveLanding } from './landing';
 import { UsersApi } from './users/api';
 import { D1UsersRepository } from './users/d1-repository';
 import { UsersService } from './users/service';
@@ -51,6 +52,10 @@ export function collector(): Collector {
   eventCollector ??= new Collector({ sink, limiter: env.EVENTS_LIMITER, log });
   return eventCollector;
 }
+
+/** "/": the visitor's arm of the page, straight from the asset store. */
+export const landingPage = (request: Request, defer: Defer): Promise<Response> =>
+  serveLanding(request, { assets: env.ASSETS, events: serverEvents() }, defer);
 
 /** Lets work outlive the response: analytics is sent after the visitor has their answer. */
 export const deferOn =
