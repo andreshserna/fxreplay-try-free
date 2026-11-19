@@ -50,4 +50,5 @@ jobs:
           npm run test:api || { cat preview.log; exit 1; }
           npx playwright install --with-deps chromium
           npm run test:e2e || { cat preview.log; exit 1; }
-          npm run lighthouse
+          # Five runs: on a shared runner one slow run in three moved the median past a budget.
+          npm run lighthouse -- --runs 5

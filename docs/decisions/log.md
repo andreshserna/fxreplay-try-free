@@ -382,3 +382,6 @@ project or is costly to reverse also has an ADR in this folder.
   lands where it wants: the sample-ratio check and the bot flag are the controls. The
   framework's own refusal of cross-site form posts stays on as a second barrier, though its
   403 does not pass through the middleware.
+- **Lighthouse runs five times per arm in CI, three locally.** On a shared runner the median
+  of three total-blocking-time values missed the 150 ms budget once (173 ms) and passed on a
+  second run of the same commit (36 ms). The budget stays where it is. The sample grows.

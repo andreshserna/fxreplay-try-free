@@ -2,7 +2,12 @@
 
 Measured on 2026-11-19 with Lighthouse 13.6, mobile profile with simulated throttling, median
 of three runs per experiment arm (`npm run lighthouse`). The same command runs in CI on every
-push and fails the build when a budget is missed.
+push, with five runs, and fails the build when a budget is missed.
+
+The lab is not equally quiet everywhere. Total blocking time is 0 ms on a development
+machine and on the deployment, and between 19 and 173 ms across six runs on GitHub's shared
+runners, where one push failed the 150 ms budget and passed unchanged on a second run. The
+median of five is there to absorb one slow run, not to hide a slow page.
 
 ## Core Web Vitals
 
