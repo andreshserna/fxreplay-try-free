@@ -26,9 +26,9 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 | `npm run dev`, `build`, `preview` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it). `dev` and `preview` run `setup` first: local secrets and D1 migrations |
 | `npm run typecheck`, `lint`, `format` | `wrangler types` and `astro check`; ESLint and Prettier's check; Prettier's write |
 | `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
-| `npm run test:api` | The same contract over HTTP against a running preview: the real Worker and a real D1 |
+| `npm run test:api` | The API contract, the collector and edge assignment over HTTP against a running preview: the real Worker and a real D1 |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
-| `npm run gen` | Regenerate `tokens/*.css` and the contrast tables in `docs/brand-notes.md` (`gen:check` fails if stale) |
+| `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale) |
 | `npm run check:tokens`, `check:contrast`, `check:kit` | No color literals or primitive tokens in product code; every UI pair meets its WCAG threshold; `tokens.json` still matches the kit |
 
 Still to come: `test:e2e`, `lighthouse`. A command that does not exist yet is "not available",
@@ -40,13 +40,14 @@ never "passed".
 |---|---|
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
-| `src/pages/`, `src/layouts/`, `src/styles/` | The page, `api/users/` (thin endpoints), `problems/` (one page per error type), base styles |
-| `src/lib/api/` | The contract in code: shared schemas and the problem registry, used by both sides |
-| `src/server/` | `users/` (service, repository interface, D1 and in-memory implementations, HTTP handlers, `runtime.ts` for bindings), `http/session.ts` |
+| `src/pages/` | `index.ts` ("/" decided at the edge), `variants/` (one prerendered document per experiment arm), `api/` (thin endpoints: `users/`, `events`), `problems/` (one page per error type) |
+| `src/lib/api/` | The contract in code: shared schemas, the problem registry, the typed client |
+| `src/lib/analytics/`, `src/lib/experiments/` | The event registry, validation, attribution, the browser tracker; the experiment registry and assignment |
+| `src/server/` | `runtime.ts` (the only file that knows bindings), `landing.ts`, `users/`, `analytics/` (collector, sink, server events), `http/` (session, visitor cookie, responses) |
 | `migrations/`, `wrangler.jsonc`, `astro.config.mjs` | D1 schema; bindings; adapter, fonts and build settings |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
-| `scripts/`, `tests/` | `checks/`, `gen/`, `kit/`, `lib/`, `dev/setup.mjs`; `unit/` and `api/` tests |
-| `docs/` | `api.md`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` (assumptions and evidence) |
+| `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/` and `api/` tests |
+| `docs/` | `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
 | `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
 
 Planned, not built yet. Update this table when each lands:
@@ -54,8 +55,6 @@ Planned, not built yet. Update this table when each lands:
 | Path | What will live there |
 |---|---|
 | `src/components/` | Page sections, and the signup form: the only island that hydrates |
-| `src/lib/api/client.ts` | The typed client: timeout, safe retries, one mapping from errors to UI states |
-| `src/lib/analytics/`, `src/lib/experiments/` | Event registry and `track()`; edge assignment and exposure |
 | `tests/e2e/` | End-to-end tests of the signup states and the funnel, with axe |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.
