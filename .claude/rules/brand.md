@@ -13,18 +13,21 @@ two open questions and every extension we add are in `docs/brand-notes.md`.
 - **Colors are semantic tokens only**: `var(--bg-primary)`. Never a primitive
   (`var(--dark-900)`), never a literal (hex, `rgb()`, a named color).
   `scripts/checks/token-usage.mjs` runs after every edit and in CI.
-- `tokens/tokens.json` is the source, rebuilt from the kit with its names unchanged.
-  `tokens/tokens.css` is generated from it: edit the JSON, then run `npm run gen`.
-- **Our additions are extensions**: a field border, a link color for dark ground, a button edge,
-  the type and spacing scales. They live in their own block, follow the kit's naming, and each
-  one is listed in `docs/brand-notes.md` with its reason and the contrast before and after.
-  A color extension aliases a value the kit already has. It never introduces a new color.
+- `tokens/tokens.json` is the kit's tokens, rebuilt from the kit with its names unchanged
+  (`npm run check:kit` proves it). `tokens/tokens.css` is generated from it. Never edit a
+  generated file: change the JSON, then run `npm run gen`.
+- **Our additions are extensions**: a field border, a link color for dark ground, a focus
+  ring, the type and spacing scales. They live in their own files (`tokens/extensions.json`
+  and the generated `extensions.css`), follow the kit's naming, and each one is listed in
+  `docs/brand-notes.md` with its reason and the contrast before and after. A color extension
+  aliases a value the kit already has. It never introduces a new color.
 - Electric Blue stays the primary CTA fill and `bg-primary` stays the ground. When the only
   contrast fix would change how the brand looks, keep the brand, keep that pairing away from
   essential content, and write the recommendation in `docs/brand-notes.md`.
-- Every foreground and background pair the UI uses is registered in the contrast check:
-  4.5:1 for text, 3:1 for large text and for the boundaries of controls. A new pair is added
-  to the check in the same change that introduces it.
+- Every foreground and background pair the UI uses is registered under `ui` in
+  `tokens/contrast-pairs.json`: 4.5:1 for text, 3:1 for large text and for the boundaries of
+  controls. A new pair is added in the same change that introduces it, and `npm run gen`
+  refreshes the tables in `docs/brand-notes.md`.
 - Two families: Lato for headings, Nunito Sans for body and UI. Self-hosted, only the weights
   in use, the headline face preloaded. No third family without asking the candidate.
 - The logo files are used as shipped: no recolor, stretch or effects. The wordmark is the

@@ -23,12 +23,14 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 
 | Command | What it does |
 |---|---|
-| `npm run test:system` | Tests for the hooks and the checkers (Node's test runner, no dependencies) |
+| `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner, no dependencies) |
+| `npm run gen` | Regenerate `tokens/*.css` and the contrast tables in `docs/brand-notes.md` (`gen:check` fails if stale) |
 | `npm run check:tokens` | Token rules over `src/` and `public/`: no color literals, no primitive tokens |
+| `npm run check:contrast` | Every pair in `tokens/contrast-pairs.json` against its WCAG threshold |
+| `npm run check:kit` | `tokens/tokens.json` still matches the kit (skipped where `brief/` is absent) |
 
-Arriving in later phases, under names the skills and CI already use: `dev`, `build`, `preview`,
-`typecheck`, `lint`, `check:contrast`, `gen`, `gen:check`, `test`, `test:e2e`, `lighthouse`.
-A command that does not exist yet is "not available", never "passed".
+Arriving with the Phase 2 scaffold: `dev`, `build`, `preview`, `typecheck`, `lint`, `test`,
+`test:e2e`, `lighthouse`. A command that does not exist yet is "not available", never "passed".
 
 ## Map
 
@@ -36,7 +38,8 @@ A command that does not exist yet is "not available", never "passed".
 |---|---|
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
-| `scripts/checks/` | Machine checks shared by the edit hook and CI |
+| `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
+| `scripts/` | `checks/` (shared by the edit hook and CI), `gen/`, `kit/` (rebuild and verify against the kit), `lib/` |
 | `docs/decisions/` | `log.md` (every decision, one line each) and the ADRs (the important ones) |
 | `docs/research/` | Evidence: `assumptions.md` (what must be verified), `brief.md` (what was found, with sources) |
 | `brief/`, `notes/` | Inputs and private review notes. Gitignored. `brief/` is read-only |
@@ -45,7 +48,6 @@ Planned, not built yet. Update this table when each lands:
 
 | Path | What will live there |
 |---|---|
-| `tokens/` | `tokens.json` (the source, rebuilt from the kit), the generated `tokens.css`, our extensions kept apart |
 | `src/pages/` | The landing page and the Users API endpoints under `api/` |
 | `src/components/` | Page sections, and the signup form: the only island that hydrates |
 | `src/lib/api/` | The contract: shared schemas, the typed client, the error mapping |

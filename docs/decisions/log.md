@@ -62,3 +62,33 @@ project or is costly to reverse also has an ADR in this folder.
   to the Astro and Claude Code docs. Always asked: `gh repo` commands and force pushes.
   Denied: reading env files. `npm install <package>` is deliberately not pre-approved, so
   every new dependency is seen.
+
+## Phase 1: ground (started 2026-11-18)
+
+- **`tokens/tokens.json` is rebuilt from the kit page by a script,** in the W3C design-tokens
+  shape with hex strings, which is how the kit's README describes the file. The same script
+  proves the committed file still matches the kit (`npm run check:kit`): 44 primitives, 60
+  semantic tokens, every name unchanged.
+- **One naming rule for CSS names:** the token's own name, lowercased, spaces to hyphens. The
+  three brand primitives therefore become `--electric-blue`, `--black` and `--accent`. Their
+  real names cannot be known without the kit's `tokens.css`; asked in the brand notes.
+- **The kit's tokens and our extensions are separate files,** not blocks in one file.
+  `tokens/tokens.css` is then exactly the file the kit's README describes and could be
+  handed back to its authors.
+- **`btn-bg-primary-disabled` aliases `dark-950`,** the value the kit page falls back to,
+  because its real target (`blue-950`) is undefined and the stylesheet has to be valid. The
+  token is never rendered. The brand notes propose repointing it to `dark-500`.
+- **Browser target: Baseline "widely available".** It settles the kit's second open question:
+  `color-mix()` has been widely available since 2025-11-09 (webstatus.dev), so
+  `card-bg-translucent` is emitted with no fallback.
+- **Five color extensions:** `border-field`, `border-field-error`, `border-focus`,
+  `text-link`, `card-text-link`. Each is the smallest move inside the kit's palette that
+  reaches WCAG AA where the kit's own pairing does not, and each is named in the kit's
+  convention.
+- **The hover and pressed edge for the primary button is not a token yet.** It changes how
+  the brand's main control looks, so it is chosen from two rendered versions first.
+- **Contrast pairs live in `tokens/contrast-pairs.json`.** `ui` pairs are enforced and may
+  name only semantic or extension tokens. `kit` pairs are an audit and never fail the build.
+  The tables in `docs/brand-notes.md` are generated from the same file.
+- **Ratios are compared unrounded and shown truncated to two decimals,** so a displayed value
+  never overstates the real one.
