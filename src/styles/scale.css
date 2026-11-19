@@ -1,0 +1,36 @@
+/*
+ * Our own scales. The brand kit defines color and two type families and leaves sizing
+ * open "by design", so these are this project's tokens, kept apart from the kit's
+ * (tokens/) and named so they cannot be mistaken for them. Reasons: docs/brand-notes.md.
+ */
+:root {
+  /* Type: fluid between a 360px and a 1440px viewport. No breakpoints, no jumps. */
+  --step--1: clamp(0.8125rem, 0.79rem + 0.11vw, 0.875rem);
+  --step-0: clamp(1rem, 0.96rem + 0.19vw, 1.125rem);
+  --step-1: clamp(1.125rem, 1.04rem + 0.37vw, 1.375rem);
+  --step-2: clamp(1.375rem, 1.2rem + 0.74vw, 1.875rem);
+  --step-3: clamp(1.75rem, 1.4rem + 1.5vw, 2.75rem);
+  --step-4: clamp(2.375rem, 1.5rem + 3.9vw, 4.5rem);
+
+  /* Space: one scale for every gap and padding. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+  --space-9: 6rem;
+
+  /* Shape: the kit page uses 9 to 12px corners and 1px borders. */
+  --radius-control: 0.625rem;
+  --radius-surface: 0.75rem;
+
+  /* Layout. */
+  --gutter: clamp(1.25rem, 0.33rem + 4.1vw, 4rem);
+  --measure: 78rem;
+
+  /* A control a thumb can hit: above the 44px minimum on every side. */
+  --control-height: 3.25rem;
+}
