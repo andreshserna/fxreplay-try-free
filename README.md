@@ -53,7 +53,7 @@ npm run preview        # the build on the real Workers runtime, at http://localh
 npm run lint && npm run typecheck      # format, lint, types
 npm run check:tokens                   # no color outside the brand tokens
 npm run check:contrast                 # every color pair the interface uses, against WCAG
-npm test                               # 214 unit and contract tests
+npm test                               # 225 unit and contract tests
 npm run test:system                    # 128 tests of the hooks, checkers, generators and statistics
 ```
 
@@ -61,7 +61,7 @@ With the preview running:
 
 ```sh
 npm run test:api                       # the API contract over HTTP, against the Worker and a real D1
-npm run test:e2e                       # 44 browser tests on desktop and phone, with axe
+npm run test:e2e                       # 46 browser tests on desktop and phone, with axe
 npm run lighthouse                     # the performance budgets, on both experiment arms
 ```
 
@@ -98,10 +98,14 @@ and the event collector. The page loads nothing from another origin.
   only analysis so far is a rehearsal on data labelled synthetic.
 - **Real authentication,** email verification and delivery: out of scope by the brief. The
   session cookie is the seam where their auth would plug in.
-- **A screen reader pass by a person.** Accessibility is checked by axe in CI on every state.
+- **A screen reader pass by a person.** Accessibility is checked by axe in CI on the page,
+  the validation error, the profile step, the final state and the plain-form pages.
 - **Per-arm edge caching of the landing document,** the first optimization at real traffic.
-- **Consent.** There is no banner because nothing third-party loads. With ad pixels there
-  would be one, and marketing destinations would wait for it.
+- **Consent.** There is no banner. Nothing third-party loads, and the one cookie that is
+  not strictly necessary is a first-party visitor id for analytics and the experiment. An
+  analytics cookie generally needs consent under the EU's ePrivacy rules, so a production
+  page would ask there. With ad pixels,
+  marketing destinations would wait for the answer.
 - **Their languages.** One more prerendered document per locale and arm.
 
 How this would sit inside FX Replay's own Astro site is the last section of

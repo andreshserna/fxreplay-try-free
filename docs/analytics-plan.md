@@ -138,10 +138,11 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 | A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
 | The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |
 | The analytics count drifting from reality | Reconciliation: `signup_completed` events per day against rows in `users` per day. The users table is the truth. A gap above 1% is an incident |
-| Bots and internal traffic | Events from automated agents are flagged `is_bot` and excluded in analysis, not silently dropped. Internal traffic is excluded by source tag |
+| Bots and internal traffic | Events from automated agents are flagged `is_bot` and excluded in analysis, not silently dropped: crawlers, link previews, scripts, and a request that names no agent. Internal traffic is excluded by source tag, which the server reads from the address, so the exposure and a signup without script carry it too |
+| Exposures that showed the page to no one | An exposure is counted only for a `GET` of the document: not a `HEAD`, a prefetch, or another site's image tag pointed at the page. One address is capped at 120 a minute. The page is served either way |
 | A broken split in an experiment | A sample-ratio check on exposed visitors per arm, before any result is read (`scripts/experiment/stats.mjs`) |
 | A visitor counted twice | Cleared cookies create a new visitor. Accepted, and it biases a comparison toward zero |
-| Wrong timestamps | A browser's clock is trusted within a day. Outside that, the server's time is used |
+| Wrong timestamps | A browser's clock is trusted up to a day behind and five minutes ahead. Outside that, the server's time is used |
 | A regression nobody notices | Every event carries the release SHA, so a change in the funnel points at a deploy |
 
 ## Experiments
@@ -151,7 +152,7 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 
 | Key | Control | Variants | Status | Plan |
 | --- | --- | --- | --- | --- |
-| `hero_signup` | `cta_button` | `cta_button`, `inline_email` | running | [experiments/hero_signup.md](experiments/hero_signup.md) |
+| `hero_signup` | `cta_button` | `cta_button`, `inline_email` | assigning | [experiments/hero_signup.md](experiments/hero_signup.md) |
 
 <!-- experiments:end -->
 

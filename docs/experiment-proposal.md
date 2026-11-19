@@ -40,8 +40,8 @@ that the first week of traffic replaces, and the plan shows how the sample moves
   script was blocked (`src/server/landing.ts`).
 - **Exposure and conversion are server events.** The denominator and the numerator have the
   same blind spots, which is to say none that differ by arm.
-- **The arm is stored with the user** at signup, so a result can be re-derived from the
-  database alone.
+- **The arm is stored with the user** at signup, so the conversions of each arm can be
+  re-counted from the database alone. The exposed visitors are only in the event store.
 - **The analysis is a script,** not a dashboard read by eye: `scripts/experiment/analyze.mjs`,
   on statistics tested against values worked by hand. It states facts and which rows of the
   table hold. The `experiment-analyst` agent applies the table.

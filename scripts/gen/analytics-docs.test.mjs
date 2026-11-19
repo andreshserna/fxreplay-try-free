@@ -96,7 +96,7 @@ test('the experiments table shows the control, the status and a link relative to
   assert.deepEqual(tableRows(renderExperiments({ EXPERIMENTS })), [
     '| Key | Control | Variants | Status | Plan |',
     '| --- | --- | --- | --- | --- |',
-    '| `hero_test` | `control` | `control`, `bold` | running | [experiments/hero.md](experiments/hero.md) |',
+    '| `hero_test` | `control` | `control`, `bold` | assigning | [experiments/hero.md](experiments/hero.md) |',
     '| `old_test` | `a` | `a`, `b`, `c` | off | [experiments/old.md](experiments/old.md) |',
   ]);
 });

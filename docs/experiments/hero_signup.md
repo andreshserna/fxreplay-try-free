@@ -1,7 +1,10 @@
 # Experiment: an email field in the hero against a button that leads to the form
 
 - **Flag key:** `hero_signup`
-- **Status:** proposed. Assignment and exposure are implemented and tested. No data exists.
+- **Status:** wired, not started. The demo deployment assigns and records exposures, and
+  the only traffic it has seen is tagged test visits and automated audits. The analysis
+  window has no start date: it begins when real traffic is sent, and the date is recorded
+  here as an amendment before any number is read.
 - **Pre-registered:** 2026-11-18, written at commit `6542901`, before any data
 - **Why this one first:** [ADR 0015](../decisions/0015-first-experiment-hero-signup.md)
 

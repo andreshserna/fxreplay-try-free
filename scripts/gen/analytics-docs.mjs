@@ -110,7 +110,7 @@ export function renderExperiments({ EXPERIMENTS }) {
           code(key),
           code(experiment.variants[0]),
           experiment.variants.map(code).join(', '),
-          experiment.enabled ? 'running' : 'off',
+          experiment.enabled ? 'assigning' : 'off',
           `[${plan}](${plan})`,
         ];
       }),

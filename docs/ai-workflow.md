@@ -119,12 +119,25 @@ One change, the browser tracker, as it actually went:
 - **A claim in the log that hid its limits.** "Nine deliberate breaks were each caught" was
   true of the nine tried. The reviewer broke six other rules without a test failing. The
   sentence was removed and the tests written.
+- **A signup that lost what was typed.** An email typed before the form's script loaded was
+  wiped when it did, in the arm under test. Every browser test waited for the script first,
+  so none could see it. `code-reviewer` held the scripts back in its own browser and showed
+  it. Fixed, with a test that does the same.
+- **A key that could be computed.** The plain form's idempotency key was a digest of public
+  values. The reviewer computed it from outside and replayed it for a session cookie. It is
+  now signed with the server's secret.
+- **A claim true on one machine.** The performance review said a repeat view answers 304.
+  `web-quality-auditor` measured the deployment: it does not. The first fix kept the
+  validator by turning compression off, which the next measurement showed. It was reverted
+  and the review says what was measured.
+- **Events nobody could send.** `analytics-qa` found registry values no code emits, events
+  dropped while offline, and preview pages counted as visits. All fixed.
 - **A design given up.** The first idempotency design had an "in progress" state. Writing the
   database transaction showed it could not occur, and the contract lost a status code.
 
 ## Not done yet
 
-`/ship-check`, `design-critic`, `analytics-qa` and `web-quality-auditor` have not run: the
-page is not built beyond its skeleton and the signup. `experiment-analyst` runs on a fixture
-labelled synthetic. No MCP server for PostHog is connected: the funnel in PostHog was built
-through the browser.
+`/ship-check` has not run. Every reviewer agent has run on the deployed page and its findings
+are in the decision log, with what was not applied and why. `experiment-analyst` ran on a
+fixture labelled synthetic: no experiment has real data. No MCP server for PostHog is
+connected: the funnel in PostHog was built through the browser.

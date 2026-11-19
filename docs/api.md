@@ -127,9 +127,19 @@ nothing else.
 `POST /signup`, `application/x-www-form-urlencoded`, field `email`. For a browser that has not
 run the page's script. It creates the user through the same code and the same rules, sets the
 same cookies, and answers `303 See Other` to a static page: `/signup/done/`,
-`/signup/email-taken/`, `/signup/invalid/` or `/signup/try-again/`. It has no idempotency
-header, so the key is derived from the visitor and the email: repeating the form repeats the
-request.
+`/signup/email-taken/`, `/signup/invalid/` or `/signup/try-again/`.
+
+- **Repeats.** It has no idempotency header, so the key is derived on the server from the
+  visitor cookie and the email, signed with the server's secret: repeating the form repeats
+  the request. The key has a shape the `Idempotency-Key` header does not accept, so it cannot
+  be presented to `POST /api/users`. Without the visitor cookie a repeat is a new request,
+  and lands on `/signup/email-taken/`.
+- **Other sites.** A post whose `Origin` is not the site's answers **403** `forbidden`, and
+  a body that is not `application/x-www-form-urlencoded` lands on `/signup/invalid/`. The
+  framework refuses a cross-site form post before this handler runs, with a plain 403 that
+  does not pass through the middleware.
+- **Attribution.** The campaign parameters of the page the form was posted from (its
+  `Referer`, same origin only) are stored as the user's first and last touch.
 
 ## Update a user
 
@@ -194,6 +204,45 @@ is `null` on the last page.
 | 429 | `rate_limited` | Too many requests from this address, checked before the token. `Retry-After` in seconds |
 
 Any other method on these paths answers **405** `method_not_allowed` with an `Allow` header.
+
+## The event collector
+
+`POST /api/events` receives the page's analytics events. It is not part of the Users API, and
+only the page's tracker calls it. [The analytics plan](analytics-plan.md) has the events.
+
+```http
+POST /api/events
+Content-Type: application/json
+
+{
+  "context": { "page_path": "/", "session_id": "…", "device_class": "mobile", "release": "cb06628" },
+  "events": [
+    { "name": "signup_started", "properties": { "form_location": "hero" },
+      "event_id": "0b0f…", "occurred_at": "2026-11-19T10:04:11.201Z" }
+  ]
+}
+```
+
+**202 Accepted**, always with the count, never with the reasons, so a caller learns nothing
+about the rules by probing:
+
+```json
+{ "accepted": 1, "rejected": 0 }
+```
+
+- At most 25 events and 16 KB. An event that is not in the registry, is server-only, or has a
+  property of the wrong shape is rejected. An unknown key is dropped and the event is kept.
+- The server adds what a browser must not choose: the visitor id (from the `HttpOnly`
+  cookie, set here if absent), the country, whether the agent looks automated, and the time
+  when the browser's is more than a day old or five minutes ahead.
+
+| Status | `code` | When |
+|---|---|---|
+| 403 | `forbidden` | An `Origin` that is not the site's |
+| 429 | `rate_limited` | More than 120 requests a minute from one address |
+| 413 | `payload_too_large` | A body over 16 KB |
+| 400 | `invalid_json` | A body that does not parse |
+| 422 | `validation_failed` | Not `{ context, events }`, or more than 25 events |
 
 ## Abuse controls
 
