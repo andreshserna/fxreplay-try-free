@@ -152,8 +152,8 @@ On 2026-11-19 nine scripted visits ran against the deployed site, tagged as inte
 collector on Cloudflare and on to PostHog, and the funnel below is PostHog's own, built from
 them. The server events (`experiment_exposed`, `signup_completed`, `profile_completed`)
 arrived with the same visitor id as the browser events of the same visit, which is what lets
-the funnel join them. The visit that submitted a malformed email produced a `signup_failed`
-and no `signup_submitted`, as designed.
+the funnel join them. The visit that submitted a malformed email produced no
+`signup_submitted`, as designed: three visits sent the form and three accounts exist.
 
 ![The signup funnel in PostHog, from internal test traffic](img/posthog-funnel.jpg)
 

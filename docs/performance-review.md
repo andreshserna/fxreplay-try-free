@@ -1,0 +1,122 @@
+# Performance review
+
+Measured on 2026-11-19 with Lighthouse 13.6, mobile profile with simulated throttling, median
+of three runs per experiment arm (`npm run lighthouse`). The same command runs in CI on every
+push and fails the build when a budget is missed.
+
+## Core Web Vitals
+
+| Metric | Budget | Local Workers runtime | Deployed on Cloudflare |
+|---|---|---|---|
+| LCP | ≤ 2.0 s | 1.00 s | 1.00 s |
+| CLS | ≤ 0.05 | 0.001 | 0.001 |
+| TBT (lab stand-in for INP) | ≤ 150 ms | 0 ms | 0 ms |
+| Performance score | ≥ 95 | 100 | 100 |
+| Accessibility | 100 | 100 | 100 |
+| Best practices | 100 | 100 | 100 |
+| SEO | 100 | 100, on a build with indexing on | 69: the demo ships `noindex` on purpose |
+
+Both arms measure the same within a few milliseconds. On the deployment the page is 13
+requests and 176 KiB, and the root document answered in 30 ms.
+
+**Field data: none yet.** No real visitor has seen the page. The targets are p75 LCP ≤ 2.5 s,
+INP ≤ 200 ms and CLS ≤ 0.1, and the page reports all three through the `web_vitals` event,
+split by device class and experiment arm, so the first week of traffic answers what the lab
+cannot: interaction latency on real phones. For scale, FX Replay's own homepage is at 3.3 s
+LCP and 300 ms INP at p75 on phones (Chrome UX Report, `docs/research/brief.md`, section 5.5).
+
+## The decisions behind the numbers
+
+| Decision | Effect |
+|---|---|
+| Every arm of the page is a prerendered document | Nothing is rendered per request. Time to first byte is the asset store's |
+| The largest element is text | LCP does not wait for an image. The hero illustration is inline SVG: no request, no decode |
+| CSS travels in the HTML | No render-blocking request. The HTML is 14 KB compressed |
+| Fonts are self-hosted: two families, six files, 112 KB | Only the headline weight is preloaded. Fallbacks are metric-matched, which is why CLS is 0.001 |
+| One island | 82 KB of script, compressed, all of it deferred. Nothing blocks the first paint |
+| No third-party script | The analytics tracker is 2.4 KB of our own code posting to our own origin ([ADR 0014](decisions/0014-first-party-event-collector.md)) |
+| The form reserves the space for its error message | A validation error does not move the page |
+| Motion is opacity and transform only, and off under `prefers-reduced-motion` | No layout work in the animation |
+
+**JavaScript execution.** The island is React, 66 KB of the 82. Preact was built and measured
+first at 25 KB in total, with identical lab scores, and React was kept as the team's own stack
+([ADR 0017](decisions/0017-react-for-the-island.md)). The cost is known and it is the first
+thing to revisit if field INP is poor on low-end phones.
+
+**Third-party scripts.** None. When marketing needs ad pixels, they would load after
+consent, off the critical path, with the Lighthouse budgets in CI as the limit they have to
+fit inside.
+
+## SEO
+
+- **Metadata:** title, description, canonical, Open Graph and Twitter tags, a generated share
+  image, the theme color.
+- **Semantic structure:** one `h1`, a heading per section, `header`, `main` and `footer`
+  landmarks, labelled sections, a list of steps as a list, the FAQ as native `details`.
+- **Technical:** both arms declare the same canonical URL, so an experiment never creates a
+  duplicate page. Internal pages (form outcomes, problem pages) are never indexable.
+- **Structured data:** a `WebPage` and a `FAQPage`, built from the same list the FAQ renders.
+- **Indexing is off by default** behind `ALLOW_INDEXING`, because the page carries another
+  company's brand ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)). With the
+  flag on, the SEO audit scores 100.
+- Not done: no `sitemap.xml` or `robots.txt`. One page does not need the first, and the
+  second would only matter once indexing is on.
+
+## Accessibility
+
+Target: WCAG 2.2 AA.
+
+- **Checked by machine, in CI:** axe runs inside the end-to-end tests on both arms, on desktop
+  and phone, in the resting state, with a validation error showing, on the profile step, on
+  the final state and on every outcome page. The contrast of every color pair the interface
+  uses is computed from the tokens (`npm run check:contrast`, 18 pairs).
+- **Forms:** a visible label, an error that is text plus an icon plus a border (never color
+  alone), `aria-invalid`, the message tied to the field, focus moved to the field on a failed
+  submit and to the heading when the step changes.
+- **The button is never disabled.** While a request is in flight it says so (`aria-busy`,
+  "Creating your account") and ignores a second press.
+- **Keyboard:** a skip link, a visible focus ring with an offset, native controls throughout.
+- **Targets:** controls are 52 px tall.
+- **Motion** stops under `prefers-reduced-motion`. The hero illustration has a text
+  alternative that says what it shows.
+- **Without JavaScript** the signup still works.
+- Fixes the kit needed are in `docs/brand-notes.md`: field borders, link color and the
+  focus ring are one step lighter than the kit's tokens to reach their thresholds.
+- Not done: a pass with a screen reader by a person.
+
+## Rendering strategy
+
+Static first. The page is built once per experiment arm. At `/` a Worker reads the visitor's
+cookie, hashes it to an arm and streams that arm's document from the asset store
+(`src/server/landing.ts`). Only the API and that decision run code. Server rendering per
+request was rejected: it would spend the Worker's CPU budget on HTML that never changes.
+
+## Caching and CDN
+
+| What | Cache-Control | Why |
+|---|---|---|
+| `/_astro/*` (scripts, fonts, images) | `public, max-age=31536000, immutable` | File names carry a content hash |
+| Prerendered pages | `public, max-age=0, must-revalidate` | Always current, cheap to revalidate |
+| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. Answers 304 when unchanged |
+| The API | `no-store` | Personal data and one-time answers |
+
+Everything is served from Cloudflare's edge. The one compromise is `/`: because the arm is
+chosen per visitor, no shared cache holds the landing document. The production fix is a
+cache key that includes the arm.
+
+## Production risks
+
+1. **Interaction on low-end phones** is unmeasured until field data exists. Watch INP by
+   device class in the first week.
+2. **The landing document is not shared-cached** (above). At scale every view is a Worker
+   request: fine on a paid plan, and the first limit to hit on the free one, together with
+   event batches.
+3. **Third-party scripts.** The numbers above hold because there are none. The day a tag
+   manager arrives is the day the budgets in CI earn their keep.
+4. **Rate limits are per client address,** so visitors behind one carrier address share
+   them. A signup wave from one mobile network could see "too many attempts".
+5. **One write region for the database.** Signups from far away pay the round trip. The
+   client's timeout and safe retry cover the slow tail.
+6. **Experiment weight.** Each new arm is a full prerendered page, and a heavier variant can
+   win on conversion while losing on speed. The Web Vitals guardrail in the experiment plan
+   exists for that.
