@@ -363,9 +363,13 @@ test.describe('the hero illustration', () => {
     await controls.getByRole('button', { name: 'Play', exact: true }).click();
     await expect.poll(drawn).toBeGreaterThan(30);
     await controls.getByRole('button', { name: 'Pause' }).click();
-    const paused = await drawn();
+    // A candle revealed just before the pause is still fading in, so what is drawn can
+    // trail by one for a moment. The replay's own position is what must not move.
+    const revealed = () => figure.locator('.candle:not(.ahead)').count();
+    const paused = await revealed();
     await page.waitForTimeout(700);
-    expect(await drawn()).toBe(paused);
+    expect(await revealed()).toBe(paused);
+    await expect.poll(drawn).toBe(paused);
 
     await flushEvents(page);
     const used = sent.events.filter((event) => event.name === 'replay_demo_used');
