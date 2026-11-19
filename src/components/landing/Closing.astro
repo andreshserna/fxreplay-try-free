@@ -1,0 +1,49 @@
+---
+import Signup from '../signup/Signup.astro';
+---
+
+<section id="signup" class="shell closing" aria-labelledby="signup-heading">
+  <div class="panel">
+    <p class="kicker">Try FX Replay free</p>
+    <h2 id="signup-heading">Your first replay session is one email away.</h2>
+    <Signup location="closing" cta="Start for free" />
+    <p class="small">Free plan. No credit card. No time limit.</p>
+  </div>
+</section>
+
+<style>
+  .closing {
+    padding-block: var(--section);
+    scroll-margin-top: var(--space-5);
+  }
+
+  .panel {
+    display: grid;
+    gap: var(--space-4);
+    padding: clamp(1.5rem, 0.6rem + 4vw, 4rem);
+    border: 1px solid var(--border-secondary);
+    border-radius: 1rem;
+    background:
+      radial-gradient(
+        120% 140% at 15% 0%,
+        color-mix(in srgb, var(--chart-up) 16%, transparent),
+        transparent 55%
+      ),
+      var(--bg-secondary);
+  }
+
+  h2 {
+    max-width: 18ch;
+    font-size: var(--step-3);
+  }
+
+  .panel :global(.signup) {
+    max-width: 34rem;
+    margin-top: var(--space-3);
+  }
+
+  .small {
+    color: var(--text-secondary);
+    font-size: var(--step--1);
+  }
+</style>

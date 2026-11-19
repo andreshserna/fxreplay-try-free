@@ -1,0 +1,73 @@
+---
+/**
+ * Three figures, each read on fxreplay.com (docs/research/brief.md, section 2). The
+ * first is FX Replay's own claim and is worded as theirs. The second is a count of
+ * their Markets page. None is a result a trader can expect.
+ */
+const figures = [
+  { value: '1M+', label: 'traders have used FX Replay, by its own count' },
+  { value: '173', label: 'markets you can replay on the free plan' },
+  { value: '2003', label: 'is where the EUR/USD history starts' },
+];
+---
+
+<section class="shell stats" aria-label="FX Replay in three figures">
+  <dl>
+    {figures.map((figure) => (
+      <div>
+        <dt>{figure.label}</dt>
+        <dd>{figure.value}</dd>
+      </div>
+    ))}
+  </dl>
+  <p>Figures from fxreplay.com, read on 18 November 2026.</p>
+</section>
+
+<style>
+  .stats {
+    display: grid;
+    gap: var(--space-4);
+    padding-block: var(--space-6);
+    border-block: 1px solid var(--border-primary);
+  }
+
+  dl {
+    display: grid;
+    gap: var(--space-5);
+    margin: 0;
+  }
+
+  @media (width >= 40rem) {
+    dl {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-6);
+    }
+  }
+
+  dl div {
+    display: flex;
+    flex-direction: column-reverse;
+    gap: var(--space-1);
+  }
+
+  dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: var(--step-3);
+    font-weight: 900;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  dt {
+    max-width: 18rem;
+    color: var(--text-secondary);
+    font-size: var(--step-0);
+    line-height: 1.4;
+  }
+
+  p {
+    color: var(--text-secondary);
+    font-size: var(--step--1);
+  }
+</style>

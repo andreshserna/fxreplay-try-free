@@ -69,3 +69,36 @@ svg {
     scroll-behavior: auto !important;
   }
 }
+
+/* Layout: one content width and one gutter for the whole page. */
+.shell {
+  width: min(100% - 2 * var(--gutter), var(--measure));
+  margin-inline: auto;
+}
+
+/* The kit page's uppercase, letter-spaced label, set in the body family. */
+.kicker {
+  color: var(--text-link);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.4;
+  text-transform: uppercase;
+}
+
+/* Visible only to a keyboard user, as the first stop of the page. */
+.skip {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  z-index: 1;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  transform: translateY(-200%);
+}
+
+.skip:focus-visible {
+  transform: none;
+}

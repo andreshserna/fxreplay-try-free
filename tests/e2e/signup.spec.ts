@@ -24,7 +24,7 @@ test.describe('the variant: an email field in the hero', () => {
     await openAs(page, baseURL, 'inline_email');
     const email = uniqueEmail();
 
-    const field = page.getByLabel('Email').first();
+    const field = page.getByLabel('Email', { exact: true }).first();
     await field.fill(email);
     await page.getByRole('button', { name: 'Start for free' }).first().click();
 
@@ -55,7 +55,7 @@ test.describe('the variant: an email field in the hero', () => {
   }) => {
     const sent = recordEvents(page);
     await openAs(page, baseURL, 'inline_email');
-    const field = page.getByLabel('Email').first();
+    const field = page.getByLabel('Email', { exact: true }).first();
 
     await field.fill('ada@');
     await field.blur();
@@ -91,12 +91,12 @@ test.describe('the variant: an email field in the hero', () => {
     expect(first.status()).toBe(201);
 
     await openAs(page, baseURL, 'inline_email');
-    await page.getByLabel('Email').first().fill(email);
-    await page.getByLabel('Email').first().press('Enter');
+    await page.getByLabel('Email', { exact: true }).first().fill(email);
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
 
     await expect(page.getByRole('alert').first()).toContainText('already has an account');
     await expect(page.getByRole('link', { name: 'Log in instead' })).toBeVisible();
-    await expect(page.getByLabel('Email').first()).toHaveValue(email);
+    await expect(page.getByLabel('Email', { exact: true }).first()).toHaveValue(email);
   });
 
   test('says when there were too many attempts', async ({ page, baseURL }) => {
@@ -104,8 +104,8 @@ test.describe('the variant: an email field in the hero', () => {
       route.fulfill(problem(429, 'rate_limited', { 'Retry-After': '60' })),
     );
     await openAs(page, baseURL, 'inline_email');
-    await page.getByLabel('Email').first().fill(uniqueEmail());
-    await page.getByLabel('Email').first().press('Enter');
+    await page.getByLabel('Email', { exact: true }).first().fill(uniqueEmail());
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page.getByRole('alert').first()).toContainText('Too many attempts');
   });
 
@@ -122,7 +122,7 @@ test.describe('the variant: an email field in the hero', () => {
     });
     await openAs(page, baseURL, 'inline_email');
     const email = uniqueEmail();
-    const field = page.getByLabel('Email').first();
+    const field = page.getByLabel('Email', { exact: true }).first();
     await field.fill(email);
     await field.press('Enter');
 
@@ -148,7 +148,7 @@ test.describe('the variant: an email field in the hero', () => {
       await route.continue();
     });
     await openAs(page, baseURL, 'inline_email');
-    const field = page.getByLabel('Email').first();
+    const field = page.getByLabel('Email', { exact: true }).first();
     await field.fill(uniqueEmail());
     await field.press('Enter');
     const busy = page.getByRole('button', { name: 'Creating your account' });
@@ -165,8 +165,8 @@ test.describe('the variant: an email field in the hero', () => {
   }) => {
     await openAs(page, baseURL, 'inline_email');
     await expectAccessible(page);
-    await page.getByLabel('Email').first().fill(uniqueEmail());
-    await page.getByLabel('Email').first().press('Enter');
+    await page.getByLabel('Email', { exact: true }).first().fill(uniqueEmail());
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
     await expectAccessible(page);
     await page.getByRole('button', { name: 'Skip' }).click();
@@ -182,16 +182,16 @@ test.describe('the control: a button that leads to the form', () => {
   }) => {
     const sent = recordEvents(page);
     await openAs(page, baseURL, 'cta_button');
-    await expect(page.getByLabel('Email')).toHaveCount(1);
+    await expect(page.getByLabel('Email', { exact: true })).toHaveCount(1);
 
     await page.getByRole('link', { name: 'Start for free' }).click();
     await expect(page).toHaveURL(/#signup$/);
-    await expect(page.getByLabel('Email')).toBeInViewport();
+    await expect(page.getByLabel('Email', { exact: true })).toBeInViewport();
     await expectAccessible(page);
 
     const email = uniqueEmail();
-    await page.getByLabel('Email').fill(email);
-    await page.getByLabel('Email').press('Enter');
+    await page.getByLabel('Email', { exact: true }).fill(email);
+    await page.getByLabel('Email', { exact: true }).press('Enter');
     await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
 
     await flushEvents(page);
@@ -214,21 +214,21 @@ test.describe('without JavaScript', () => {
   test('the form still creates the account and says so', async ({ page, baseURL }) => {
     await openAs(page, baseURL, 'inline_email', { scripted: false });
     const email = uniqueEmail();
-    await page.getByLabel('Email').first().fill(email);
+    await page.getByLabel('Email', { exact: true }).first().fill(email);
     await page.getByRole('button', { name: 'Start for free' }).first().click();
     await expect(page).toHaveURL(/\/signup\/done\/$/);
     await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
 
     // The same visitor submitting again is the same request. Someone else is told why not.
     await page.goto('/');
-    await page.getByLabel('Email').first().fill(email);
-    await page.getByLabel('Email').first().press('Enter');
+    await page.getByLabel('Email', { exact: true }).first().fill(email);
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page).toHaveURL(/\/signup\/done\/$/);
 
     await page.context().clearCookies();
     await openAs(page, baseURL, 'inline_email', { scripted: false });
-    await page.getByLabel('Email').first().fill(email);
-    await page.getByLabel('Email').first().press('Enter');
+    await page.getByLabel('Email', { exact: true }).first().fill(email);
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page).toHaveURL(/\/signup\/email-taken\/$/);
     await expect(page.getByRole('link', { name: 'Log in instead' })).toBeVisible();
   });
@@ -236,8 +236,8 @@ test.describe('without JavaScript', () => {
   test('a bad email lands on a page that explains it and leads back', async ({ page, baseURL }) => {
     await openAs(page, baseURL, 'cta_button', { scripted: false });
     await page.getByRole('link', { name: 'Start for free' }).click();
-    await page.getByLabel('Email').fill('ada@');
-    await page.getByLabel('Email').press('Enter');
+    await page.getByLabel('Email', { exact: true }).fill('ada@');
+    await page.getByLabel('Email', { exact: true }).press('Enter');
     await expect(page).toHaveURL(/\/signup\/invalid\/$/);
     await page.getByRole('link', { name: 'Try again' }).click();
     await expect(page).toHaveURL(/\/#signup$/);

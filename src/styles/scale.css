@@ -31,6 +31,9 @@
   --gutter: clamp(1.25rem, 0.33rem + 4.1vw, 4rem);
   --measure: 78rem;
 
+  /* The breathing room between sections. */
+  --section: clamp(3.5rem, 2rem + 5.5vw, 6rem);
+
   /* A control a thumb can hit: above the 44px minimum on every side. */
   --control-height: 3.25rem;
 }

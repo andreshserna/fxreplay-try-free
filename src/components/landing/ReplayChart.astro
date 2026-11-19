@@ -1,0 +1,362 @@
+---
+/**
+ * An original illustration of market replay: candles already played, candles
+ * arriving one by one behind a playhead, an open simulated trade, and a future
+ * that stays hidden. It carries no ticker, prices or dates, so it claims
+ * nothing about a market.
+ */
+/**
+ * The geometry is fixed, not passed in: the stylesheet below repeats two of these
+ * numbers (the playhead's travel and its number of steps), because the page's Content
+ * Security Policy allows no `style` attribute to carry them.
+ */
+const SHOWN = 21;
+const REPLAYED = 6;
+const SLOTS = 38;
+const ENTRY = 19;
+const SEED = 2682;
+
+interface Candle {
+  open: number;
+  close: number;
+  high: number;
+  low: number;
+}
+
+/** A fixed pseudo-random walk, so every build draws the same chart. */
+function series(count: number, start: number): Candle[] {
+  let state = start;
+  const random = () => {
+    state = (state * 1664525 + 1013904223) % 4294967296;
+    return state / 4294967296;
+  };
+  const candles: Candle[] = [];
+  let price = 50;
+  for (let index = 0; index < count; index += 1) {
+    const drift = Math.sin(index / 3.4 + 0.8) * 2.6 + 0.5;
+    const open = price;
+    const close = open + drift + (random() - 0.5) * 9;
+    candles.push({
+      open,
+      close,
+      high: Math.max(open, close) + 0.8 + random() * 3.6,
+      low: Math.min(open, close) - 0.8 - random() * 3.6,
+    });
+    price = close;
+  }
+  return candles;
+}
+
+const WIDTH = 760;
+const HEIGHT = 440;
+const PAD_TOP = 40;
+const PAD_BOTTOM = 34;
+const pitch = WIDTH / SLOTS; // 20: the playhead travels REPLAYED x 20 = 120
+const bodyWidth = Math.round(pitch * 0.54);
+
+const visible = series(SHOWN + REPLAYED, SEED);
+const sinceEntry = visible.slice(ENTRY);
+const entryPrice = visible[ENTRY]?.close ?? 50;
+
+// The trade is still open at the last candle: neither level has been reached.
+const stop = Math.min(...sinceEntry.map((candle) => candle.low)) - 3;
+const reach = Math.max(...sinceEntry.map((candle) => candle.high)) - entryPrice;
+const target = entryPrice + Math.max(reach + 3, (entryPrice - stop) * 1.5);
+
+const top = Math.max(target, ...visible.map((candle) => candle.high));
+const bottom = Math.min(stop, ...visible.map((candle) => candle.low));
+const y = (price: number) =>
+  PAD_TOP + ((top - price) / (top - bottom)) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
+
+const candles = visible.map((candle, index) => {
+  const center = pitch * index + pitch / 2;
+  const bodyTop = y(Math.max(candle.open, candle.close));
+  const bodyBottom = y(Math.min(candle.open, candle.close));
+  return {
+    center,
+    wickTop: y(candle.high),
+    wickBottom: y(candle.low),
+    bodyX: center - bodyWidth / 2,
+    bodyY: bodyTop,
+    bodyHeight: Math.max(bodyBottom - bodyTop, 4),
+    rising: candle.close >= candle.open,
+    step: index - SHOWN,
+  };
+});
+
+const playheadStart = pitch * SHOWN;
+const playheadEnd = pitch * (SHOWN + REPLAYED);
+const tradeX = pitch * ENTRY + pitch / 2;
+const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share));
+---
+
+<figure class="replay">
+  <svg
+    viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+    role="img"
+    aria-label="Illustration: a candle chart replayed one candle at a time, with a simulated trade still open. Everything to the right of the playhead stays hidden."
+  >
+    <defs>
+      <pattern id="future" width="10" height="10" patternUnits="userSpaceOnUse">
+        <path d="M-2 12 12 -2" class="hatch"></path>
+      </pattern>
+    </defs>
+
+    {gridLines.map((line) => (
+      <path class="grid" d={`M0 ${line}H${WIDTH}`} />
+    ))}
+
+    <g class="trade">
+      <rect
+        class="target"
+        x={tradeX}
+        y={y(target)}
+        width={WIDTH - tradeX}
+        height={y(entryPrice) - y(target)}
+      ></rect>
+      <rect
+        class="stop"
+        x={tradeX}
+        y={y(entryPrice)}
+        width={WIDTH - tradeX}
+        height={y(stop) - y(entryPrice)}
+      ></rect>
+      <path class="entry" d={`M${tradeX} ${y(entryPrice)}H${WIDTH}`}></path>
+      <circle class="marker" cx={tradeX} cy={y(entryPrice)} r="5"></circle>
+    </g>
+
+    <rect class="future" x={playheadEnd} y="0" width={WIDTH - playheadEnd} height={HEIGHT}></rect>
+
+    {candles.map((candle) => (
+      <g
+        class:list={[
+          'candle',
+          candle.rising ? 'rising' : 'falling',
+          candle.step >= 0 && `arriving step-${candle.step}`,
+        ]}
+      >
+        <path class="wick" d={`M${candle.center} ${candle.wickTop}V${candle.wickBottom}`} />
+        <rect
+          class="body"
+          x={candle.bodyX}
+          y={candle.bodyY}
+          width={bodyWidth}
+          height={candle.bodyHeight}
+          rx="3"
+        />
+      </g>
+    ))}
+
+    <g class="playhead">
+      <path class="line" d={`M${playheadStart} 0V${HEIGHT}`}></path>
+      <path class="handle" d={`M${playheadStart - 7} 0h14v9l-7 7-7-7z`}></path>
+    </g>
+  </svg>
+
+  <div class="transport" aria-hidden="true">
+    <span class="key">
+      <svg viewBox="0 0 16 16">
+        <path d="M3 3h2v10H3zM13 3v10L6 8z"></path>
+      </svg>
+    </span>
+    <span class="key play">
+      <svg viewBox="0 0 16 16">
+        <path d="M4.5 2.5v11l9-5.5z"></path>
+      </svg>
+    </span>
+    <span class="key">
+      <svg viewBox="0 0 16 16">
+        <path d="M11 3h2v10h-2zM3 3v10l7-5z"></path>
+      </svg>
+    </span>
+    <span class="track">
+      <span class="played"></span>
+    </span>
+    <span class="speed">1x</span>
+  </div>
+</figure>
+
+<style>
+  .replay {
+    margin: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-surface);
+    background:
+      radial-gradient(
+        120% 140% at 15% 0%,
+        color-mix(in srgb, var(--chart-up) 16%, transparent),
+        transparent 55%
+      ),
+      var(--bg-secondary);
+  }
+
+  svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .grid {
+    stroke: var(--chart-grid);
+    stroke-width: 1;
+  }
+
+  .hatch {
+    stroke: var(--chart-future);
+    stroke-width: 1;
+  }
+
+  .future {
+    fill: url('#future');
+  }
+
+  .target {
+    fill: color-mix(in srgb, var(--chart-up) 20%, transparent);
+  }
+
+  .stop {
+    fill: color-mix(in srgb, var(--chart-down) 12%, transparent);
+  }
+
+  .entry {
+    stroke: var(--icon-primary);
+    stroke-width: 1;
+    stroke-dasharray: 2 5;
+  }
+
+  .marker {
+    fill: var(--bg-secondary);
+    stroke: var(--icon-primary);
+    stroke-width: 2;
+  }
+
+  .wick {
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .rising .wick {
+    stroke: var(--chart-up);
+  }
+
+  .rising .body {
+    fill: var(--chart-up);
+  }
+
+  .falling .wick {
+    stroke: var(--chart-down);
+  }
+
+  .falling .body {
+    fill: var(--chart-down);
+  }
+
+  .playhead .line {
+    stroke: var(--chart-playhead);
+    stroke-width: 1.5;
+  }
+
+  .playhead .handle {
+    fill: var(--chart-playhead);
+  }
+
+  /* The replay: the playhead steps right and each candle appears as it passes. */
+  .playhead {
+    /* REPLAYED steps of 0.6s each, over REPLAYED x pitch = 120 units. */
+    animation: advance 3.6s steps(6) 1s both;
+  }
+
+  .arriving {
+    animation: arrive 0.2s ease-out both;
+  }
+
+  /* Each candle appears as the playhead passes it: 1s + step x 0.6s + 0.55s. */
+  .step-0 {
+    animation-delay: 1.55s;
+  }
+
+  .step-1 {
+    animation-delay: 2.15s;
+  }
+
+  .step-2 {
+    animation-delay: 2.75s;
+  }
+
+  .step-3 {
+    animation-delay: 3.35s;
+  }
+
+  .step-4 {
+    animation-delay: 3.95s;
+  }
+
+  .step-5 {
+    animation-delay: 4.55s;
+  }
+
+  @keyframes advance {
+    to {
+      transform: translateX(120px);
+    }
+  }
+
+  @keyframes arrive {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    border-top: 1px solid var(--border-primary);
+  }
+
+  .key {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border-secondary);
+    border-radius: 0.5rem;
+  }
+
+  .key svg {
+    width: 0.875rem;
+    fill: var(--icon-secondary);
+  }
+
+  .key.play {
+    border-color: transparent;
+    background: var(--btn-bg-primary-active);
+  }
+
+  .key.play svg {
+    fill: var(--btn-text);
+  }
+
+  .track {
+    flex: 1;
+    height: 0.25rem;
+    overflow: hidden;
+    border-radius: 1rem;
+    background: var(--border-secondary);
+  }
+
+  .played {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--chart-up);
+    width: 71%; /* (SHOWN + REPLAYED) / SLOTS */
+  }
+
+  .speed {
+    color: var(--text-secondary);
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+</style>

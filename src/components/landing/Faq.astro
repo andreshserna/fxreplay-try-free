@@ -1,0 +1,116 @@
+---
+/**
+ * The objections left after the page. Each answer traces to fxreplay.com
+ * (docs/research/brief.md), except the last, which is about this demo.
+ */
+const questions = [
+  {
+    q: 'Is it really free?',
+    a: 'Yes. FX Replay’s free plan needs no credit card, has no trial period and does not convert to a paid plan. You keep it for as long as you like.',
+  },
+  {
+    q: 'Is this the 5-day free trial?',
+    a: 'No. The 5-day trial belongs to the paid plans. This page is about the free plan, which has no card and no clock.',
+  },
+  {
+    q: 'Which markets can I replay for free?',
+    a: 'Forex, indices, metals and part of the crypto list: 173 of the 310 markets FX Replay lists. Futures are on the Pro plan.',
+  },
+  {
+    q: 'Do I need to know how to code?',
+    a: 'No. FX Replay is designed for manual traders, with no coding required.',
+  },
+  {
+    q: 'Is FX Replay a broker?',
+    a: 'No. It does not execute real trades and does not handle client funds. You practise on historical data, and practice is not a promise of results.',
+  },
+  {
+    q: 'Is this the official FX Replay site?',
+    a: 'No. It is a candidate’s demo, built for a hiring challenge. Signing up here creates a test account on this demo, not on fxreplay.com.',
+  },
+];
+---
+
+<section class="shell faq" aria-labelledby="faq-heading">
+  <div>
+    <p class="kicker">Before you start</p>
+    <h2 id="faq-heading">Fair questions.</h2>
+  </div>
+  <div class="list">
+    {questions.map((item) => (
+      <details>
+        <summary>{item.q}</summary>
+        <p>{item.a}</p>
+      </details>
+    ))}
+  </div>
+</section>
+
+<style>
+  .faq {
+    display: grid;
+    gap: var(--space-6);
+    padding-block: var(--section);
+    border-top: 1px solid var(--border-primary);
+  }
+
+  @media (width >= 62rem) {
+    .faq {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-8);
+    }
+  }
+
+  h2 {
+    margin-top: var(--space-4);
+    font-size: var(--step-3);
+  }
+
+  details {
+    border-bottom: 1px solid var(--border-secondary);
+  }
+
+  details:first-child {
+    border-top: 1px solid var(--border-secondary);
+  }
+
+  summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: var(--control-height);
+    padding-block: var(--space-3);
+    font-size: var(--step-1);
+    font-weight: 700;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  summary::-webkit-details-marker {
+    display: none;
+  }
+
+  /* A plus that becomes a minus: two bars, one of which lies down when open. */
+  summary::after {
+    content: '';
+    flex: none;
+    width: 0.875rem;
+    height: 0.875rem;
+    background:
+      linear-gradient(var(--icon-primary), var(--icon-primary)) center / 100% 2px no-repeat,
+      linear-gradient(var(--icon-primary), var(--icon-primary)) center / 2px 100% no-repeat;
+    transition: transform 0.2s ease;
+  }
+
+  details[open] summary::after {
+    background: linear-gradient(var(--icon-primary), var(--icon-primary)) center / 100% 2px
+      no-repeat;
+  }
+
+  details p {
+    max-width: 40rem;
+    padding-bottom: var(--space-5);
+    color: var(--text-secondary);
+  }
+</style>

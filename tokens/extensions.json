@@ -21,6 +21,30 @@
     "card-text-link": {
       "$value": "{primitive.Blue.blue-400}",
       "$description": "Links inside bg-tertiary surfaces, where blue-500 drops to 4.44:1."
+    },
+    "btn-border-primary": {
+      "$value": "{primitive.Blue.blue-500}",
+      "$description": "Edge of the primary button while hovered or pressed. The kit's hover and pressed fills (blue-800, blue-900) are 1.70:1 and 1.31:1 against the ground, so the button would lose its shape. blue-500 is 5.26:1 against the ground and 3.10:1 against the hover fill."
+    },
+    "chart-up": {
+      "$value": "{primitive.Blue.blue-600}",
+      "$description": "Rising candles in the replay illustration: Electric Blue. Decorative, carries no text."
+    },
+    "chart-down": {
+      "$value": "{primitive.Neutral.neutral-200}",
+      "$description": "Falling candles in the replay illustration. Blue and near-white instead of green and red, so the picture reads as the brand and does not color a trade as good or bad."
+    },
+    "chart-grid": {
+      "$value": "{primitive.Dark.dark-700}",
+      "$description": "Grid lines of the replay illustration: the value of the kit's border-primary."
+    },
+    "chart-future": {
+      "$value": "{primitive.Dark.dark-500}",
+      "$description": "Hatching over the part of the illustration that has not been replayed yet."
+    },
+    "chart-playhead": {
+      "$value": "{primitive.Blue.blue-500}",
+      "$description": "The playhead of the replay illustration. 5.26:1 against the ground, so the line is visible as a graphic object."
     }
   }
 }

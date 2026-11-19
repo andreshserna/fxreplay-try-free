@@ -70,13 +70,13 @@
 .signup button[type='submit']:hover,
 .button:hover {
   background: var(--btn-bg-primary-hover);
-  box-shadow: inset 0 0 0 1px var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--btn-border-primary);
 }
 
 .signup button[type='submit']:active,
 .button:active {
   background: var(--btn-bg-primary-pressed);
-  box-shadow: inset 0 0 0 1px var(--border-focus);
+  box-shadow: inset 0 0 0 1px var(--btn-border-primary);
 }
 
 /* Busy is said, not hidden: the button stays on its fill and never becomes disabled. */

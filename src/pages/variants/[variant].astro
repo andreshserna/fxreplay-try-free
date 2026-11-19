@@ -2,11 +2,22 @@
 /**
  * The landing page, prerendered once per arm of the hero experiment. Visitors never
  * request these paths: the edge serves the right one at "/" (src/server/landing.ts).
+ *
+ * Each section answers one objection that stands between a visitor and the signup:
+ * what is it, can I believe it, how does it work, is it for me, what is the catch,
+ * what else should I know.
  */
 import type { GetStaticPaths } from 'astro';
 
-import wordmark from '../../assets/brand/FXReplayLogo.svg';
-import Signup from '../../components/signup/Signup.astro';
+import Audience from '../../components/landing/Audience.astro';
+import Closing from '../../components/landing/Closing.astro';
+import Faq from '../../components/landing/Faq.astro';
+import FreePlan from '../../components/landing/FreePlan.astro';
+import Hero from '../../components/landing/Hero.astro';
+import HowItWorks from '../../components/landing/HowItWorks.astro';
+import SiteFooter from '../../components/landing/SiteFooter.astro';
+import SiteHeader from '../../components/landing/SiteHeader.astro';
+import StatsBar from '../../components/landing/StatsBar.astro';
 import Base from '../../layouts/Base.astro';
 import { EXPERIMENTS, formatAssignments, type VariantOf } from '../../lib/experiments/registry';
 
@@ -20,32 +31,23 @@ const variant = Astro.params.variant as VariantOf<'hero_signup'>;
 
 <Base
   experiments={formatAssignments({ hero_signup: variant })}
-  title="Try FX Replay Free (candidate demo)"
-  description="A candidate challenge demo of a Try FX Replay Free landing page. Not the official FX Replay site."
+  title="Try FX Replay Free: test your strategy on real market history (candidate demo)"
+  description="Replay real market history candle by candle and practise your strategy with simulated trades. Free plan, no credit card. A candidate challenge demo, not the official FX Replay site."
 >
-  <main class="skeleton">
-    <img
-      class="wordmark"
-      src={wordmark.src}
-      width={wordmark.width}
-      height={wordmark.height}
-      alt="FX Replay"
-    />
-    <h1>Try FX Replay Free</h1>
-    <p class="status">This page is being built. The signup below is real.</p>
-    {variant === 'inline_email' ? (
-      <Signup location="hero" cta="Start for free" />
-    ) : (
-      <a class="button" href="#signup" data-cta="hero">
-        Start for free
-      </a>
-    )}
-    <section id="signup" class="closing" aria-labelledby="signup-heading">
-      <h2 id="signup-heading">Create your free account</h2>
-      <Signup location="closing" cta="Start for free" />
-    </section>
-    <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
+  <a class="skip" href="#signup">
+    Skip to sign up
+  </a>
+  <SiteHeader />
+  <main>
+    <Hero variant={variant} />
+    <StatsBar />
+    <HowItWorks />
+    <Audience />
+    <FreePlan />
+    <Faq />
+    <Closing />
   </main>
+  <SiteFooter />
 </Base>
 
 <script>
@@ -70,44 +72,3 @@ const variant = Astro.params.variant as VariantOf<'hero_signup'>;
       track('cta_clicked', { cta_name: 'start_free', cta_location: location });
   });
 </script>
-
-<style>
-  .skeleton {
-    display: grid;
-    align-content: center;
-    justify-items: start;
-    gap: 1.5rem;
-    min-height: 100svh;
-    max-width: 40rem;
-    margin-inline: auto;
-    padding: 2rem 1.25rem;
-  }
-
-  .wordmark {
-    width: min(11rem, 60vw);
-    height: auto;
-  }
-
-  h1 {
-    font-size: clamp(2.25rem, 1.5rem + 3.5vw, 4rem);
-  }
-
-  .closing {
-    display: grid;
-    gap: 1rem;
-    width: 100%;
-    padding-top: 3rem;
-    scroll-margin-top: 2rem;
-  }
-
-  .status {
-    color: var(--text-secondary);
-  }
-
-  .notice {
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--border-primary);
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-  }
-</style>

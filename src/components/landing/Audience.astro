@@ -1,0 +1,76 @@
+---
+/** Who it is for, in the three situations FX Replay's own help center names. */
+const people = [
+  {
+    who: 'You are new to trading',
+    what: 'Learn to read a chart and build a first strategy on days that have already happened.',
+  },
+  {
+    who: 'You already trade',
+    what: 'Test and refine a strategy before you trade it live. Find out whether it was the rules or the week.',
+  },
+  {
+    who: 'You are preparing for a prop firm challenge',
+    what: 'Practise your rules on market history first, where a mistake costs nothing.',
+  },
+];
+---
+
+<section class="shell audience" aria-labelledby="audience-heading">
+  <p class="kicker">Who it is for</p>
+  <h2 id="audience-heading">Wherever you are with your strategy.</h2>
+  <ul>
+    {people.map((person) => (
+      <li>
+        <h3>{person.who}</h3>
+        <p>{person.what}</p>
+      </li>
+    ))}
+  </ul>
+</section>
+
+<style>
+  .audience {
+    display: grid;
+    gap: var(--space-4);
+    padding-block: var(--section);
+    border-top: 1px solid var(--border-primary);
+  }
+
+  h2 {
+    max-width: 22ch;
+    font-size: var(--step-3);
+  }
+
+  ul {
+    display: grid;
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: grid;
+    gap: var(--space-2);
+    padding-block: var(--space-5);
+    border-top: 1px solid var(--border-primary);
+  }
+
+  @media (width >= 48rem) {
+    li {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+      gap: var(--space-6);
+      align-items: baseline;
+    }
+  }
+
+  h3 {
+    font-size: var(--step-2);
+  }
+
+  li p {
+    color: var(--text-secondary);
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+</style>

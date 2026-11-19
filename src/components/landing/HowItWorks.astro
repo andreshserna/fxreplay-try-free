@@ -1,0 +1,88 @@
+---
+const steps = [
+  {
+    name: 'Replay',
+    text: 'Pick a market. The chart plays forward candle by candle, and what comes next stays hidden, as it was on the day.',
+  },
+  {
+    name: 'Trade',
+    text: 'Place simulated trades the way your rules call for. FX Replay is not a broker: nothing is executed and no money moves.',
+  },
+  {
+    name: 'Review',
+    text: 'Each trade lands in your journal, so you read what your rules did instead of remembering it.',
+  },
+];
+---
+
+<section class="shell how" aria-labelledby="how-heading">
+  <p class="kicker">How a session works</p>
+  <h2 id="how-heading">Years of market days, replayed in an afternoon.</h2>
+  <ol>
+    {steps.map((step, index) => (
+      <li>
+        <span class="number" aria-hidden="true">
+          {index + 1}
+        </span>
+        <h3>{step.name}</h3>
+        <p>{step.text}</p>
+      </li>
+    ))}
+  </ol>
+</section>
+
+<style>
+  .how {
+    display: grid;
+    gap: var(--space-4);
+    padding-block: var(--section);
+  }
+
+  h2 {
+    max-width: 22ch;
+    font-size: var(--step-3);
+  }
+
+  ol {
+    display: grid;
+    gap: var(--space-5);
+    margin: var(--space-5) 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  @media (width >= 48rem) {
+    ol {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  li {
+    display: grid;
+    align-content: start;
+    gap: var(--space-3);
+    padding: var(--space-5);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-surface);
+    background: var(--bg-secondary);
+  }
+
+  .number {
+    display: grid;
+    place-items: center;
+    width: 2rem;
+    height: 2rem;
+    border: 1px solid var(--border-tertiary);
+    border-radius: 0.5rem;
+    font-size: var(--step--1);
+    font-weight: 700;
+  }
+
+  h3 {
+    font-size: var(--step-2);
+  }
+
+  li p {
+    color: var(--text-secondary);
+  }
+</style>

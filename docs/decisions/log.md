@@ -264,3 +264,18 @@ project or is costly to reverse also has an ADR in this folder.
 - **Back to React for the island.** Preact was built and measured first: 25 KB against 82,
   and identical lab scores. With no budget separating them, the team's own stack won.
   [ADR 0017](0017-react-for-the-island.md), which supersedes 0016.
+- **The page follows the "replay" direction,** chosen from three rendered hero options: the
+  product is shown, not described, by an original illustration of a replay with a simulated
+  trade still open. The "offer card" direction is kept as experiment 4 in the backlog.
+- **Seven sections, each answering one objection:** what it is (hero), can I believe it (three
+  sourced figures), how it works, who it is for, what the catch is (the free plan's limits,
+  stated), what else (six questions), and the form again.
+- **The figures bar shows only what fxreplay.com shows.** Their own count of traders is worded
+  as theirs, the number of markets on the free plan is a count of their Markets page, and no
+  rating is shown: the Trustpilot page could not be read at the source.
+- **The illustration has its own tokens** (`chart-*`), each an alias of a kit color. Rising
+  candles are Electric Blue and falling ones near-white, not green and red, so the picture
+  reads as the brand and does not color a trade as good or bad.
+- **No `style` attribute anywhere.** The first version of the illustration passed its numbers
+  through style attributes, which the Content Security Policy blocks. The end-to-end test
+  that fails on any policy violation caught it, and the geometry is now fixed in CSS.

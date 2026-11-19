@@ -42,6 +42,7 @@ A command that does not exist is "not available", never "passed".
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
 | `src/pages/` | `index.ts` ("/" decided at the edge), `variants/` (one prerendered document per experiment arm), `api/` (thin endpoints: `users/`, `events`), `signup` (the plain-form path and its outcome pages), `problems/` (one page per error type) |
+| `src/components/` | `landing/` (the page's sections, static) and `signup/` (the state machine and the form: the only island that hydrates) |
 | `src/lib/api/` | The contract in code: shared schemas, the problem registry, the typed client |
 | `src/lib/analytics/`, `src/lib/experiments/` | The event registry, validation, attribution, the browser tracker; the experiment registry and assignment |
 | `src/server/` | `runtime.ts` (the only file that knows bindings), `landing.ts`, `users/`, `analytics/` (collector, sink, server events), `http/` (session, visitor cookie, responses) |
@@ -50,12 +51,6 @@ A command that does not exist is "not available", never "passed".
 | `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/`, `api/` and `e2e/` tests |
 | `docs/` | `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
 | `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
-
-Planned, not built yet. Update this table when each lands:
-
-| Path | What will live there |
-|---|---|
-| `src/components/` (more) | The page sections. `signup/` exists: the state machine and the form, the only island |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.
 
