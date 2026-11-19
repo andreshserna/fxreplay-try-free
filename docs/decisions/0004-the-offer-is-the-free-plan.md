@@ -6,9 +6,8 @@
 
 ## Context
 
-The scenario is "Try FX Replay Free" and the metric is account creation. According to a
-first read of fxreplay.com (assumptions 3 to 6 in `docs/research/assumptions.md`, to be
-verified), the site presents two different "free" things: a free Beginner plan with no card
+The scenario is "Try FX Replay Free" and the metric is account creation. FX Replay's
+site presents two different "free" things (`docs/research/brief.md`, section 3): a free Beginner plan with no card
 and no time limit but tight limits, and a 5-day free trial of the paid plans. Its own pages
 use both messages and disagree on whether the trial needs a card. A visitor who cannot tell
 what "free" means hesitates.

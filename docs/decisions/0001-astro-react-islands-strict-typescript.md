@@ -8,9 +8,10 @@
 
 The page is a marketing landing whose job is conversion, so its speed is part of the product:
 the lab budget is LCP ≤ 2.0 s and TBT ≤ 150 ms on a mobile profile. It has one interactive
-piece, the signup form. The job post for this role names Astro, React and TypeScript for
-marketing and growth web (assumption 1 in `docs/research/assumptions.md`, to be verified
-before it is cited anywhere else).
+piece, the signup form. The job post for this role asks for "marketing and growth web
+experiences using Astro, React, TypeScript, HTML, and CSS", and FX Replay's own marketing
+site has run on Astro 6 with React islands since 2026-10-04 (`docs/research/brief.md`,
+sections 5.1 and 8).
 
 ## Options considered
 

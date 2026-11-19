@@ -169,3 +169,8 @@ project or is costly to reverse also has an ADR in this folder.
   contrast rules, generated files, the system's own tests, the API contract in Node, the
   build, and the same contract over HTTP against the built Worker. End-to-end, axe and
   Lighthouse budgets join it with the page. Actions are pinned to their current major.
+- **The research is in `docs/research/brief.md`,** with the outcome of each starting
+  assumption. Three things changed what gets built: the free plan has no futures and tighter
+  limits than its card shows; "no card" is only safe to say about the free plan; and their
+  marketing site is already Astro with React islands, so in production this page would be a
+  route in that site, not a separate deployment.
