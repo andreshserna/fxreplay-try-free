@@ -30,6 +30,6 @@ paths:
 | `docs/api.md` | The contract, with an example for every status code |
 | `docs/analytics-plan.md` | The generated event table (name, trigger, properties, context, decision informed), the funnel, the primary metric, architecture and tooling, data quality |
 | `docs/experiment-proposal.md` | Hypothesis, control, variant, success metric, decision criteria, and a short ranked backlog |
-| `docs/ai-workflow.md` | The Claude Code setup, how the pieces work together, where AI improved execution, where its output was corrected or rejected, MCP in use and proposed for production |
+| `docs/ai-workflow.md` | The Claude Code setup, how the pieces work together, human judgment in the candidate's first person (what he did himself, delegated, rejected and how the work was validated: only what the private record holds), where AI improved execution, where the reviewers corrected it, MCP in use and proposed for production |
 | `docs/performance-review.md` | Measured numbers and how they were measured, the decisions behind them, SEO, accessibility, rendering, caching and CDN, production risks |
 | `docs/brand-notes.md` | One page the kit's design team could act on: how the kit was implemented, answers to its open questions, the generated contrast tables, each extension with its reason |

@@ -1,8 +1,10 @@
 # Try FX Replay Free
 
 A take-home for the Growth Engineer role at FX Replay: a landing page, a signup flow and a
-Users API, with the measurement, the experiment and the operations around them. Built with
-Claude Code inside a system that is itself part of the submission.
+Users API, with the measurement, the experiment and the operations around them. The
+direction and the product decisions are mine. The heavy implementation is Claude Code's,
+inside a system that is itself part of the submission:
+[who decided what](docs/ai-workflow.md#human-judgment).
 
 > A candidate's demo. Not the official FX Replay site. Accounts created here exist only here.
 

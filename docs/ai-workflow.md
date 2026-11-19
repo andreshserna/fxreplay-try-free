@@ -1,9 +1,13 @@
 # AI-native workflow
 
-Claude Code built this project inside a system that was committed before any product code.
-The system has one job: make the work checkable. A rule a machine can enforce is a hook or a
-CI step, not a sentence. The author of a change never reviews it. Nothing is reported as done
-without evidence.
+I built this project with Claude Code. The direction and the decisions that carry the
+product are mine. The heavy implementation is Claude Code's, inside a system that was
+committed before any product code. That system has one job: make the AI's work checkable,
+so it could be given a lot of it. A rule a machine can enforce is a hook or a CI step, not a
+sentence. The author of a change never reviews it. Nothing is reported as done without
+evidence.
+
+Who decided what is in [Human judgment](#human-judgment).
 
 Every file named here is in the repository.
 
@@ -86,6 +90,85 @@ One change, the browser tracker, as it actually went:
 6. **End-to-end tests** then drove the real page and asserted the events once, in order.
 7. **`code-reviewer`** sees the result at the end of the phase, with no write access.
 
+## Human judgment
+
+The brief's four questions, answered from the working record.
+
+### What I did myself
+
+- **Set the starting positions before any code existed** (ADRs
+  [0001](decisions/0001-astro-react-islands-strict-typescript.md) to
+  [0010](decisions/0010-agents-on-fable-at-max-effort.md)): the stack, one deployable, the
+  offer as the free plan and not the trial, a signup that starts with the email alone, the
+  API contract before the code, analytics as code, experiments assigned at the edge, a demo
+  that stays out of search. Everything after was built against them.
+- **Set the working agreement the AI operates under,** now in
+  [`CLAUDE.md`](../CLAUDE.md#how-decisions-are-made): what it may decide on its
+  recommendation, what it must brief me on at once with an ADR, what it must bring to me as
+  rendered options and wait for (the visual design, the headline, the wording of the
+  offer), and what it may never do alone (publish the repository, spend money, send
+  anything to FX Replay).
+- **Chose the visual direction** from three rendered heroes, kept a second one for the
+  experiment backlog (number 4 in [the proposal](experiment-proposal.md#ranked-backlog)),
+  and asked for the line of sourced figures under the hero.
+- **Chose React for the island** after both were built and measured
+  ([ADR 0017](decisions/0017-react-for-the-island.md)): Preact was smaller with the same
+  lab scores, React is the team's stack and its cost was not a penalty here.
+- **Changed how models are assigned** ([ADR 0012](decisions/0012-models-by-kind-of-work.md)),
+  against my own starting position of every agent on the strongest model.
+- **Reviewed the deployed page as a visitor would, more than once,** and sent it back each
+  time (below).
+- **Signed in to Cloudflare, created the PostHog project and set the analytics key
+  myself.** Decided to make the repository and the PostHog dashboard public.
+- **Asked for [the evaluation sheet](evaluation-sheet.md),** so a reviewer can grade
+  against the brief's own list.
+
+### What I delegated
+
+The implementation and its tests, the research gathering, the reviews, and the drafting of
+the documents. Also the technical decisions inside the starting positions: hosting and
+persistence, the event taxonomy, the collector, which experiment goes first. Those were
+taken on the AI's recommendation and each was written down at once, as an ADR with its
+real alternatives or as a line in [the log](decisions/log.md), so I could read it and
+overrule it. They stood unless I did. I overruled two: the island library and the model
+policy.
+
+### What I rejected or corrected
+
+- **A play button that did nothing.** The hero illustration drew transport controls as
+  decoration. Visitors tap what looks tappable. It is now a small playable replay, its
+  first use is an event, and "anything drawn as a control responds" is a rule the AI loads
+  with every component ([`.claude/rules/experience.md`](../.claude/rules/experience.md)).
+- **Text under 16 px.** Captions, labels and notices were set smaller. The type scale now
+  has a floor, and a browser test fails on any text below it.
+- **An FAQ that snapped open and an anchor that jumped.** Both got a transition, off under
+  reduced motion.
+- **A page that read as generated.** I ran the page through an outside design critique and
+  did not take the critique as law either: I had the AI study how the category's own pages
+  handle the same sections ([research/visual-patterns.md](research/visual-patterns.md)).
+  The labels above every heading went, the three numbered boxes became drawn rows, the
+  figures became a quiet line, and the call to action stays in view.
+- **My own request for stock photos.** That same study showed the category sells with the
+  product, not with stock imagery. I dropped the photos before any was licensed.
+- **A form without JavaScript, accepted only once checked.** I asked how established sites
+  and frameworks handle it before agreeing to the pattern. The sources are in the log.
+- **Every agent on the strongest model, and Preact.** Above.
+
+The corrections the system's own reviewers made to the AI's work are a separate list,
+[further down](#where-ai-output-was-corrected-or-rejected).
+
+### How AI-generated work was validated
+
+- **By the system, on every change:** hooks on each edit, tests run and diffs read before a
+  commit, reviewer agents with no write access, budgets that fail the build, and
+  measurements on the deployment instead of the local machine.
+- **By me, on the result:** on the rendered, deployed page and not on reports of it. And by
+  asking for the reasoning behind each decision I had not made myself (the island library,
+  the form without JavaScript, the signup body, the analytics tooling), to be able to defend
+  each one myself.
+- **By a rule about the record:** nothing is written down as done unless it happened in
+  that session. It is why this document can list claims the AI made and had to withdraw.
+
 ## Where AI improved execution
 
 - **An independent review found a real hole.** `code-reviewer` showed, with a request against
@@ -103,6 +186,9 @@ One change, the browser tracker, as it actually went:
   choosing between them. The budgets are a command that fails the build.
 
 ## Where AI output was corrected or rejected
+
+By the system's reviewers and checks. What I sent back myself is under
+[Human judgment](#what-i-rejected-or-corrected).
 
 - **The author's test for the admin token proved nothing.** Found by the reviewer, above.
 - **A chart that implied a result.** The first hero illustration showed a trade in profit.

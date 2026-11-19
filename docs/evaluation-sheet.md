@@ -168,10 +168,10 @@ The brief's example areas, and the agent that covers each:
 
 | The brief asks | Where it is answered |
 |---|---|
-| What was delegated to AI | [ai-workflow.md, Agents](ai-workflow.md#agents) and [How the pieces work together](ai-workflow.md#how-the-pieces-work-together) |
-| What was kept for a person | [`CLAUDE.md`, How decisions are made](../CLAUDE.md#how-decisions-are-made): the visual design, the headline and the wording of the offer are chosen by a person from rendered options. The release gate can only be invoked by a person |
-| What AI output was rejected or corrected | Eleven cases with what was wrong and how it was found: [ai-workflow.md](ai-workflow.md#where-ai-output-was-corrected-or-rejected) |
-| How AI-generated work was validated | Independent reviewer agents, tests written before the commit, measurements on the deployment, and [a log line or an ADR for every decision](decisions/log.md) |
+| What was delegated to AI | [What I delegated](ai-workflow.md#what-i-delegated): the implementation, the research, the reviews, and the technical decisions inside the starting positions, each written down so it could be overruled |
+| What was kept for a person | [What I did myself](ai-workflow.md#what-i-did-myself): the starting positions, the working agreement, the visual direction, React for the island, the model policy, the reviews of the deployed page |
+| What AI output was rejected or corrected | [What I sent back](ai-workflow.md#what-i-rejected-or-corrected): seven cases. [What the system's reviewers caught](ai-workflow.md#where-ai-output-was-corrected-or-rejected): eleven more, each with how it was found |
+| How AI-generated work was validated | [By the system, by me and by a rule about the record](ai-workflow.md#how-ai-generated-work-was-validated) |
 
 ## Deliverables
 
