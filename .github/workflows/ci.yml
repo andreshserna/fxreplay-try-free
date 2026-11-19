@@ -39,9 +39,9 @@ jobs:
 
       - run: npm run build
 
-      # The contract over HTTP, then the signup in a real browser with axe, against the built
-      # Worker and a real local D1.
-      - name: Contract and end-to-end tests against the running build
+      # Against the built Worker and a real local D1: the contract over HTTP, the signup in a
+      # real browser with axe, then the Lighthouse budgets. A missed budget fails the build.
+      - name: Contract tests, end-to-end tests and performance budgets
         run: |
           # The preview server may stay in the foreground on a runner, so it is sent to the
           # background here and awaited by polling.
@@ -50,3 +50,4 @@ jobs:
           npm run test:api || { cat preview.log; exit 1; }
           npx playwright install --with-deps chromium
           npm run test:e2e || { cat preview.log; exit 1; }
+          npm run lighthouse

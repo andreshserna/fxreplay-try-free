@@ -235,3 +235,19 @@ project or is costly to reverse also has an ADR in this folder.
   the email, so a refresh or a second press is the same request.
 - **The form further down the page hydrates when the browser is idle,** not when it scrolls
   into view, so it is ready before a visitor can reach it.
+- **A strict Content Security Policy with no `'unsafe-inline'`.** Astro's built-in CSP hashes
+  every inline script and stylesheet into each page's `<meta>`. Everything else is `'self'`,
+  which is possible because the page loads nothing from another origin (ADR 0014). An
+  end-to-end test runs the signup under the policy and fails on any violation.
+- **The security headers have two senders with one source.** `public/_headers` covers what
+  the asset store serves and a middleware covers what the Worker answers. A test keeps them
+  equal. The header's policy carries `frame-ancestors`, which a `<meta>` cannot.
+- **Known limit of the policy:** a `<meta>` policy governs only what follows it in the
+  document, and Astro writes it at the end of the head. What precedes it is fixed at build
+  time and holds no visitor input. Moving the whole policy into a per-page header is the
+  production step, and it was left out as surface this demo does not need.
+- **The Lighthouse budgets are a command and a CI step.** `npm run lighthouse` audits both
+  arms on the mobile profile and judges the median of three runs. Its first run failed on a
+  missing favicon, which is how the favicon got done.
+- **The favicon is the kit's isotype, both files as shipped:** the white one for a dark
+  browser interface and the black one for a light one, chosen by a media query.

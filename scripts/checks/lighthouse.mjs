@@ -261,7 +261,9 @@ async function main(argv) {
 
   const { default: lighthouse } = await import('lighthouse');
   const chromeLauncher = await import('chrome-launcher');
-  const chrome = await chromeLauncher.launch({ chromeFlags: ['--headless=new'] });
+  // A CI runner has no user namespace for Chrome's sandbox. The page under test is our own.
+  const chromeFlags = ['--headless=new', ...(process.env.CI ? ['--no-sandbox'] : [])];
+  const chrome = await chromeLauncher.launch({ chromeFlags });
 
   const url = new URL('/', baseUrl).href;
   const outDir = join(REPO_ROOT, OUT_DIR);

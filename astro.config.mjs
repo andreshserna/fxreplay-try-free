@@ -46,6 +46,25 @@ export default defineConfig({
   session: false,
   // One page: its CSS travels in the HTML instead of costing a render-blocking request.
   build: { inlineStylesheets: 'always' },
+  // No Markdown is rendered, so the highlighter that would need inline styles is off.
+  markdown: { syntaxHighlight: false },
+  // Astro hashes every script and style it emits, inline ones included, and writes the
+  // policy into each page's <meta>. Nothing is allowed from another origin because
+  // nothing comes from one (ADR 0014). The directives a <meta> policy cannot carry,
+  // such as frame-ancestors, travel as a header (src/server/http/security-headers.ts).
+  security: {
+    csp: {
+      directives: [
+        "default-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "form-action 'self'",
+        "base-uri 'none'",
+        "object-src 'none'",
+      ],
+    },
+  },
   vite: { define: { __RELEASE__: JSON.stringify(process.env.RELEASE ?? release()) } },
   fonts: [
     family('Lato', '--font-display', 'lato', [400, 700, 900]),
