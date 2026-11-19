@@ -422,14 +422,22 @@ describe('GET /api/users', () => {
     }
   });
 
-  it('is closed when no admin token is configured', async () => {
-    api = new UsersApi({
-      service: new UsersService(repository),
-      sessionSecret: SECRET,
-      adminToken: '',
-    });
-    await expectProblem(await list('', ''), 401, 'unauthenticated');
-  });
+  it.each([undefined, ''])(
+    'is closed to everyone when the admin token is %o',
+    async (adminToken) => {
+      // A secret that was never set arrives as undefined, not as an empty string.
+      api = new UsersApi({
+        service: new UsersService(repository),
+        sessionSecret: SECRET,
+        adminToken,
+      });
+      await signUp('ada@example.com');
+      const bare = new Request(`${ORIGIN}/api/users`, { headers: { Authorization: 'Bearer' } });
+      await expectProblem(await api.list(bare), 401, 'unauthenticated');
+      await expectProblem(await list('', ''), 401, 'unauthenticated');
+      await expectProblem(await list('', 'undefined'), 401, 'unauthenticated');
+    },
+  );
 
   it('pages newest first by key, without repeating or skipping anyone', async () => {
     for (let index = 0; index < 5; index += 1) {

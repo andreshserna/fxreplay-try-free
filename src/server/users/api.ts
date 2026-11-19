@@ -43,7 +43,8 @@ export interface UsersApiOptions {
   /** Absent limiters are skipped, so the API still works where the binding is missing. */
   limiters?: { create?: RateLimiter; update?: RateLimiter; list?: RateLimiter };
   sessionSecret: string;
-  adminToken: string;
+  /** Absent or empty: the list is closed to everyone. */
+  adminToken: string | undefined;
   /** Where the conversion and the profile event go. Absent: nothing is emitted. */
   events?: ServerEvents;
   now?: () => Date;
@@ -60,8 +61,9 @@ type BodyResult = { ok: true; value: unknown } | { ok: false; code: ProblemCode 
 const encoder = new TextEncoder();
 
 /** Compares two secrets without leaking how much of them matched. */
-async function secretsMatch(given: string, expected: string): Promise<boolean> {
-  if (expected === '') return false;
+async function secretsMatch(given: string, expected: string | undefined): Promise<boolean> {
+  // A missing secret is `undefined` at runtime, and it must close the door, not open it.
+  if (!given || !expected) return false;
   const [a, b] = await Promise.all(
     [given, expected].map((value) => crypto.subtle.digest('SHA-256', encoder.encode(value))),
   );

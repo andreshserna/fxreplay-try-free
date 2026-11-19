@@ -46,4 +46,4 @@ jobs:
           # background here and awaited by polling.
           npm run preview -- --port 4321 --host 127.0.0.1 > preview.log 2>&1 &
           curl --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4321/ || { cat preview.log; exit 1; }
-          npm run test:api
+          npm run test:api || { cat preview.log; exit 1; }

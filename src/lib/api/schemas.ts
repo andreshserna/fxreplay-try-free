@@ -14,15 +14,14 @@ export const EMAIL_MAX_LENGTH = 254;
 const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 /** Trimmed and lowercased, then checked for shape only. Deliverability is not checked here. */
-export const emailSchema = z
-  .string({ error: 'Enter your email.' })
-  .check(
-    z.trim(),
-    z.toLowerCase(),
-    z.minLength(1, { error: 'Enter your email.' }),
-    z.maxLength(EMAIL_MAX_LENGTH, { error: 'That email is too long.' }),
-    z.regex(EMAIL_SHAPE, { error: 'Enter an email like name@example.com.' }),
-  );
+export const emailSchema = z.string({ error: 'Enter your email.' }).check(
+  z.trim(),
+  z.toLowerCase(),
+  z.minLength(1, { error: 'Enter your email.' }),
+  // Abort here: the shape check below must never run on a long hostile string.
+  z.maxLength(EMAIL_MAX_LENGTH, { error: 'That email is too long.', abort: true }),
+  z.regex(EMAIL_SHAPE, { error: 'Enter an email like name@example.com.' }),
+);
 
 const label = z.string().check(z.maxLength(200));
 

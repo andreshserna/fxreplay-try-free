@@ -21,9 +21,20 @@ function localSecret(name: string): string {
 }
 
 const ADMIN_TOKEN = process.env['ADMIN_TOKEN'] ?? localSecret('ADMIN_TOKEN');
+if (!ADMIN_TOKEN) {
+  // Skipping would report green without testing the list. Fail instead.
+  throw new Error('ADMIN_TOKEN is not set and .dev.vars has none: run `npm run setup` first.');
+}
 
-/** A distinct client address per call, so one test never spends another's rate limit. */
-const address = () => `198.51.100.${1 + Math.floor(Math.random() * 250)}`;
+/**
+ * A distinct client address per call, so one test never spends another's rate limit.
+ * From a counter seeded by the clock: two runs within the limiter's minute do not collide.
+ */
+let addressCounter = Math.floor(Date.now() / 1000) % 60000;
+const address = () => {
+  addressCounter += 1;
+  return `10.${200 + (addressCounter >> 16)}.${(addressCounter >> 8) & 255}.${addressCounter & 255}`;
+};
 const uniqueEmail = () => `contract-${randomUUID()}@example.com`;
 const key = () => randomUUID();
 
@@ -92,7 +103,7 @@ describe('Users API over HTTP', () => {
     expect((await patch(other.id, sessionOf(first))).status).toBe(403);
   });
 
-  it.skipIf(!ADMIN_TOKEN)('pages through users newest first without repeats', async () => {
+  it('pages through users newest first without repeats', async () => {
     const emails = [uniqueEmail(), uniqueEmail(), uniqueEmail()];
     for (const email of emails) expect((await create(email, key())).status).toBe(201);
 
@@ -114,7 +125,7 @@ describe('Users API over HTTP', () => {
     expect([...ids].sort().reverse()).toEqual(ids);
   });
 
-  it.skipIf(!ADMIN_TOKEN)('stores the visitor from the cookie the collector set', async () => {
+  it('stores the visitor from the cookie the collector set', async () => {
     const batch = {
       context: { release: 'contract-test', page_path: '/', device_class: 'desktop' },
       events: [
