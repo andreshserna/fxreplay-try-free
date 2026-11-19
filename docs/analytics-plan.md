@@ -1,6 +1,42 @@
 # Analytics plan
 
+The business question is one number: of the people marketing sends here, how many create an
+account. Everything below exists to make that number correct, and to explain it when it moves.
+
+The three tables in this document are generated from the code (`npm run gen`), so they cannot
+drift from what the page sends: `src/lib/analytics/registry.ts` is the single source.
+
+## Funnel
+
+| Step | Event | Recorded by |
+|---|---|---|
+| Entry | `landing_viewed` | browser |
+| Intent, where the hero has a button | `cta_clicked` | browser |
+| Started the form | `signup_started` | browser |
+| Sent it | `signup_submitted` | browser |
+| **Primary conversion: the account exists** | `signup_completed` | **server, after the commit** |
+| Secondary: told us how they trade | `profile_completed` | server |
+
+`signup_failed` is not a step. It explains the gap between "sent it" and "the account
+exists", by reason. `web_vitals` and `experiment_exposed` are context for the funnel: whether
+the page was fast for the people in it, and which arm they saw.
+
+## Primary conversion metric
+
+**Signup conversion rate:** visitors with a `signup_completed` within 7 days of their first
+`landing_viewed`, divided by visitors with a `landing_viewed`.
+
+- The unit is the visitor (the anonymous id), not the session or the page view.
+- Split by first-touch source, device class and experiment arm.
+- In an experiment the denominator is `experiment_exposed`, which the server records, so both
+  sides of the ratio are immune to blocked scripts ([experiment plan](experiments/hero_signup.md)).
+- "Account" here means a user row. FX Replay's own `signup_step_completed` fires later, after
+  the plan choice, so the two are not the same number
+  ([ADR 0013](decisions/0013-event-taxonomy-and-primary-metric.md)).
+
 ## Events
+
+Each event names the decision it informs. One that informs none is removed.
 
 <!-- events:start -->
 <!-- Generated from src/lib/analytics/registry.ts by `npm run gen`. Do not edit: change the registry and run the command. -->
@@ -20,6 +56,8 @@
 <!-- events:end -->
 
 ## Context on every event
+
+Call sites pass only an event's own properties. The tracker and the server attach the rest.
 
 <!-- context:start -->
 <!-- Generated from src/lib/analytics/registry.ts by `npm run gen`. Do not edit: change the registry and run the command. -->
@@ -48,6 +86,54 @@
 
 <!-- context:end -->
 
+## Architecture and tooling
+
+```
+browser                         our origin (Cloudflare Worker)            destination
+───────                         ──────────────────────────────            ───────────
+track(name, props) ──batch──▶  POST /api/events  (the collector)
+  typed by the registry          checks every event against the registry
+  no vendor script               refuses server-only events        ──▶  PostHog (capture API)
+                                 adds visitor id, country, bot flag
+dataLayer.push(...)             GET /        ──▶ experiment_exposed ──▶
+  for ad platforms              POST /api/users ─▶ signup_completed ──▶
+                                PATCH /api/users/… ▶ profile_completed ─▶
+```
+
+- **One registry, three uses:** the types that make `track()` refuse an unknown event or
+  property at compile time, the validation the collector runs on every event, and the tables
+  above.
+- **No vendor script on the page.** The tracker (2.4 KB gzipped) posts to our own origin, and
+  the Worker forwards to PostHog after the response is sent
+  ([ADR 0014](decisions/0014-first-party-event-collector.md)). In production at FX Replay the
+  forwarder would point at their existing first-party pipeline.
+- **The visitor id is an `HttpOnly` cookie the server sets and reads.** Scripts never see it.
+  The same id is stored with the user at signup, so analytics and the database join.
+- **PostHog** is the destination for analysis: funnels, breakdowns, experiment readouts. A
+  `dataLayer` push per event is there for ad platforms. No tag manager is loaded in this demo.
+- **With no PostHog key** the collector still validates and then discards, so the site and
+  its tests run without any account.
+
+## Data quality
+
+How the number is kept accurate and trustworthy, in the order a failure would be caught:
+
+| Risk | What prevents or detects it |
+|---|---|
+| A typo in an event or property name | It does not compile: `track()` is typed from the registry |
+| A property with the wrong shape at runtime | The collector validates every event and drops what does not fit |
+| Personal data in a payload | The registry has no free-text type, unknown keys are dropped at the collector, and campaign parameters are forced into lowercase labels that cannot contain "@". A test sends an email in every place it could hide and asserts it never leaves |
+| The conversion lost to an ad blocker | It is emitted by the server after the row is committed, not by the browser |
+| A conversion counted twice | It is not emitted for an idempotent replay, and every event carries an `event_id` to deduplicate on |
+| A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
+| The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |
+| The analytics count drifting from reality | Reconciliation: `signup_completed` events per day against rows in `users` per day. The users table is the truth. A gap above 1% is an incident |
+| Bots and internal traffic | Events from automated agents are flagged `is_bot` and excluded in analysis, not silently dropped. Internal traffic is excluded by source tag |
+| A broken split in an experiment | A sample-ratio check on exposed visitors per arm, before any result is read (`scripts/experiment/stats.mjs`) |
+| A visitor counted twice | Cleared cookies create a new visitor. Accepted, and it biases a comparison toward zero |
+| Wrong timestamps | A browser's clock is trusted within a day. Outside that, the server's time is used |
+| A regression nobody notices | Every event carries the release SHA, so a change in the funnel points at a deploy |
+
 ## Experiments
 
 <!-- experiments:start -->
@@ -58,3 +144,10 @@
 | `hero_signup` | `cta_button` | `cta_button`, `inline_email` | running | [experiments/hero_signup.md](experiments/hero_signup.md) |
 
 <!-- experiments:end -->
+
+## What is not verified yet
+
+- Forwarding to PostHog is tested against a stand-in for its API, not against a real project.
+  The funnel and the reconciliation query are built once a project key exists.
+- The country and bot fields were exercised locally only, where Cloudflare's request data is
+  simulated.
