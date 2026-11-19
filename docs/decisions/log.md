@@ -233,6 +233,11 @@ project or is costly to reverse also has an ADR in this folder.
   before the script has loaded used to submit a form that did nothing useful. Now that press
   creates the account. The idempotency key of a plain form is derived from the visitor and
   the email, so a refresh or a second press is the same request.
+- **The plain-form path is progressive enhancement, not an invention.** It is what GOV.UK's
+  service manual requires ("make your page work with HTML first"), what React Router states
+  as a principle ("everybody has JavaScript disabled until it's loaded"), and what SvelteKit's
+  form actions and Astro's own actions provide. Read on 2026-11-18. It was kept to its
+  smallest form: one endpoint on the same code path and four static pages.
 - **The form further down the page hydrates when the browser is idle,** not when it scrolls
   into view, so it is ready before a visitor can reach it.
 - **A strict Content Security Policy with no `'unsafe-inline'`.** Astro's built-in CSP hashes
@@ -251,3 +256,8 @@ project or is costly to reverse also has an ADR in this folder.
   missing favicon, which is how the favicon got done.
 - **The favicon is the kit's isotype, both files as shipped:** the white one for a dark
   browser interface and the black one for a light one, chosen by a media query.
+- **Deployed to Cloudflare** at a `workers.dev` address, with the canonical URL built in.
+  Checked on the live site: the arm and the visitor cookie on `/`, the security headers on
+  Worker and asset responses, the cache rules, a 422 for a bad email, and a 401 on the user
+  list without a token. Secrets were generated on the deploying machine, outside the
+  repository, and uploaded with the deploy.
