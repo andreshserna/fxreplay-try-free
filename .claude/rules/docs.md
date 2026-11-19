@@ -25,6 +25,7 @@ paths:
 | Document | It must cover |
 |---|---|
 | `README.md` | A 60-second tour first (live URL, what to click, where each deliverable lives), then local setup in as few commands as possible, then assumptions and next steps |
+| `docs/evaluation-sheet.md` | Every line of the brief in the brief's order: what was built, with what, where to check it. Links and commands, no new claims: a number here is one another document already states with how it was measured |
 | `docs/architecture.md` | Two pages and one diagram: structure, major decisions and trade-offs with links to ADRs, the API and integration approach, deployment, infrastructure (hosting, deployment, CI/CD, DNS, CDN and edge, caching, observability, security, reliability), extension points, and what changes if this becomes a production FX Replay system |
 | `docs/api.md` | The contract, with an example for every status code |
 | `docs/analytics-plan.md` | The generated event table (name, trigger, properties, context, decision informed), the funnel, the primary metric, architecture and tooling, data quality |

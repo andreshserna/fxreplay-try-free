@@ -432,3 +432,7 @@ project or is costly to reverse also has an ADR in this folder.
   local run harder (6.4x) and a slow runner's fairer. Tried first and dropped:
   `content-visibility` on the sections below the first screen cut layout work by a tenth and
   needed a script to keep anchors exact.
+- **An evaluation sheet, `docs/evaluation-sheet.md`, linked from the top of the README.** A
+  reviewer grades against the brief's list, and the deliverables are organized by document,
+  not by that list. The sheet follows the brief line by line and only points: what was
+  built, with what, and where to check it. It makes no claim another document does not hold.

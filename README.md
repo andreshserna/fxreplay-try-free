@@ -8,6 +8,9 @@ Claude Code inside a system that is itself part of the submission.
 
 **Live:** https://fxreplay-try-free.mauricioserna123.workers.dev
 
+**Reviewing it?** [docs/evaluation-sheet.md](docs/evaluation-sheet.md) takes the brief line by
+line: what was built for each, with what, and where to check it.
+
 ## The 60-second tour
 
 1. **Open the live site.** You are in one arm of an experiment, decided at the edge before

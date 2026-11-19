@@ -49,7 +49,7 @@ A command that does not exist is "not available", never "passed".
 | `migrations/`, `wrangler.jsonc`, `astro.config.mjs` | D1 schema; bindings; adapter, fonts and build settings |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
 | `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/`, `api/` and `e2e/` tests |
-| `docs/` | `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
+| `docs/` | `evaluation-sheet.md` (the brief line by line), `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
 | `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.

@@ -86,7 +86,7 @@ Target: WCAG 2.2 AA.
 - **Checked by machine, in CI:** axe runs inside the end-to-end tests on both arms, on desktop
   and phone, in the resting state, with a validation error showing, on the profile step, on
   the final state and on every outcome page. The contrast of every color pair the interface
-  uses is computed from the tokens (`npm run check:contrast`, 18 pairs).
+  uses is computed from the tokens (`npm run check:contrast`, 20 pairs).
 - **Forms:** a visible label, an error that is text plus an icon plus a border (never color
   alone), `aria-invalid`, the message tied to the field, focus moved to the field on a failed
   submit and to the heading when the step changes.

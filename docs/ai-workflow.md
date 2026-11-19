@@ -94,8 +94,8 @@ One change, the browser tracker, as it actually went:
   found lost updates under concurrent requests, a quadratic regex, and six rules that no test
   held. All are fixed, each with a test.
 - **Research from real requests.** The research agent read FX Replay's site and found that
-  two starting assumptions were wrong: their site is Astro, not Webflow, and the free plan
-  has no futures. Both changed what was built.
+  the free plan has no futures and tighter limits than its pricing card shows, and that
+  their marketing site is already Astro with React islands. Both changed what was built.
 - **Parallel work with a contract.** While the registry was being designed, three
   specifications ran in parallel on a cheaper model: the API client, the statistics, the
   attribution capture. Each came back with tests and a mutation check.
