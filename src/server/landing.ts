@@ -66,3 +66,18 @@ export async function serveLanding(
   }
   return new Response(document.body, { status: document.status, headers });
 }
+
+/**
+ * The development server renders pages on demand and has no asset store, so there is no
+ * prerendered document to stream. There, "/" sends the visitor to their arm's page.
+ * Assignment and the cookie work the same. No exposure is recorded.
+ */
+export function redirectToArm(request: Request): Response {
+  const visitor = readVisitor(request);
+  const headers = new Headers({
+    Location: `/variants/${assign(EXPERIMENT, visitor.id)}/`,
+    'Cache-Control': 'no-store',
+  });
+  if (visitor.isNew) headers.append('Set-Cookie', visitorCookie(visitor.id));
+  return new Response(null, { status: 302, headers });
+}

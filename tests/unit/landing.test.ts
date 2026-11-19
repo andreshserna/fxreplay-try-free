@@ -4,7 +4,7 @@ import { assign } from '../../src/lib/experiments/registry';
 import { ServerEvents } from '../../src/server/analytics/emitter';
 import { MemorySink } from '../../src/server/analytics/sink';
 import { VISITOR_COOKIE } from '../../src/server/http/visitor';
-import { serveLanding, type Assets } from '../../src/server/landing';
+import { redirectToArm, serveLanding, type Assets } from '../../src/server/landing';
 
 const ORIGIN = 'https://demo.example';
 
@@ -111,5 +111,20 @@ describe('the landing page at the edge', () => {
   it('still serves the page when the analytics destination fails', async () => {
     sink.send = () => Promise.reject(new Error('destination down'));
     expect((await visit()).status).toBe(200);
+  });
+});
+
+describe('the landing page on the development server', () => {
+  it("redirects to the visitor's arm, with the same assignment and cookie", () => {
+    const known = redirectToArm(
+      new Request(`${ORIGIN}/`, { headers: { Cookie: `${VISITOR_COOKIE}=visitor-a` } }),
+    );
+    expect(known.status).toBe(302);
+    expect(known.headers.get('Location')).toBe(`/variants/${assign('hero_signup', 'visitor-a')}/`);
+    expect(known.headers.has('Set-Cookie')).toBe(false);
+
+    const fresh = redirectToArm(new Request(`${ORIGIN}/`));
+    const id = /fxr_aid=([^;]+)/.exec(fresh.headers.get('Set-Cookie') ?? '')?.[1] ?? '';
+    expect(fresh.headers.get('Location')).toBe(`/variants/${assign('hero_signup', id)}/`);
   });
 });

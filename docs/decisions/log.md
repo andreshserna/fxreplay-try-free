@@ -287,3 +287,6 @@ project or is costly to reverse also has an ADR in this folder.
 - **The primary button keeps an edge when hovered or pressed** (`btn-border-primary`): the
   kit's hover and pressed fills fade into the ground. Recorded in the brand notes as a
   question for their design team.
+- **`npm run dev` serves the landing page too.** The development server has no asset store
+  to stream a prerendered arm from, so there "/" redirects to the visitor's arm. Found by
+  running the command a reviewer would run first.
