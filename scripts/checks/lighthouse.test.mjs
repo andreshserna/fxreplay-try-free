@@ -5,6 +5,7 @@ import { assign, EXPERIMENTS } from '../../src/lib/experiments/registry.ts';
 import {
   BUDGETS,
   EXPERIMENT,
+  auditWithRetry,
   calibratedSlowdown,
   contributors,
   extract,
@@ -232,4 +233,27 @@ test('the slowdown stays within what Lighthouse lists, and falls back to its def
   assert.equal(calibratedSlowdown(9000), 10);
   assert.equal(calibratedSlowdown(undefined), 4);
   assert.equal(calibratedSlowdown(Number.NaN), 4);
+});
+
+test('a run Lighthouse could not audit is run again, and never counts as a pass', async () => {
+  const good = { lhr: {} };
+  const broken = { lhr: { runtimeError: { code: 'NO_NAVSTART' } } };
+  const sequence = (results) => {
+    const queue = [...results];
+    return () => Promise.resolve(queue.shift());
+  };
+  const logged = [];
+  const log = (line) => logged.push(line);
+
+  assert.equal(await auditWithRetry(sequence([good]), 3, log), good);
+  assert.deepEqual(logged, []);
+
+  assert.equal(await auditWithRetry(sequence([broken, undefined, good]), 3, log), good);
+  assert.equal(logged.length, 2);
+  assert.match(logged[0], /NO_NAVSTART/);
+
+  await assert.rejects(
+    auditWithRetry(sequence([broken, broken, broken, good]), 3, log),
+    /could not audit the page in 3 attempts: NO_NAVSTART/,
+  );
 });

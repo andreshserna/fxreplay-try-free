@@ -57,7 +57,7 @@ npm run lint && npm run typecheck      # format, lint, types
 npm run check:tokens                   # no color outside the brand tokens
 npm run check:contrast                 # every color pair the interface uses, against WCAG
 npm test                               # 223 unit and contract tests
-npm run test:system                    # 131 tests of the hooks, checkers, generators and statistics
+npm run test:system                    # 132 tests of the hooks, checkers, generators and statistics
 ```
 
 With the preview running:

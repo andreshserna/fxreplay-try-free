@@ -252,22 +252,41 @@ async function serverAnswers(baseUrl) {
   }
 }
 
+/**
+ * A run that Lighthouse could not audit says nothing about the page (NO_NAVSTART, a trace
+ * without its first event, was seen once in CI and under pinned cores), so it is run
+ * again. A page that cannot be audited in three attempts is an error, never a pass.
+ */
+export const AUDIT_ATTEMPTS = 3;
+
+export async function auditWithRetry(audit, attempts = AUDIT_ATTEMPTS, log = console.error) {
+  for (let attempt = 1; ; attempt += 1) {
+    const result = await audit();
+    const reason = result ? result.lhr.runtimeError?.code : 'no result';
+    if (!reason) return result;
+    if (attempt >= attempts) {
+      throw new Error(`Lighthouse could not audit the page in ${attempts} attempts: ${reason}`);
+    }
+    log(
+      `lighthouse: a run could not audit the page (${reason}), running it again (${attempt + 1} of ${attempts}).`,
+    );
+  }
+}
+
 async function auditArm({ lighthouse, port, url, visitorId, runs, slowdown }) {
   const results = [];
   for (let run = 0; run < runs; run += 1) {
-    const result = await lighthouse(url, {
-      port,
-      output: 'json',
-      logLevel: 'error',
-      onlyCategories: CATEGORIES,
-      extraHeaders: { Cookie: `${VISITOR_COOKIE}=${visitorId}` },
-      throttling: { cpuSlowdownMultiplier: slowdown },
-    });
-    if (!result) throw new Error(`Lighthouse returned no result for ${url}`);
+    const result = await auditWithRetry(() =>
+      lighthouse(url, {
+        port,
+        output: 'json',
+        logLevel: 'error',
+        onlyCategories: CATEGORIES,
+        extraHeaders: { Cookie: `${VISITOR_COOKIE}=${visitorId}` },
+        throttling: { cpuSlowdownMultiplier: slowdown },
+      }),
+    );
     const { lhr } = result;
-    if (lhr.runtimeError) {
-      throw new Error(`Lighthouse could not audit ${url}: ${lhr.runtimeError.code}`);
-    }
     for (const warning of lhr.runWarnings ?? []) console.error(`lighthouse: warning: ${warning}`);
     results.push({ lhr, report: result.report, values: extract(lhr) });
   }

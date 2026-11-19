@@ -43,6 +43,8 @@ jobs:
       # real browser with axe, then the Lighthouse budgets. A missed budget fails the build.
       - name: Contract tests, end-to-end tests and performance budgets
         run: |
+          # Without this the step's status would be tee's, and a failed check would pass.
+          set -o pipefail
           # The preview server may stay in the foreground on a runner, so it is sent to the
           # background here and awaited by polling.
           npm run preview -- --port 4321 --host 127.0.0.1 > preview.log 2>&1 &

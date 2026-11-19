@@ -451,3 +451,11 @@ project or is costly to reverse also has an ADR in this folder.
 - **The four-core rule held on its first judged CI run.** On a four-core shared runner the
   same commit that measured 193 and 215 ms on two cores measured 13 and 7 ms, judged and
   passing. Blocking time is judged in CI again.
+- **Two faults in the performance gate, found on one CI run and fixed.** Piping the check
+  into `tee` to publish its table made the step report `tee`'s status: a run where
+  Lighthouse could not audit the page passed. The step now sets `pipefail`. And a run
+  Lighthouse cannot audit (`NO_NAVSTART`) is repeated up to three times, because it says
+  nothing about the page. Three failures are an error, never a pass.
+- **The illustration's pause test compares the replay's position, not what is drawn.** A
+  candle revealed just before the pause was still fading in, and the test failed once on a
+  faster runner. The page was right and the test raced it.
