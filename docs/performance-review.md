@@ -102,12 +102,17 @@ request was rejected: it would spend the Worker's CPU budget on HTML that never 
 |---|---|---|
 | `/_astro/*` (scripts, fonts, images) | `public, max-age=31536000, immutable` | File names carry a content hash |
 | Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 15 KB at most |
-| `/` | `private, no-cache`, `Vary: Cookie`, an `ETag` of the release and the arm | Decided per visitor. A repeat view answers 304 with no body |
+| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. The same holds: no validator reaches the browser, so a repeat view is 15 KB |
 | The API | `no-store` | Personal data and one-time answers |
 
 Everything is served from Cloudflare's edge. The one compromise is `/`: because the arm is
 chosen per visitor, no shared cache holds the landing document. The production fix is a
 cache key that includes the arm.
+
+HTML leaves this host compressed and without an `ETag`, so a repeat view is never a 304.
+An `ETag` set by the Worker survived only with `no-transform`, which switched compression
+off: 55 KB in place of 15 KB (curl against the deployment, 2026-11-19). Compression was
+kept.
 
 ## Production risks
 

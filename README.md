@@ -53,7 +53,7 @@ npm run preview        # the build on the real Workers runtime, at http://localh
 npm run lint && npm run typecheck      # format, lint, types
 npm run check:tokens                   # no color outside the brand tokens
 npm run check:contrast                 # every color pair the interface uses, against WCAG
-npm test                               # 215 unit and contract tests
+npm test                               # 214 unit and contract tests
 npm run test:system                    # 128 tests of the hooks, checkers, generators and statistics
 ```
 

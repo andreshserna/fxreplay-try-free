@@ -327,9 +327,12 @@ project or is costly to reverse also has an ADR in this folder.
   deployment, axe and a keyboard pass on every state):
   - A 404 page of our own, with a way back to the offer. The framework's default was a dead
     end for a visitor arriving from a mangled campaign link.
-  - "/" carries its own `ETag`, the release and the arm. On the host, the asset store's
-    validator did not reach the browser, so a repeat view downloaded the page again while
-    the performance review said it answered 304. Now it does, and a test over HTTP holds it.
+  - HTML reaches the browser without a validator on this host, so a repeat view downloads
+    the page again (15 KB) while the performance review said it answered 304. The review
+    now says what happens. Tried on the deployment: an `ETag` of our own on "/" (the
+    release and the arm) survives only with `no-transform`, which also turns the edge's
+    compression off, 55 KB instead of 15 KB on the first view. A first view is what
+    campaign traffic is, so the validator was given up, not the compression.
   - The step heading after the signup is an `h2`: as an `h3` it had no parent heading once
     the closing section's own heading steps aside.
   - A status region announces "Creating your account…": the button's label changes, but a
