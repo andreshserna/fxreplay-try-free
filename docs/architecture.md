@@ -104,9 +104,14 @@ Their marketing site is already Astro with React islands (`docs/research/brief.m
 7. **Email verification and abuse controls** that a demo leaves out: verification, a
    challenge on suspicious signups, deliverability checks.
 
-## Not done
+## Verified, and not
 
-The site is not deployed yet: everything above was run on the local Workers runtime
-(`workerd`) with a local D1. Behavior on Cloudflare's network (the client address header,
-header rules from the asset store, D1 provisioning) is the first thing to verify after the
-first deploy.
+The site is deployed at https://fxreplay-try-free.mauricioserna123.workers.dev. Checked on the
+live site on 2026-11-18: the experiment arm and the visitor cookie on `/`, the security
+headers on Worker and asset-store responses, the cache rules for hashed files and static
+pages, a 422 for an invalid email, and a 401 on the user list without a token.
+
+Not verified on Cloudflare's network yet: the rate limits under real traffic, the client
+address header they key on, and events reaching PostHog. The automated suites run against
+the local Workers runtime (`workerd`) with a local D1, not against the deployment: they
+create users and exceed rate limits on purpose.
