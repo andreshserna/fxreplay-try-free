@@ -109,7 +109,10 @@ live site on 2026-11-18: the experiment arm and the visitor cookie on `/`, the s
 headers on Worker and asset-store responses, the cache rules for hashed files and static
 pages, a 422 for an invalid email, and a 401 on the user list without a token.
 
-Not verified on Cloudflare's network yet: the rate limits under real traffic, the client
-address header they key on, and events reaching PostHog. The automated suites run against
+Events reach PostHog from the deployment: nine scripted visits, tagged internal, produced
+the funnel shown in `docs/analytics-plan.md` on 2026-11-19.
+
+Not verified on Cloudflare's network yet: the rate limits under real traffic and the client
+address header they key on. The automated suites run against
 the local Workers runtime (`workerd`) with a local D1, not against the deployment: they
 create users and exceed rate limits on purpose.

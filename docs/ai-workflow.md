@@ -126,4 +126,5 @@ One change, the browser tracker, as it actually went:
 
 `/ship-check`, `design-critic`, `analytics-qa` and `web-quality-auditor` have not run: the
 page is not built beyond its skeleton and the signup. `experiment-analyst` runs on a fixture
-labelled synthetic. No MCP server for PostHog is connected.
+labelled synthetic. No MCP server for PostHog is connected: the funnel in PostHog was built
+through the browser.

@@ -145,9 +145,26 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 
 <!-- experiments:end -->
 
+## Seen working end to end
+
+On 2026-11-19 nine scripted visits ran against the deployed site, tagged as internal traffic
+(`aff=internal`), each stopping at a different step. The events went from the browser to the
+collector on Cloudflare and on to PostHog, and the funnel below is PostHog's own, built from
+them. The server events (`experiment_exposed`, `signup_completed`, `profile_completed`)
+arrived with the same visitor id as the browser events of the same visit, which is what lets
+the funnel join them. The visit that submitted a malformed email produced a `signup_failed`
+and no `signup_submitted`, as designed.
+
+![The signup funnel in PostHog, from internal test traffic](img/posthog-funnel.jpg)
+
+This is test traffic, not a measurement of anything: the numbers show that the pipeline
+counts, not how the page converts. The other visitors in the first step are automated
+audits of the live page.
+
 ## What is not verified yet
 
-- Forwarding to PostHog is tested against a stand-in for its API, not against a real project.
-  The funnel and the reconciliation query are built once a project key exists.
-- The country and bot fields were exercised locally only, where Cloudflare's request data is
-  simulated.
+- The reconciliation of `signup_completed` against the `users` table is defined above and
+  not automated.
+- The country and bot fields were not inspected in PostHog event by event.
+- No real visitor has seen the page, so every rate in this document is a definition, not a
+  result.
