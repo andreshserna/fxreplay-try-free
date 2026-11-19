@@ -179,3 +179,10 @@ Found while making the analysis script follow the amendments above:
     since the last exposure (amendment 3): the analyst does, against the query's cut-off.
 17. **`sample-size.mjs` now prints the two-week floor** as an extra line, so its output is
     one line longer than the block quoted in this plan.
+18. **2026-11-19, before any real traffic: the page around the test changed, the same in both
+    arms.** A header that stays on screen carries a third call to action that leads to the
+    closing form, the label above the headline is gone, and the hero illustration can be
+    played. The element under test is unchanged. The header's button gives the variant's
+    visitors a second way to the closing form, so `form_location` on `signup_submitted` is
+    read with the result: if most of the variant's signups come through the closing form,
+    the inline field is not what won.

@@ -184,7 +184,7 @@ test.describe('the control: a button that leads to the form', () => {
     await openAs(page, baseURL, 'cta_button');
     await expect(page.getByLabel('Email', { exact: true })).toHaveCount(1);
 
-    await page.getByRole('link', { name: 'Start for free' }).first().click();
+    await page.getByRole('main').getByRole('link', { name: 'Start for free' }).first().click();
     await expect(page).toHaveURL(/#signup$/);
     await expect(page.getByLabel('Email', { exact: true })).toBeInViewport();
     await expectAccessible(page);
@@ -392,4 +392,27 @@ test.describe('legibility', () => {
       expect(small).toEqual([]);
     });
   }
+});
+
+test.describe('the header', () => {
+  test('stays on screen, and its call to action leads to the form from anywhere', async ({
+    page,
+    baseURL,
+  }) => {
+    const sent = recordEvents(page);
+    await openAs(page, baseURL, 'inline_email');
+    await page.getByRole('heading', { name: 'Fair questions.' }).scrollIntoViewIfNeeded();
+
+    const cta = page.getByRole('banner').getByRole('link', { name: 'Start for free' });
+    await expect(cta).toBeInViewport();
+    await cta.click();
+    await expect(page).toHaveURL(/#signup$/);
+    await expect(page.getByLabel('Email', { exact: true }).last()).toBeFocused();
+
+    await flushEvents(page);
+    expect(sent.events.find((event) => event.name === 'cta_clicked')?.properties).toEqual({
+      cta_name: 'start_free',
+      cta_location: 'header',
+    });
+  });
 });

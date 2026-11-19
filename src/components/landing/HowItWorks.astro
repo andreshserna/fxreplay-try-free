@@ -1,31 +1,164 @@
 ---
+/**
+ * A session in three moments, drawn in the hero illustration's language: one strip of
+ * chart that is replayed, traded on, and read back. The drawings are original and carry
+ * no ticker, price or result.
+ */
 const steps = [
   {
+    id: 'replay',
     name: 'Replay',
     text: 'Pick a market. The chart plays forward candle by candle, and what comes next stays hidden, as it was on the day.',
   },
   {
+    id: 'trade',
     name: 'Trade',
     text: 'Place simulated trades the way your rules call for. FX Replay is not a broker: nothing is executed and no money moves.',
   },
   {
+    id: 'review',
     name: 'Review',
     text: 'Each trade lands in your journal, so you read what your rules did instead of remembering it.',
   },
+] as const;
+
+const WIDTH = 360;
+const HEIGHT = 200;
+const grid = [50, 100, 150];
+
+/** A candle as [center x, wick top, body top, body bottom, wick bottom, rising]. */
+type Candle = readonly [number, number, number, number, number, boolean];
+
+const replayed: Candle[] = [
+  [36, 118, 132, 160, 172, true],
+  [64, 96, 108, 134, 146, true],
+  [92, 88, 100, 112, 126, false],
+  [120, 70, 82, 104, 114, true],
+  [148, 58, 66, 84, 96, true],
+  [176, 62, 72, 92, 104, false],
+  [204, 76, 90, 110, 118, false],
+  [232, 84, 96, 108, 124, true],
+];
+
+const traded: Candle[] = [
+  [36, 60, 70, 96, 108, false],
+  [64, 84, 94, 116, 128, false],
+  [92, 100, 112, 124, 138, true],
+  [120, 92, 104, 118, 130, false],
+  [148, 96, 106, 114, 126, true],
+  [176, 86, 98, 110, 122, true],
+  [204, 92, 102, 112, 120, false],
+];
+const ENTRY_X = 120;
+const ENTRY_Y = 110;
+
+/** Journal rows: which way the trade went, how long its note is, how big its figure is. */
+const journal = [
+  { rising: true, note: 150, figure: 44 },
+  { rising: false, note: 118, figure: 30 },
+  { rising: true, note: 136, figure: 52 },
+  { rising: false, note: 96, figure: 38 },
 ];
 ---
 
 <section class="shell how" aria-labelledby="how-heading">
-  <p class="kicker">How a session works</p>
   <h2 id="how-heading">A month of market days, replayed in an afternoon.</h2>
   <ol>
-    {steps.map((step, index) => (
+    {steps.map((step) => (
       <li>
-        <span class="number" aria-hidden="true">
-          {index + 1}
-        </span>
-        <h3>{step.name}</h3>
-        <p>{step.text}</p>
+        <div class="moment">
+          <svg viewBox={`0 0 ${WIDTH} ${HEIGHT}`} aria-hidden="true">
+            {step.id !== 'review' &&
+              grid.map((line) => <path class="grid" d={`M0 ${line}H${WIDTH}`} />)}
+
+            {step.id === 'replay' && (
+              <>
+                <defs>
+                  <pattern id="ahead" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <path d="M-2 12 12 -2" class="hatch" />
+                  </pattern>
+                </defs>
+                <rect class="future" x="260" y="0" width={WIDTH - 260} height={HEIGHT} />
+                {replayed.map(([x, top, bodyTop, bodyBottom, bottom, rising]) => (
+                  <g class={rising ? 'rising' : 'falling'}>
+                    <path class="wick" d={`M${x} ${top}V${bottom}`} />
+                    <rect
+                      class="body"
+                      x={x - 6}
+                      y={bodyTop}
+                      width="12"
+                      height={bodyBottom - bodyTop}
+                      rx="2.5"
+                    />
+                  </g>
+                ))}
+                <path class="playhead" d={`M260 0V${HEIGHT}`} />
+                <path class="handle" d="M253 0h14v9l-7 7-7-7z" />
+              </>
+            )}
+
+            {step.id === 'trade' && (
+              <>
+                <rect
+                  class="target"
+                  x={ENTRY_X}
+                  y="46"
+                  width={WIDTH - ENTRY_X}
+                  height={ENTRY_Y - 46}
+                />
+                <rect class="stop" x={ENTRY_X} y={ENTRY_Y} width={WIDTH - ENTRY_X} height="42" />
+                {traded.map(([x, top, bodyTop, bodyBottom, bottom, rising]) => (
+                  <g class={rising ? 'rising' : 'falling'}>
+                    <path class="wick" d={`M${x} ${top}V${bottom}`} />
+                    <rect
+                      class="body"
+                      x={x - 6}
+                      y={bodyTop}
+                      width="12"
+                      height={bodyBottom - bodyTop}
+                      rx="2.5"
+                    />
+                  </g>
+                ))}
+                <path class="entry" d={`M${ENTRY_X} ${ENTRY_Y}H${WIDTH}`} />
+                <circle class="marker" cx={ENTRY_X} cy={ENTRY_Y} r="5" />
+                {/* The two levels, with the handles a trader drags. */}
+                <path class="level up" d={`M${ENTRY_X} 46H${WIDTH}`} />
+                <path class="level" d={`M${ENTRY_X} ${ENTRY_Y + 42}H${WIDTH}`} />
+                <rect class="grip up" x={WIDTH - 44} y="38" width="28" height="16" rx="4" />
+                <rect class="grip" x={WIDTH - 44} y={ENTRY_Y + 34} width="28" height="16" rx="4" />
+              </>
+            )}
+
+            {step.id === 'review' && (
+              <>
+                <rect class="sheet" x="28" y="22" width={WIDTH - 56} height={HEIGHT - 44} rx="10" />
+                {journal.map((row, index) => {
+                  const y = 50 + index * 34;
+                  return (
+                    <g class={row.rising ? 'rising' : 'falling'}>
+                      {index > 0 && <path class="rule" d={`M44 ${y - 17}H${WIDTH - 44}`} />}
+                      <rect class="body" x="46" y={y - 9} width="8" height="18" rx="2.5" />
+                      <rect class="note" x="70" y={y - 4} width={row.note} height="8" rx="4" />
+                      <rect
+                        class="figure"
+                        x={WIDTH - 46 - row.figure}
+                        y={y - 4}
+                        width={row.figure}
+                        height="8"
+                        rx="4"
+                      />
+                    </g>
+                  );
+                })}
+              </>
+            )}
+          </svg>
+        </div>
+        <div class="copy">
+          <h3>{step.name}</h3>
+          <p>{step.text}</p>
+        </div>
       </li>
     ))}
   </ol>
@@ -34,7 +167,7 @@ const steps = [
 <style>
   .how {
     display: grid;
-    gap: var(--space-4);
+    gap: var(--space-7);
     padding-block: var(--section);
   }
 
@@ -45,44 +178,176 @@ const steps = [
 
   ol {
     display: grid;
-    gap: var(--space-5);
-    margin: var(--space-5) 0 0;
+    gap: var(--space-7);
+    margin: 0;
     padding: 0;
     list-style: none;
   }
 
+  li {
+    display: grid;
+    gap: var(--space-5);
+  }
+
+  /* Each moment of a session, drawn at a size that shows it. */
+  .moment {
+    overflow: hidden;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-surface);
+    background:
+      radial-gradient(
+        120% 140% at 15% 0%,
+        color-mix(in srgb, var(--chart-up) 12%, transparent),
+        transparent 55%
+      ),
+      var(--bg-secondary);
+  }
+
+  .moment svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .copy {
+    display: grid;
+    align-content: center;
+    gap: var(--space-3);
+  }
+
+  /* Side by side on a wide screen, the drawing changing sides from one row to the next. */
   @media (width >= 62rem) {
     ol {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: var(--space-8);
+    }
+
+    li {
+      grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+      align-items: center;
+      gap: var(--space-8);
+    }
+
+    li:nth-child(even) {
+      grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    }
+
+    li:nth-child(even) .moment {
+      order: 2;
     }
   }
 
-  li {
-    display: grid;
-    align-content: start;
-    gap: var(--space-3);
-    padding: var(--space-5);
-    border: 1px solid var(--border-primary);
-    border-radius: var(--radius-surface);
-    background: var(--bg-secondary);
-  }
-
-  .number {
-    display: grid;
-    place-items: center;
-    width: 2rem;
-    height: 2rem;
-    border: 1px solid var(--border-tertiary);
-    border-radius: 0.5rem;
-    font-size: var(--step--1);
-    font-weight: 700;
-  }
-
   h3 {
-    font-size: var(--step-2);
+    font-size: var(--step-3);
   }
 
   li p {
+    max-width: 30rem;
     color: var(--text-secondary);
+    font-size: var(--step-1);
+    line-height: 1.5;
+  }
+
+  .grid {
+    stroke: var(--chart-grid);
+    stroke-width: 1;
+  }
+
+  .wick {
+    stroke-width: 2;
+    stroke-linecap: round;
+  }
+
+  .rising .wick {
+    stroke: var(--chart-up);
+  }
+
+  .rising .body {
+    fill: var(--chart-up);
+  }
+
+  .falling .wick {
+    stroke: var(--chart-down);
+  }
+
+  .falling .body {
+    fill: var(--chart-down);
+  }
+
+  .hatch {
+    stroke: var(--chart-future);
+    stroke-width: 1;
+  }
+
+  .future {
+    fill: url('#ahead');
+  }
+
+  .playhead {
+    stroke: var(--chart-playhead);
+    stroke-width: 1.5;
+  }
+
+  .handle {
+    fill: var(--chart-playhead);
+  }
+
+  .target {
+    fill: color-mix(in srgb, var(--chart-up) 20%, transparent);
+  }
+
+  .stop {
+    fill: color-mix(in srgb, var(--chart-down) 12%, transparent);
+  }
+
+  .entry {
+    stroke: var(--icon-primary);
+    stroke-width: 1;
+    stroke-dasharray: 2 5;
+  }
+
+  .marker {
+    fill: var(--bg-secondary);
+    stroke: var(--icon-primary);
+    stroke-width: 2;
+  }
+
+  .level {
+    stroke: var(--chart-down);
+    stroke-width: 1;
+    opacity: 0.5;
+  }
+
+  .level.up {
+    stroke: var(--chart-up);
+    opacity: 1;
+  }
+
+  .grip {
+    fill: var(--chart-down);
+    opacity: 0.6;
+  }
+
+  .grip.up {
+    fill: var(--chart-up);
+    opacity: 1;
+  }
+
+  .sheet {
+    fill: var(--bg-primary);
+    stroke: var(--border-secondary);
+  }
+
+  .rule {
+    stroke: var(--border-secondary);
+    stroke-width: 1;
+  }
+
+  .note {
+    fill: var(--border-secondary);
+  }
+
+  .figure {
+    fill: var(--chart-grid);
+    stroke: var(--border-secondary);
   }
 </style>

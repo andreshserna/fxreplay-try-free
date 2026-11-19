@@ -17,7 +17,6 @@ const people = [
 ---
 
 <section class="shell audience" aria-labelledby="audience-heading">
-  <p class="kicker">Who it is for</p>
   <h2 id="audience-heading">Wherever you are with your strategy.</h2>
   <ul>
     {people.map((person) => (
@@ -32,7 +31,7 @@ const people = [
 <style>
   .audience {
     display: grid;
-    gap: var(--space-4);
+    gap: var(--space-6);
     padding-block: var(--section);
     border-top: 1px solid var(--border-primary);
   }
@@ -44,7 +43,8 @@ const people = [
 
   ul {
     display: grid;
-    margin: var(--space-5) 0 0;
+    align-content: start;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
@@ -56,11 +56,14 @@ const people = [
     border-top: 1px solid var(--border-primary);
   }
 
+  li:last-child {
+    border-bottom: 1px solid var(--border-primary);
+  }
+
   @media (width >= 62rem) {
-    li {
+    .audience {
       grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
       gap: var(--space-8);
-      align-items: baseline;
     }
   }
 

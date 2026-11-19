@@ -5,10 +5,7 @@ import { QUESTIONS } from './faq';
 ---
 
 <section class="shell faq" aria-labelledby="faq-heading">
-  <div>
-    <p class="kicker">Before you start</p>
-    <h2 id="faq-heading">Fair questions.</h2>
-  </div>
+  <h2 id="faq-heading">Fair questions.</h2>
   <div class="list">
     {QUESTIONS.map((item) => (
       <details>
@@ -35,7 +32,6 @@ import { QUESTIONS } from './faq';
   }
 
   h2 {
-    margin-top: var(--space-4);
     font-size: var(--step-3);
   }
 

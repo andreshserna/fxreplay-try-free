@@ -404,3 +404,23 @@ project or is costly to reverse also has an ADR in this folder.
 - **A call to action travels to the form instead of cutting to it.** `scroll-behavior:
   smooth`, off under reduced motion. The cursor enters the email field when the page has
   arrived (`scrollend`), not on the tap: focusing first raises a phone's keyboard mid-way.
+- **A redesign against the category's own pages** ([research](../research/visual-patterns.md):
+  five rendered sites, 2026-11-19). What they share and this page lacked:
+  - **The steps are shown, not boxed.** Three alternating rows, each with an original
+    drawing of its moment (a replay, a trade with its two levels, a journal). No site in the
+    category shows steps as three numbered boxes; all show the product.
+  - **A label only where it adds something.** The uppercase label above every section
+    heading is gone, the one above the headline included. No site puts one on every section.
+  - **The figures are a line of proof, lighter than the headline.** Stats rows exist on
+    three of five sites and are never the loudest thing. "2003" became "23 years of EUR/USD
+    history": a year is not a measure.
+  - **The header stays, with a call to action in it,** as on four of five. It is an outline
+    button, so the filled one still belongs to the hero and the form. A new
+    `cta_location: header`.
+  - **The illustration reaches the first phone screen:** its top is at 444px of 780 at 360
+    wide, with its controls in view. Before, it started at about 520.
+  - **No stock photographs.** Two were mocked up and dropped: one stock-looking photo was
+    found on one of the five sites, outside its pitch. The category shows the tool.
+- **The footer ends the page the way a replay ends:** a tape of candles that stops at the
+  playhead, then the wordmark and the two notices side by side. Decoration in the hero's
+  language, inline SVG, no request.

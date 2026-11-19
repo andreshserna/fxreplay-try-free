@@ -2,12 +2,16 @@
 /**
  * Three figures, each read on fxreplay.com (docs/research/brief.md, section 2). The
  * first is FX Replay's own claim and is worded as theirs. The second is a count of
- * their Markets page. None is a result a trader can expect.
+ * their Markets page. The third counts from the year their EUR/USD history starts.
+ * None is a result a trader can expect.
+ *
+ * Set as a line of proof, lighter than the headline: in this category a stats row is
+ * common, and it is never the loudest thing on the page (docs/research/visual-patterns.md).
  */
 const figures = [
   { value: '1M+', label: 'traders have used FX Replay, by its own count' },
-  { value: '173', label: 'markets you can replay on the free plan' },
-  { value: '2003', label: 'is where the EUR/USD history starts' },
+  { value: '173', label: 'markets to replay on the free plan' },
+  { value: '23 years', label: 'of EUR/USD history, back to 2003' },
 ];
 ---
 
@@ -27,47 +31,48 @@ const figures = [
   .stats {
     display: grid;
     gap: var(--space-4);
-    padding-block: var(--space-6);
-    border-block: 1px solid var(--border-primary);
+    padding-block: var(--space-5);
+    border-top: 1px solid var(--border-primary);
   }
 
   dl {
     display: grid;
-    gap: var(--space-5);
+    gap: var(--space-3);
     margin: 0;
   }
 
-  @media (width >= 40rem) {
+  @media (width >= 62rem) {
     dl {
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: var(--space-6);
     }
   }
 
+  /* The figure leads its sentence. The markup keeps the term before its value. */
   dl div {
     display: flex;
-    flex-direction: column-reverse;
-    gap: var(--space-1);
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    align-items: baseline;
+    gap: var(--space-3);
   }
 
   dd {
+    flex: none;
     margin: 0;
     font-family: var(--font-display);
-    font-size: var(--step-3);
-    font-weight: 900;
-    line-height: 1;
-    letter-spacing: -0.02em;
+    font-size: var(--step-2);
+    font-weight: 700;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   dt {
-    max-width: 18rem;
     color: var(--text-secondary);
-    font-size: var(--step-0);
     line-height: 1.4;
   }
 
   p {
     color: var(--text-secondary);
-    font-size: var(--step--1);
   }
 </style>

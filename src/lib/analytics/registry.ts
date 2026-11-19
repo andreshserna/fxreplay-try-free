@@ -63,7 +63,7 @@ export const EVENTS = {
       },
       cta_location: {
         type: 'enum',
-        values: ['hero', 'plan'],
+        values: ['header', 'hero', 'plan'],
         description: 'The section the button sits in.',
       },
     },

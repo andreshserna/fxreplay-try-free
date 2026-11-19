@@ -44,7 +44,7 @@ Each event names the decision it informs. One that informs none is removed.
 | Event | Fires | Trigger | Properties | Decision it informs |
 | --- | --- | --- | --- | --- |
 | `landing_viewed` | browser | Once per page load, after the landing page has rendered in a browser. | none | The denominator of the funnel: whether traffic from a source is worth buying. |
-| `cta_clicked` | browser | A visitor activates a call to action that leads to the signup form. | `cta_name`: `start_free`<br>`cta_location`: `hero`, `plan` | Which calls to action earn their place on the page. |
+| `cta_clicked` | browser | A visitor activates a call to action that leads to the signup form. | `cta_name`: `start_free`<br>`cta_location`: `header`, `hero`, `plan` | Which calls to action earn their place on the page. |
 | `replay_demo_used` | browser | The visitor's first use of the hero illustration's controls or a tap on its chart, once per page load. | `control`: `play`, `step`, `speed` | Whether the interactive illustration earns its place: do visitors who play it sign up more than those who do not. |
 | `signup_started` | browser | The first input into the email field, once per page load. | `form_location`: `hero`, `closing` | Whether visitors are lost before the form (interest) or in it (friction). |
 | `signup_submitted` | browser | The form passes client validation and a create request is sent. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50 | How many attempts never become accounts. |

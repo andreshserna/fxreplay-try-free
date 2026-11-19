@@ -1,30 +1,200 @@
-<footer class="shell site-footer">
-  <p>
-    <strong>Candidate challenge demo.</strong> This is not the official FX Replay site. It was built
-    for a hiring challenge, and accounts created here exist only on this demo. The real product is
-    at <a href="https://fxreplay.com/">fxreplay.com</a>.
-  </p>
-  <p>
-    FX Replay is not a broker. It does not execute real trades and does not handle client funds.
-    Backtesting is practice on historical data. It does not predict or promise results.
-  </p>
+---
+import wordmark from '../../assets/brand/FXReplayLogo.svg';
+
+/**
+ * The page ends the way a replay does: a tape of candles that stops at the playhead,
+ * with what comes next hidden. Decoration in the hero illustration's language, drawn
+ * from a fixed pseudo-random walk so every build is the same. No ticker, no prices.
+ */
+const WIDTH = 1200;
+const HEIGHT = 96;
+const PITCH = 16;
+const PLAYHEAD = 1040;
+
+let state = 4127;
+const random = () => {
+  state = (state * 1664525 + 1013904223) % 4294967296;
+  return state / 4294967296;
+};
+
+let level = 52;
+const tape = Array.from({ length: PLAYHEAD / PITCH }, (_, index) => {
+  const open = level;
+  const drift = Math.sin(index / 5.2) * 2.4;
+  level = Math.min(74, Math.max(24, open + drift + (random() - 0.5) * 24));
+  const top = Math.min(open, level);
+  const bottom = Math.max(open, level);
+  return {
+    x: index * PITCH + PITCH / 2,
+    top,
+    height: Math.max(bottom - top, 4),
+    wickTop: top - 2 - random() * 7,
+    wickBottom: bottom + 2 + random() * 7,
+    // On screen, up is a smaller y.
+    rising: level <= open,
+  };
+});
+---
+
+<footer class="site-footer">
+  <svg
+    class="tape"
+    viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
+    preserveAspectRatio="xMaxYMid slice"
+    aria-hidden="true"
+  >
+    <defs>
+      <pattern id="tape-ahead" width="10" height="10" patternUnits="userSpaceOnUse">
+        <path d="M-2 12 12 -2" class="hatch"></path>
+      </pattern>
+    </defs>
+    {tape.map((candle) => (
+      <g class={candle.rising ? 'rising' : 'falling'}>
+        <path class="wick" d={`M${candle.x} ${candle.wickTop}V${candle.wickBottom}`} />
+        <rect
+          class="body"
+          x={candle.x - 4}
+          y={candle.top}
+          width="8"
+          height={candle.height}
+          rx="2"
+        />
+      </g>
+    ))}
+    <rect class="ahead" x={PLAYHEAD} y="0" width={WIDTH - PLAYHEAD} height={HEIGHT}></rect>
+    <path class="playhead" d={`M${PLAYHEAD} 0V${HEIGHT}`}></path>
+  </svg>
+
+  <div class="shell body">
+    <div class="brand">
+      <a href="#top" aria-label="FX Replay, candidate demo: back to the top of the page">
+        <img
+          src={wordmark.src}
+          width={wordmark.width}
+          height={wordmark.height}
+          alt="FX Replay"
+          loading="lazy"
+        />
+      </a>
+      <p>
+        The real product is at <a href="https://fxreplay.com/">fxreplay.com</a>.
+      </p>
+    </div>
+    <p>
+      <strong>Candidate challenge demo.</strong> This is not the official FX Replay site. It was
+      built for a hiring challenge, and accounts created here exist only on this demo.
+    </p>
+    <p>
+      <strong>Not a broker.</strong> FX Replay does not execute real trades and does not handle
+      client funds. Backtesting is practice on historical data. It does not predict or promise
+      results.
+    </p>
+  </div>
 </footer>
 
 <style>
   .site-footer {
-    display: grid;
-    gap: var(--space-3);
-    padding-block: var(--space-6) var(--space-7);
     border-top: 1px solid var(--border-primary);
+    background: linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--chart-up) 9%, var(--bg-secondary)),
+      var(--bg-primary) 9rem
+    );
     color: var(--text-secondary);
-    font-size: var(--step--1);
+  }
+
+  .tape {
+    display: block;
+    width: 100%;
+    height: 6rem;
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .wick {
+    stroke-width: 1.5;
+    stroke-linecap: round;
+  }
+
+  .rising .wick {
+    stroke: var(--chart-up);
+  }
+
+  .rising .body {
+    fill: var(--chart-up);
+  }
+
+  .falling .wick {
+    stroke: var(--chart-down);
+  }
+
+  .falling .body {
+    fill: var(--chart-down);
+  }
+
+  /* Quiet: this is where the page ends, not a second illustration. */
+  .rising,
+  .falling {
+    opacity: 0.55;
+  }
+
+  .hatch {
+    stroke: var(--chart-future);
+    stroke-width: 1;
+  }
+
+  .ahead {
+    fill: url('#tape-ahead');
+  }
+
+  .playhead {
+    stroke: var(--chart-playhead);
+    stroke-width: 1.5;
+  }
+
+  .body {
+    display: grid;
+    gap: var(--space-5);
+    padding-block: var(--space-7);
+  }
+
+  @media (width >= 62rem) {
+    .body {
+      grid-template-columns: minmax(0, 4fr) minmax(0, 5fr) minmax(0, 5fr);
+      gap: var(--space-8);
+    }
+  }
+
+  .brand {
+    display: grid;
+    align-content: start;
+    gap: var(--space-4);
+  }
+
+  .brand > a {
+    display: block;
+    justify-self: start;
+    border-radius: 0.25rem;
+  }
+
+  /* The wordmark as shipped: scaled as a whole, never recolored. */
+  img {
+    display: block;
+    width: auto;
+    height: 1.5rem;
   }
 
   p {
-    max-width: 48rem;
+    max-width: 30rem;
+    line-height: 1.6;
+  }
+
+  p a {
+    color: var(--text-link);
   }
 
   strong {
+    display: block;
+    margin-bottom: var(--space-1);
     color: var(--text-primary);
   }
 </style>

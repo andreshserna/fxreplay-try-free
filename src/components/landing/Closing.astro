@@ -7,7 +7,6 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
 <section id="signup" class="shell closing" aria-labelledby="signup-heading">
   <div class="panel">
     <div class="ask">
-      <p class="kicker">Try FX Replay free</p>
       <h2 id="signup-heading">Your first replay session is one email away.</h2>
     </div>
     <Signup location="closing" cta="Start for free" promises={promises} />
@@ -17,7 +16,7 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
 <style>
   .closing {
     padding-block: var(--section);
-    scroll-margin-top: var(--space-5);
+    scroll-margin-top: var(--header-height);
   }
 
   .panel {

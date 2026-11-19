@@ -18,7 +18,6 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
 
 <section class="hero">
   <div class="pitch">
-    <p class="kicker">Try FX Replay free</p>
     <h1>Test your strategy before you trust it.</h1>
     <p class="lede">
       Replay real market history candle by candle, place simulated trades and review what your rules
@@ -54,8 +53,9 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
       [full-start] minmax(var(--gutter), 1fr)
       [content-start] minmax(0, var(--measure))
       [content-end] minmax(var(--gutter), 1fr) [full-end];
-    row-gap: var(--space-7);
-    padding-block: var(--space-5) var(--space-7);
+    /* On a phone the illustration has to reach the first screen: little air above it. */
+    row-gap: var(--space-6);
+    padding-block: var(--space-4) var(--space-7);
   }
 
   .pitch,
@@ -125,7 +125,7 @@ const promises = ['Free plan', 'No credit card', 'No time limit'];
        illustration stays beside the headline instead of sliding down. */
     .stage {
       position: sticky;
-      top: var(--space-6);
+      top: calc(var(--header-height) + var(--space-5));
       grid-column: stage-start / full-end;
       align-self: start;
     }
