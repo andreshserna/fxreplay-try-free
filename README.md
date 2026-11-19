@@ -61,7 +61,7 @@ With the preview running:
 
 ```sh
 npm run test:api                       # the API contract over HTTP, against the Worker and a real D1
-npm run test:e2e                       # 38 browser tests on desktop and phone, with axe
+npm run test:e2e                       # 44 browser tests on desktop and phone, with axe
 npm run lighthouse                     # the performance budgets, on both experiment arms
 ```
 

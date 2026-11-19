@@ -21,7 +21,7 @@ export const PROBLEMS = {
   },
   forbidden: {
     status: 403,
-    title: 'This request is not allowed to change that user',
+    title: 'This request is not allowed',
     when: "A profile update uses a session that belongs to another user, or its Origin is missing or is not the site's. The event collector also refuses a request from another origin with it.",
   },
   not_found: {

@@ -310,3 +310,16 @@ project or is costly to reverse also has an ADR in this folder.
     and the "step back" key is gone: rewind is a paid feature.
 - **Hover styles apply only where a pointer can hover,** so a tapped button on a phone does
   not stay on its dark hover fill.
+- **Changes from the analytics review** (`analytics-qa`, in a real browser against the local
+  Workers runtime):
+  - A batch the collector could not be reached with is kept and sent again when the
+    connection returns. Before, a failure while offline was dropped, which is exactly when a
+    failed signup happens and when the failure guardrail needs the event.
+  - A page under `/variants/` opened directly is a preview, and the tracker records nothing
+    there. The edge did not assign it, so its events would have named an arm the visitor was
+    never given.
+  - `signup_started` fires once per page load, as the registry says, not once per form.
+  - The registry lists only what the page can send: two CTA locations, seven failure
+    reasons. A value nothing emits is a promise the data cannot keep.
+  - The tracker's request sends no referrer: the page's address can carry campaign
+    parameters.

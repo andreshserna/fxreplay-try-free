@@ -208,19 +208,39 @@ export function createTracker(deps: TrackerDeps): Tracker {
 
 let instance: Tracker | undefined;
 
+/** Batches the collector could not be reached with, kept to send again. Bounded. */
+const undelivered: string[] = [];
+const MAX_UNDELIVERED = 10;
+
+function post(body: string): void {
+  fetch(ENDPOINT, {
+    method: 'POST',
+    body,
+    keepalive: true,
+    credentials: 'same-origin',
+    // The page's address can carry campaign parameters. The collector does not need it.
+    referrerPolicy: 'no-referrer',
+    headers: { 'Content-Type': 'application/json' },
+  }).catch(() => {
+    // Offline or a dropped connection: exactly the moments a failed signup happens in.
+    // Keep the batch and try again when the connection returns or on the next send.
+    if (undelivered.length < MAX_UNDELIVERED) undelivered.push(body);
+  });
+}
+
+/** Sends again what an earlier attempt could not deliver. Each event keeps its event_id. */
+function resend(): void {
+  for (const body of undelivered.splice(0)) post(body);
+}
+
 function sendToCollector(body: string, urgent: boolean): void {
   try {
     if (urgent && navigator.sendBeacon(ENDPOINT, body)) return;
   } catch {
     // Fall through to fetch.
   }
-  fetch(ENDPOINT, {
-    method: 'POST',
-    body,
-    keepalive: true,
-    credentials: 'same-origin',
-    headers: { 'Content-Type': 'application/json' },
-  }).catch(() => undefined);
+  resend();
+  post(body);
 }
 
 /** A UUID where the browser offers one; random hex in an insecure context (a LAN dev URL). */
@@ -237,8 +257,17 @@ const storageOf = (pick: () => Storage): StorageLike => ({
   setItem: (key, value) => pick().setItem(key, value),
 });
 
+/**
+ * A page under /variants/ opened directly is a preview of one arm, not a visit: the edge
+ * did not assign it and recorded no exposure, so its browser events would name an arm the
+ * visitor was never given. Nothing is tracked there. (The development server sends "/"
+ * to these paths, so there they are the page.)
+ */
+const isPreview = (): boolean =>
+  !import.meta.env.DEV && window.location.pathname.startsWith('/variants/');
+
 function browserTracker(): Tracker | undefined {
-  if (typeof window === 'undefined') return undefined;
+  if (typeof window === 'undefined' || isPreview()) return undefined;
   if (instance) return instance;
   const host = window as Window & { dataLayer?: unknown[] };
   const tracker = createTracker({
@@ -265,6 +294,7 @@ function browserTracker(): Tracker | undefined {
     if (document.visibilityState === 'hidden') tracker.flush(true);
   });
   window.addEventListener('pagehide', () => tracker.flush(true));
+  window.addEventListener('online', resend);
   return tracker;
 }
 

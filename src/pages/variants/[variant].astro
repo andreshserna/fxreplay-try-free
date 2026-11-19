@@ -97,7 +97,7 @@ const structuredData = {
 
   // A type-only import: the registry's text stays out of the page's script.
   type CtaLocation = EventProperties<'cta_clicked'>['cta_location'];
-  const locations = ['hero', 'proof', 'plan', 'faq', 'closing'] as const satisfies CtaLocation[];
+  const locations = ['hero', 'plan'] as const satisfies CtaLocation[];
   const isLocation = (value: string | undefined): value is CtaLocation =>
     (locations as readonly (string | undefined)[]).includes(value);
 

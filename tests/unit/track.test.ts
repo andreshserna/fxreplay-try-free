@@ -295,7 +295,7 @@ describe('the tracker', () => {
     expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
 
     failing = false;
-    tracker.track('cta_clicked', { cta_name: 'start_free', cta_location: 'closing' });
+    tracker.track('cta_clicked', { cta_name: 'start_free', cta_location: 'plan' });
     vi.advanceTimersByTime(2000);
     expect(delivered.map((body) => (JSON.parse(body) as Batch).events[0]?.name)).toEqual([
       'cta_clicked',
@@ -322,10 +322,10 @@ describe('the tracker', () => {
     const dataLayer: unknown[] = [];
     const { tracker } = setup({ deps: { dataLayer } });
     tracker.track('landing_viewed');
-    tracker.track('cta_clicked', { cta_name: 'start_free', cta_location: 'faq' });
+    tracker.track('cta_clicked', { cta_name: 'start_free', cta_location: 'plan' });
     expect(dataLayer).toEqual([
       { event: 'landing_viewed' },
-      { event: 'cta_clicked', cta_name: 'start_free', cta_location: 'faq' },
+      { event: 'cta_clicked', cta_name: 'start_free', cta_location: 'plan' },
     ]);
   });
 

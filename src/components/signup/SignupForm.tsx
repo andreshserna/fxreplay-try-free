@@ -44,6 +44,9 @@ const LABELS: Record<string, string> = {
 
 const LOGIN_URL = 'https://app.fxreplay.com/';
 
+/** Whether the visitor has started typing in a form on this page load: once, for any form. */
+let started = false;
+
 /** The first validation message for what was typed, or null when it is a usable email. */
 function emailError(value: string): string | null {
   const parsed = parseEmail(value);
@@ -73,7 +76,6 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
   const input = useRef<HTMLInputElement>(null);
   const decoy = useRef<HTMLInputElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
-  const started = useRef(false);
   const previous = useRef(state);
 
   // Side effects of a transition: the request, the analytics events, and focus.
@@ -196,8 +198,8 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
           aria-invalid={fieldTrouble || undefined}
           aria-describedby={trouble ? errorId : undefined}
           onChange={(event) => {
-            if (!started.current) {
-              started.current = true;
+            if (!started) {
+              started = true;
               track('signup_started', { form_location: location });
             }
             dispatch({ type: 'typed', email: event.currentTarget.value });

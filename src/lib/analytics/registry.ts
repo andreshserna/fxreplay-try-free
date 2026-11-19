@@ -63,7 +63,7 @@ export const EVENTS = {
       },
       cta_location: {
         type: 'enum',
-        values: ['hero', 'proof', 'plan', 'faq', 'closing'],
+        values: ['hero', 'plan'],
         description: 'The section the button sits in.',
       },
     },
@@ -124,7 +124,6 @@ export const EVENTS = {
           'timeout',
           'network',
           'server',
-          'unexpected',
         ],
         description: 'The state the form showed. Never the text the visitor typed.',
       },

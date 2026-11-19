@@ -44,10 +44,10 @@ Each event names the decision it informs. One that informs none is removed.
 | Event | Fires | Trigger | Properties | Decision it informs |
 | --- | --- | --- | --- | --- |
 | `landing_viewed` | browser | Once per page load, after the landing page has rendered in a browser. | none | The denominator of the funnel: whether traffic from a source is worth buying. |
-| `cta_clicked` | browser | A visitor activates a call to action that leads to the signup form. | `cta_name`: `start_free`<br>`cta_location`: `hero`, `proof`, `plan`, `faq`, `closing` | Which calls to action earn their place on the page. |
+| `cta_clicked` | browser | A visitor activates a call to action that leads to the signup form. | `cta_name`: `start_free`<br>`cta_location`: `hero`, `plan` | Which calls to action earn their place on the page. |
 | `signup_started` | browser | The first input into the email field, once per page load. | `form_location`: `hero`, `closing` | Whether visitors are lost before the form (interest) or in it (friction). |
 | `signup_submitted` | browser | The form passes client validation and a create request is sent. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50 | How many attempts never become accounts. |
-| `signup_failed` | browser | A submission ends in anything other than an account, including client validation. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50<br>`reason`: `invalid_email`, `email_taken`, `rate_limited`, `offline`, `timeout`, `network`, `server`, `unexpected` | Which failure to fix first, and whether a release broke the signup. |
+| `signup_failed` | browser | A submission ends in anything other than an account, including client validation. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50<br>`reason`: `invalid_email`, `email_taken`, `rate_limited`, `offline`, `timeout`, `network`, `server` | Which failure to fix first, and whether a release broke the signup. |
 | `signup_completed` | server | The user row has been committed. Not emitted for an idempotent replay. | `user_id`: opaque id | The primary conversion. The numerator of the signup conversion rate. |
 | `profile_completed` | server | A profile update that leaves at least one answer has been saved. | `user_id`: opaque id<br>`markets_count`: integer, 0 to 5<br>`experience`: `beginner`, `intermediate`, `advanced`, optional<br>`goal`: `strategy_testing`, `prop_firm`, `practice`, optional | Signup quality: the guardrail that stops a variant winning with empty accounts. |
 | `experiment_exposed` | server | The edge serves a variant of the page to a visitor, before the HTML is sent. | `experiment`: opaque id<br>`variant`: opaque id | The denominator of each arm, and the sample-ratio check that validates a run. |
@@ -85,6 +85,15 @@ Call sites pass only an event's own properties. The tracker and the server attac
 | `is_bot` | boolean, optional | The user agent looks automated. Set by the server, to filter in analysis. |
 
 <!-- context:end -->
+
+Three rules behind those fields:
+
+- **`via` and `aff` stick.** They are taken from the last touch that has one, otherwise from
+  the first, so an affiliate keeps the credit when a later visit arrives through an ad.
+- **A session is a tab.** It lives in `sessionStorage`, so a link opened in a new tab starts
+  a new session. The visitor id, not the session, is the unit of every metric here.
+- **A page under `/variants/` opened directly is a preview, not a visit.** The edge did not
+  assign it, so the browser tracker records nothing there.
 
 ## Architecture and tooling
 
@@ -124,7 +133,8 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 | A property with the wrong shape at runtime | The collector validates every event and drops what does not fit |
 | Personal data in a payload | The registry has no free-text type, unknown keys are dropped at the collector, and campaign parameters are forced into lowercase labels that cannot contain "@". A test sends an email in every place it could hide and asserts it never leaves |
 | The conversion lost to an ad blocker | It is emitted by the server after the row is committed, not by the browser |
-| A conversion counted twice | It is not emitted for an idempotent replay, and every event carries an `event_id` to deduplicate on |
+| A conversion counted twice | It is not emitted for an idempotent replay, and every event carries an `event_id` to deduplicate on in analysis |
+| Events lost while offline | A batch the collector could not be reached with is kept and sent again when the connection returns, with the same `event_id`s. That is when a failed signup happens, so it is when the failure event matters |
 | A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
 | The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |
 | The analytics count drifting from reality | Reconciliation: `signup_completed` events per day against rows in `users` per day. The users table is the truth. A gap above 1% is an incident |

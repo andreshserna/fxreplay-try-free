@@ -251,3 +251,55 @@ test('the pages a plain form signup lands on are accessible', async ({ page }) =
     await expectAccessible(page);
   }
 });
+
+test.describe('what the tracker records', () => {
+  test('one signup_started per page load, whichever form is typed into first', async ({
+    page,
+    baseURL,
+  }) => {
+    const sent = recordEvents(page);
+    await openAs(page, baseURL, 'inline_email');
+    await page.getByLabel('Email', { exact: true }).last().fill('ada');
+    await page.getByLabel('Email', { exact: true }).first().fill('ada');
+    await flushEvents(page);
+    const started = sent.events.filter((event) => event.name === 'signup_started');
+    expect(started.map((event) => event.properties)).toEqual([{ form_location: 'closing' }]);
+  });
+
+  test('nothing on an arm opened directly: it is a preview, not a visit', async ({ page }) => {
+    const sent = recordEvents(page);
+    await page.goto('/variants/inline_email/');
+    await expect(page.locator('astro-island[ssr]')).toHaveCount(0);
+    await page.getByLabel('Email', { exact: true }).first().fill('ada@');
+    await page.getByLabel('Email', { exact: true }).first().press('Enter');
+    await flushEvents(page);
+    expect(sent.events).toEqual([]);
+  });
+
+  test('a failure while offline is still recorded once the connection is back', async ({
+    page,
+    baseURL,
+    context,
+  }) => {
+    // What the collector actually received: bodies of the requests it answered.
+    const received: string[] = [];
+    page.on('response', (response) => {
+      if (response.url().endsWith('/api/events') && response.status() === 202) {
+        received.push(response.request().postData() ?? '');
+      }
+    });
+    await openAs(page, baseURL, 'inline_email');
+
+    await context.setOffline(true);
+    const field = page.getByLabel('Email', { exact: true }).first();
+    await field.fill(uniqueEmail());
+    await field.press('Enter');
+    await expect(page.getByRole('alert').first()).toContainText('offline');
+    await page.waitForTimeout(2500); // the tracker's own flush, which cannot reach the collector
+    expect(received.join()).not.toContain('signup_failed');
+
+    await context.setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+    await expect.poll(() => received.join()).toContain('"reason":"offline"');
+  });
+});
