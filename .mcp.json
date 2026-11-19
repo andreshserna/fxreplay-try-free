@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "chrome-devtools-mcp@1.13.0",
+        "--headless",
+        "--isolated",
+        "--viewport",
+        "1440x900",
+        "--no-usage-statistics",
+        "--no-performance-crux"
+      ]
+    },
+    "astro-docs": {
+      "type": "http",
+      "url": "https://mcp.docs.astro.build/mcp"
+    }
+  }
+}
