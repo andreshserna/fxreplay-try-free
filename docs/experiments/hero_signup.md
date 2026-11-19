@@ -106,3 +106,55 @@ interval, and the sample-ratio check. `experiment-analyst` applies this table to
   holds, but the baseline measured in such a fortnight is not the normal one.
 - **Device mix.** The split by device class is reported, not tested: the sample is sized for
   the overall effect only.
+
+## Amendments
+
+The plan above is kept as first written. Changes are added here, dated, with their reason.
+
+### 2026-11-18, before any real data exists
+
+The `experiment-analyst` agent applied this plan to a synthetic result set and reviewed the
+plan itself ([its report](hero_signup.synthetic-analysis.md)). It found places where the plan
+was ambiguous or would let a wrong decision through. These amendments close them. No real
+visitor had been exposed when they were written.
+
+1. **Row 4 of the decision table also requires that no guardrail is breached.** As written,
+   a smaller effect with a breached guardrail matched both "ship" and "do not ship". The
+   Metrics section already says a breached guardrail blocks a ship. Row 4 now reads: "Rate
+   up, interval excludes zero, effect below 15%, no guardrail breached".
+2. **The table is read from the top, and the first row that holds decides.** Where two rows
+   hold (a rate that is up, an interval that includes zero and a breached guardrail), the
+   earlier one applies.
+3. **The look happens 7 days after the last exposure,** not at the end of the last day, so
+   every exposed visitor has had the full 7-day window. `profile_completed` is counted within
+   the same 7 days of first exposure.
+4. **"Planned sample" means each arm reaches 6,690.** A random split of exactly twice that
+   leaves one arm short almost every time, so the run is planned to exceed it: whole weeks,
+   until both arms are past the number.
+5. **Replacing the assumed baseline after the first week is done blind.** The pooled rate of
+   both arms replaces the 10%, the +15% stays, and the new planned sample is recorded here as
+   a dated amendment before the final look. The floor of two whole weeks holds whatever the
+   traffic.
+6. **Exclusions are fixed now.** Events flagged `is_bot` are excluded. Internal traffic is
+   any visit whose source tag is `aff=internal`. The sample-ratio check runs on the excluded
+   and on the included population, and both must pass. The population is every visitor to
+   the landing page: no filter by source is applied afterwards.
+7. **The guardrails compare point estimates, and their error rates are known.** At the
+   planned sample, a true 15% drop in profile completion is flagged about 82% of the time,
+   and no drop at all about 3% of the time (the analyst's computation). A breach blocks the
+   ship and calls for a rerun sized for the guardrail. That is deliberately conservative.
+8. **The speed guardrail is also breached by a clear regression,** even when both arms are
+   on the same side of a target: a p75 in the variant more than 10% worse than the control's
+   on LCP, INP or CLS.
+9. **A known limit of the failure guardrail.** It is built on browser events, and a signup
+   through the plain form emits none. The share of accounts created without a
+   `signup_submitted` event is reported per arm, so a difference between arms is visible.
+10. **The split by device class needs a join** from the server events to a browser event of
+    the same visitor. Visitors whose scripts are blocked are reported as "unknown", not
+    dropped.
+11. **With real data, the query that produces the counts is committed with the results,**
+    including the window, the count per visitor and the exclusions.
+12. **The interval decides, the p-value is reported.** In rare boundary cases the two
+    disagree by a hair. The decision table keys on the interval.
+13. **Novelty is not ruled out.** The plan said there was none to wear off. A two-week run
+    has returning visitors, so the lift is also reported by week.

@@ -29,7 +29,8 @@ short:
 | Interval includes zero | **Reject.** Keep the control |
 | Rate down, interval excludes zero | **Reject.** Keep the control |
 
-No peeking: one look, at the end. A baseline of 10% and 1,500 visitors a day are assumptions
+The table is read from the top and the first row that holds decides. No peeking: one look,
+7 days after the last exposure, so every visitor has had the full window. A baseline of 10% and 1,500 visitors a day are assumptions
 that the first week of traffic replaces, and the plan shows how the sample moves with them.
 
 ### What makes the result believable
@@ -41,9 +42,14 @@ that the first week of traffic replaces, and the plan shows how the sample moves
   same blind spots, which is to say none that differ by arm.
 - **The arm is stored with the user** at signup, so a result can be re-derived from the
   database alone.
-- **The analysis is a script,** not a dashboard read by eye: `scripts/experiment/stats.mjs`,
-  tested against values worked by hand. The `experiment-analyst` agent applies the decision
-  table to its output.
+- **The analysis is a script,** not a dashboard read by eye: `scripts/experiment/analyze.mjs`,
+  on statistics tested against values worked by hand. It states facts and which rows of the
+  table hold. The `experiment-analyst` agent applies the table.
+- **The method was rehearsed before any data.** The analyst ran the whole procedure on a
+  result set labelled synthetic, recomputed every number independently, and reviewed the
+  plan. It found thirteen places where the plan was ambiguous or unsafe, and each is closed
+  by a dated amendment: [the report](experiments/hero_signup.synthetic-analysis.md), [the
+  amendments](experiments/hero_signup.md#amendments).
 
 ## Ranked backlog
 
