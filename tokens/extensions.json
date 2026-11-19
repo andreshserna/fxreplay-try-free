@@ -1,0 +1,26 @@
+{
+  "$description": "Tokens this project adds to the FX Replay kit. Every entry aliases a value the kit already has: none introduces a color. The reason for each, with the contrast before and after, is in docs/brand-notes.md.",
+  "color": {
+    "$type": "color",
+    "border-field": {
+      "$value": "{primitive.Dark.dark-200}",
+      "$description": "Boundary of a form field. The kit's border tokens reach 1.81:1 at most on the ground, and a control's boundary needs 3:1. dark-200 is the value the kit's own outline button uses."
+    },
+    "border-field-error": {
+      "$value": "{primitive.System.error}",
+      "$description": "Boundary of a form field in error. The kit's border-error (error-dark) is 2.46:1 on the ground. Always paired with an icon and a message, never color alone."
+    },
+    "border-focus": {
+      "$value": "{primitive.Blue.blue-500}",
+      "$description": "Focus ring: 2px with a 2px offset, so it sits on the ground. One step lighter than the kit page's Electric Blue ring, to stay distinct from the primary button it surrounds."
+    },
+    "text-link": {
+      "$value": "{primitive.Blue.blue-500}",
+      "$description": "Links and small brand-colored text on the dark ground. The kit's text-brand (blue-600) is 4.02:1 there, short of the 4.5:1 that body-size text needs."
+    },
+    "card-text-link": {
+      "$value": "{primitive.Blue.blue-400}",
+      "$description": "Links inside bg-tertiary surfaces, where blue-500 drops to 4.44:1."
+    }
+  }
+}
