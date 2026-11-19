@@ -94,6 +94,21 @@ test('SEO is judged with --seo', () => {
   assert.equal(resultOf(judge(GOOD, BUDGETS, { seo: true }), 'seo'), 'pass');
 });
 
+test('TBT is judged on four cores or more, and only reported below that', () => {
+  const slow = { ...GOOD, tbt: 190 };
+  assert.equal(resultOf(judge(slow, BUDGETS, { cores: 12 }), 'tbt'), 'fail');
+  assert.equal(resultOf(judge(slow, BUDGETS, { cores: 4 }), 'tbt'), 'fail');
+  assert.equal(resultOf(judge(slow, BUDGETS), 'tbt'), 'fail');
+
+  const rows = judge(slow, BUDGETS, { cores: 2 });
+  assert.equal(resultOf(rows, 'tbt'), 'not judged');
+  assert.deepEqual(failing(rows), []);
+  assert.match(render(rows), /TBT is reported, not judged: this host has 2 core\(s\)/);
+
+  // Every other budget still fails on two cores.
+  assert.deepEqual(failing(judge({ ...slow, lcp: 2400 }, BUDGETS, { cores: 2 })), ['lcp']);
+});
+
 test('the table shows a passing and a failing row', () => {
   const budgets = { lcp: BUDGETS.lcp, tbt: BUDGETS.tbt };
   const rows = judge({ lcp: 1234.2, tbt: 312 }, budgets);

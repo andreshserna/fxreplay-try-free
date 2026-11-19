@@ -25,6 +25,14 @@
  * A first, unjudged run reads the host's benchmark, and the judged runs scale the
  * slowdown by it, so every host simulates the same phone.
  *
+ * Total blocking time is judged only on a host with four cores or more. It is wall-clock
+ * time on the main thread, and with fewer cores Chrome's own processes stretch it by
+ * competing for them, which the benchmark does not see: one machine, one benchmark, and
+ * 0 ms on twelve cores, 0 to 10 ms with Chrome and the server pinned to four, 72 to 122 ms
+ * pinned to two. A shared two-core CI runner measured about 190 ms. Lighthouse (its docs/variability.md) asks for
+ * dedicated cores and recommends four. Below that the number is printed and stored, not
+ * judged.
+ *
  * Budgets are compared on unrounded values. The table rounds against the budget (a
  * maximum up, a minimum down), so a displayed value never looks better than the real one.
  *
@@ -33,6 +41,7 @@
  * performance score.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { availableParallelism } from 'node:os';
 import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
@@ -48,7 +57,7 @@ export const CATEGORIES = ['performance', 'accessibility', 'best-practices', 'se
 export const BUDGETS = {
   lcp: { label: 'LCP', unit: 'ms', max: 2000 },
   cls: { label: 'CLS', unit: '', max: 0.05 },
-  tbt: { label: 'TBT', unit: 'ms', max: 150 },
+  tbt: { label: 'TBT', unit: 'ms', max: 150, minCores: 4 },
   performance: { label: 'Performance', unit: '', min: 95 },
   accessibility: { label: 'Accessibility', unit: '', min: 100 },
   bestPractices: { label: 'Best practices', unit: '', min: 100 },
@@ -74,6 +83,9 @@ export function calibratedSlowdown(benchmarkIndex) {
 
 const SEO_NOTE =
   'SEO is reported, not judged: the build ships noindex unless ALLOW_INDEXING=true, and Lighthouse scores that down by design. Judge it with --seo on an indexable build.';
+
+const coresNote = (label, cores, minCores) =>
+  `${label} is reported, not judged: this host has ${cores} core(s). It is wall-clock time on the main thread, and below ${minCores} cores Chrome's own processes stretch it by competing for them. It is judged on a host with ${minCores} or more.`;
 
 /** The median. An even count averages the two middle values. */
 export function median(values) {
@@ -113,7 +125,8 @@ const formatBudget = (budget) => {
 
 /**
  * One row per metric: `result` is 'pass', 'fail' or 'not judged'. A budget with
- * `onlyWith` is judged only when that option is set.
+ * `onlyWith` is judged only when that option is set. A budget with `minCores` is judged
+ * only when `options.cores`, if given, reaches it.
  */
 export function judge(summary, budgets, options = {}) {
   return Object.entries(budgets).map(([key, budget]) => {
@@ -127,6 +140,13 @@ export function judge(summary, budgets, options = {}) {
     };
     if (budget.onlyWith && !options[budget.onlyWith]) {
       return { ...row, result: 'not judged', note: key === 'seo' ? SEO_NOTE : undefined };
+    }
+    if (budget.minCores && options.cores !== undefined && options.cores < budget.minCores) {
+      return {
+        ...row,
+        result: 'not judged',
+        note: coresNote(budget.label, options.cores, budget.minCores),
+      };
     }
     const passes = budget.max !== undefined ? value <= budget.max : value >= budget.min;
     return { ...row, result: passes ? 'pass' : 'fail' };
@@ -300,6 +320,7 @@ async function main(argv) {
     seoJudged: flags.seo,
     budgets: BUDGETS,
     hostBenchmarkIndex: undefined,
+    hostCores: undefined,
     cpuSlowdownMultiplier: undefined,
     arms: {},
   };
@@ -315,10 +336,12 @@ async function main(argv) {
     });
     const benchmark = probe?.lhr.environment?.benchmarkIndex;
     const slowdown = calibratedSlowdown(benchmark);
+    const cores = availableParallelism();
     summaryFile.hostBenchmarkIndex = benchmark;
+    summaryFile.hostCores = cores;
     summaryFile.cpuSlowdownMultiplier = slowdown;
     console.log(
-      `lighthouse: host benchmark ${Math.round(benchmark ?? 0)}, CPU slowdown ${slowdown}x (${DEFAULT_SLOWDOWN}x on a reference host of ${REFERENCE_BENCHMARK}).`,
+      `lighthouse: host benchmark ${Math.round(benchmark ?? 0)}, ${cores} core(s), CPU slowdown ${slowdown}x (${DEFAULT_SLOWDOWN}x on a reference host of ${REFERENCE_BENCHMARK}).`,
     );
 
     for (const [arm, visitorId] of arms) {
@@ -332,7 +355,7 @@ async function main(argv) {
       });
       const values = results.map((result) => result.values);
       const summary = summarize(values);
-      const rows = judge(summary, BUDGETS, { seo: flags.seo });
+      const rows = judge(summary, BUDGETS, { seo: flags.seo, cores });
       const representative = results[medianIndex(values.map((value) => value.performance))];
       summaryFile.lighthouseVersion = representative.lhr.lighthouseVersion;
 

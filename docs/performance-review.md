@@ -2,7 +2,7 @@
 
 Measured on 2026-11-19 with Lighthouse 13.6, mobile profile with simulated throttling, median
 of three runs per experiment arm (`npm run lighthouse`). The same command runs in CI on every
-push, with five runs, and fails the build when a budget is missed.
+push, with five runs, and fails the build when a judged budget is missed.
 
 **The CPU slowdown is calibrated to the machine that runs the check.** Lighthouse's default
 4x turns a high-end desktop into a mid-tier phone and, by its own documentation, needs
@@ -11,10 +11,29 @@ calibrating anywhere else. On a fixed 4x the same commit measured a total blocki
 was the host's, not the page's. The check now reads the host's benchmark in a first, unjudged
 run and scales the slowdown by it (4x at a benchmark of 1750, the middle of Lighthouse's
 "high-end desktop" bracket), so every host simulates the same phone. On the machine these
-numbers come from, that is 6.4x: harder than the default, not easier. Calibration does not
-remove a shared runner's noise. The benchmark is printed with every run, so a result can
-be read against the machine that produced it: the first calibrated CI run had a benchmark
-of 2248, ran at 5.1x and measured 84 and 43 ms.
+numbers come from, that is 6.4x: harder than the default, not easier.
+
+**Total blocking time is judged only where Chrome has four cores or more.** Calibration was
+not enough: three of the four CI runs after it missed the 150 ms budget, at about 190 ms,
+on runners whose benchmark was close to the reference machine's. The benchmark times one
+thread. Blocking time is wall-clock time on the main thread, and on a two-core runner
+Chrome's other processes and the server compete with it. Measured on the reference machine,
+same build, same calibration (2026-11-19):
+
+| Cores given to Chrome and the server | TBT, median per arm |
+|---|---|
+| 12 | 0 ms, 0 ms |
+| 4 | 10 ms, 0 ms |
+| 2 | 109 ms, 122 ms |
+| GitHub's shared runner, 2 cores | 193 ms, 215 ms |
+
+Lighthouse asks for dedicated cores, recommends four and calls free CI environments
+volatile (its `docs/variability.md`). Below four the check prints and
+stores the number and does not judge it. Every other budget is judged on every push. This
+gives something up: on the current CI runner a real regression in blocking time would not
+fail the build. It is caught where it is judged, by `npm run lighthouse` on a machine with
+four cores or more, and in the field by INP. The cores, the benchmark and the slowdown are
+printed with every run, and CI publishes the table and the full reports with each run.
 
 ## Core Web Vitals
 

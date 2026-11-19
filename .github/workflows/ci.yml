@@ -51,4 +51,20 @@ jobs:
           npx playwright install --with-deps chromium
           npm run test:e2e || { cat preview.log; exit 1; }
           # Five runs: on a shared runner one slow run in three moved the median past a budget.
-          npm run lighthouse -- --runs 5
+          npm run lighthouse -- --runs 5 | tee lighthouse.txt
+
+      # The Lighthouse table on the run's own page and the full reports to download, whether
+      # the budgets were met or not: a missed budget can then be read, not only seen.
+      - name: Show the Lighthouse results on the run's page
+        if: always()
+        run: |
+          if [ -f lighthouse.txt ]; then
+            { echo '## Lighthouse, mobile profile'; echo; echo '```'; cat lighthouse.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: lighthouse-reports
+          path: .artifacts/lighthouse/
+          include-hidden-files: true
+          if-no-files-found: ignore

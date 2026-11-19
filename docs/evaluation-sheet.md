@@ -12,7 +12,7 @@ Live: https://fxreplay-try-free.mauricioserna123.workers.dev
 |---|---|
 | The page, in the arm the edge assigns you | [the live site](https://fxreplay-try-free.mauricioserna123.workers.dev) |
 | Each experiment arm by itself | [`/variants/cta_button/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/cta_button/) (control), [`/variants/inline_email/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/inline_email/) (variant) |
-| Every check passing on every push | [GitHub Actions](https://github.com/andreshserna/fxreplay-try-free/actions): lint, types, brand tokens, contrast, 353 unit and system tests, the API over HTTP, 54 browser tests with axe, the Lighthouse budgets |
+| Every check, on every push | [GitHub Actions](https://github.com/andreshserna/fxreplay-try-free/actions): lint, types, brand tokens, contrast, 354 unit and system tests, the API over HTTP, 54 browser tests with axe, the Lighthouse budgets. Each run's page shows the Lighthouse table, and the full reports download from it |
 | Lighthouse on the live page, run from Google's servers | [PageSpeed Insights](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Ffxreplay-try-free.mauricioserna123.workers.dev%2F). SEO reads low there on purpose: the demo ships `noindex` ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)) |
 | The funnel in PostHog, built from the page's own events | [The screenshot and how it was produced](analytics-plan.md#seen-working-end-to-end). The PostHog project itself is private |
 | The events as they leave the page | Open the live site with the network panel filtered to `events`: batches to `/api/events`, same origin, no third-party request |
@@ -98,7 +98,7 @@ curl -i $SITE/api/users
 
 | The brief asks for | What was built | Built with | Check it |
 |---|---|---|---|
-| Core Web Vitals | On the deployment: LCP 1.17 s, CLS 0.001, TBT 0 ms, performance 100. Budgets fail the build. Field data is reported by the page as an event | Lighthouse 13 in CI, the `web-vitals` library | [performance-review.md](performance-review.md#core-web-vitals), `npm run lighthouse`, the PageSpeed link above |
+| Core Web Vitals | On the deployment: LCP 1.17 s, CLS 0.001, TBT 0 ms, performance 100. Budgets fail the build, and where a number depends on the machine that measured it the review says so. Field data is reported by the page as an event | Lighthouse 13 in CI, the `web-vitals` library | [performance-review.md](performance-review.md#core-web-vitals), `npm run lighthouse`, the PageSpeed link above |
 | Loading strategy | CSS inside the HTML, one preloaded font, the largest element is text, all script deferred | Astro's build | [The decisions behind the numbers](performance-review.md#the-decisions-behind-the-numbers) |
 | Rendering strategy | Static first: one prerendered document per arm. Code runs only to pick the arm, for the API and for the collector | Astro prerendering, a Worker | [Rendering strategy](performance-review.md#rendering-strategy) |
 | Asset optimization | Illustrations are inline SVG, fonts are self-hosted subsets, the page is 14 requests and 184 KiB | Astro fonts and assets | The network panel on the live site |

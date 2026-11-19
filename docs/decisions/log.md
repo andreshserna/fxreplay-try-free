@@ -436,3 +436,11 @@ project or is costly to reverse also has an ADR in this folder.
   reviewer grades against the brief's list, and the deliverables are organized by document,
   not by that list. The sheet follows the brief line by line and only points: what was
   built, with what, and where to check it. It makes no claim another document does not hold.
+- **Total blocking time is judged only on a host with four cores or more; below that it is
+  reported.** After the calibration, three CI runs of four still missed the budget at about
+  190 ms. Pinning Chrome and the server on one machine, at one benchmark: 0 ms on twelve
+  cores, 0 to 10 ms on four, 109 to 122 ms on two. The number on a two-core runner is the
+  runner's contention, which Lighthouse's own hardware guidance warns of. Given up: on the
+  current runner a blocking-time regression does not fail the build. The budget itself is
+  unchanged, every other budget is still judged on every push, and CI now publishes the
+  Lighthouse table and reports with each run.
