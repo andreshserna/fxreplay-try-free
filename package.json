@@ -6,5 +6,9 @@
   "type": "module",
   "engines": {
     "node": ">=22.23.4"
+  },
+  "scripts": {
+    "check:tokens": "node scripts/checks/token-usage.mjs",
+    "test:system": "node --test \"scripts/**/*.test.mjs\" \".claude/hooks/*.test.mjs\""
   }
 }

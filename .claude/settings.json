@@ -1,0 +1,61 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(npm test *)",
+      "Bash(npm ci)",
+      "Bash(node scripts/*)",
+      "Bash(node --test *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "WebSearch",
+      "WebFetch(domain:fxreplay.com)",
+      "WebFetch(domain:*.fxreplay.com)",
+      "WebFetch(domain:docs.astro.build)",
+      "WebFetch(domain:code.claude.com)",
+      "mcp__astro-docs__search_astro_docs",
+      "mcp__chrome-devtools__*"
+    ],
+    "ask": [
+      "Bash(gh repo *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f*)"
+    ],
+    "deny": [
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(!.env.example)",
+      "Read(.dev.vars)",
+      "Read(.dev.vars.*)",
+      "Read(!.dev.vars.example)",
+      "Read(*.pem)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/guard-edit.mjs\"",
+            "onFailure": "block",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.claude/hooks/after-edit.mjs\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
