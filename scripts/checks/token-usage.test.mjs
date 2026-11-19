@@ -56,7 +56,10 @@ test('flags color functions with literal arguments only', () => {
 });
 
 test('flags named colors in stylesheets and <style> blocks, not in copy', () => {
-  assert.deepEqual(found('.a{color:white;border:1px solid black}', { extension: '.css' }), ['white', 'black']);
+  assert.deepEqual(found('.a{color:white;border:1px solid black}', { extension: '.css' }), [
+    'white',
+    'black',
+  ]);
 
   const astro = [
     '<p>Trade the white-label way: black box, red flags.</p>',
@@ -86,7 +89,8 @@ test('classifies tokens: literals are primitives, aliases are not', () => {
 
 test('flags primitive references and allows semantic ones', () => {
   const primitives = new Set(['dark-900', 'blue-600']);
-  const css = '.a{background:var(--dark-900);color:var(--text-primary)} .btn--dark-900{--blue-600:inherit}';
+  const css =
+    '.a{background:var(--dark-900);color:var(--text-primary)} .btn--dark-900{--blue-600:inherit}';
   assert.deepEqual(found(css, { extension: '.css', primitives }), ['--dark-900', '--blue-600']);
 });
 
@@ -102,7 +106,8 @@ test('scans a repo and reads primitives from the generated stylesheet', (t) => {
   const root = fixture({
     'tokens/tokens.css': ':root{--dark-900:#030303;--bg-primary:var(--dark-900)}',
     'src/styles/global.css': 'body{background:var(--bg-primary)}',
-    'src/components/Bad.astro': '<div style="background:var(--dark-900)"></div>\n<style>.x{color:#fff}</style>',
+    'src/components/Bad.astro':
+      '<div style="background:var(--dark-900)"></div>\n<style>.x{color:#fff}</style>',
     'docs/notes.md': 'The ground is #030303.',
   });
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -130,5 +135,8 @@ test('checks only the given files and ignores out-of-scope ones', (t) => {
   const result = checkFiles({ root, files: ['src/a.css', 'README.md', 'src/missing.css'] });
   assert.equal(result.checked, 1);
   assert.equal(result.primitiveRuleActive, false);
-  assert.deepEqual(result.violations.map((violation) => violation.found), ['#fff']);
+  assert.deepEqual(
+    result.violations.map((violation) => violation.found),
+    ['#fff'],
+  );
 });

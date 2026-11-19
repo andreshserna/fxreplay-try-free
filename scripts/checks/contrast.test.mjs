@@ -10,7 +10,10 @@ import { KIT, tokenFixture } from '../lib/fixtures.mjs';
 
 function fixture(t, pairs, extensions) {
   const root = tokenFixture(t, { kit: KIT, extensions });
-  writeFileSync(join(root, 'tokens/contrast-pairs.json'), JSON.stringify({ ui: [], kit: [], ...pairs }));
+  writeFileSync(
+    join(root, 'tokens/contrast-pairs.json'),
+    JSON.stringify({ ui: [], kit: [], ...pairs }),
+  );
   return root;
 }
 
@@ -21,21 +24,43 @@ test('ratios are shown truncated, never rounded up', () => {
 });
 
 test('a passing interface pair raises no problem', (t) => {
-  const root = fixture(t, { ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'text', use: 'Body copy' }] });
+  const root = fixture(t, {
+    ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'text', use: 'Body copy' }],
+  });
   const { ui, problems } = audit(root);
   assert.deepEqual(problems, []);
   assert.equal(formatRatio(ui[0].ratio), '19.08');
 });
 
 test('an interface pair below its threshold stops the build', (t) => {
-  const root = fixture(t, { ui: [{ foreground: 'text-brand', background: 'bg-primary', kind: 'text', use: 'Body-size link' }] });
-  assert.deepEqual(audit(root).problems, ['text-brand on bg-primary is 4.02:1 and needs 4.5:1 (Body-size link).']);
+  const root = fixture(t, {
+    ui: [
+      { foreground: 'text-brand', background: 'bg-primary', kind: 'text', use: 'Body-size link' },
+    ],
+  });
+  assert.deepEqual(audit(root).problems, [
+    'text-brand on bg-primary is 4.02:1 and needs 4.5:1 (Body-size link).',
+  ]);
 });
 
 test('the same pair passes as large text, and the kit audit never stops the build', (t) => {
   const root = fixture(t, {
-    ui: [{ foreground: 'text-brand', background: 'bg-primary', kind: 'large-text', use: 'Headline accent' }],
-    kit: [{ foreground: 'text-brand', background: 'bg-primary', kind: 'text', note: 'Fails for body text.' }],
+    ui: [
+      {
+        foreground: 'text-brand',
+        background: 'bg-primary',
+        kind: 'large-text',
+        use: 'Headline accent',
+      },
+    ],
+    kit: [
+      {
+        foreground: 'text-brand',
+        background: 'bg-primary',
+        kind: 'text',
+        note: 'Fails for body text.',
+      },
+    ],
   });
   const { kit, problems } = audit(root);
   assert.deepEqual(problems, []);
@@ -43,14 +68,27 @@ test('the same pair passes as large text, and the kit audit never stops the buil
 });
 
 test('an interface pair may not name a primitive', (t) => {
-  const root = fixture(t, { ui: [{ foreground: 'dark-200', background: 'bg-primary', kind: 'boundary', use: 'Field boundary' }] });
+  const root = fixture(t, {
+    ui: [
+      { foreground: 'dark-200', background: 'bg-primary', kind: 'boundary', use: 'Field boundary' },
+    ],
+  });
   assert.match(audit(root).problems[0], /dark-200 is a primitive/);
 });
 
 test('an extension token is measured through its alias', (t) => {
   const root = fixture(
     t,
-    { ui: [{ foreground: 'border-field', background: 'bg-primary', kind: 'boundary', use: 'Field boundary' }] },
+    {
+      ui: [
+        {
+          foreground: 'border-field',
+          background: 'bg-primary',
+          kind: 'boundary',
+          use: 'Field boundary',
+        },
+      ],
+    },
     { color: { 'border-field': { $value: '{primitive.Dark.dark-200}' } } },
   );
   const { ui, problems } = audit(root);
@@ -59,40 +97,88 @@ test('an extension token is measured through its alias', (t) => {
 });
 
 test('a translucent foreground is composited over its background', (t) => {
-  const root = fixture(t, { kit: [{ foreground: 'card-bg-translucent', background: 'text-primary', kind: 'boundary', note: 'Scrim over a light surface.' }] });
+  const root = fixture(t, {
+    kit: [
+      {
+        foreground: 'card-bg-translucent',
+        background: 'text-primary',
+        kind: 'boundary',
+        note: 'Scrim over a light surface.',
+      },
+    ],
+  });
   const [scrim] = audit(root).kit;
   assert.ok(scrim.ratio > 3 && scrim.ratio < 8, `unexpected ratio ${scrim.ratio}`);
 });
 
 test('unknown tokens and kinds are errors, not silent passes', (t) => {
-  assert.throws(() => audit(fixture(t, { ui: [{ foreground: 'text-missing', background: 'bg-primary', kind: 'text', use: 'x' }] })), /Unknown token/);
-  assert.throws(() => audit(fixture(t, { ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'huge', use: 'x' }] })), /Unknown kind/);
+  assert.throws(
+    () =>
+      audit(
+        fixture(t, {
+          ui: [{ foreground: 'text-missing', background: 'bg-primary', kind: 'text', use: 'x' }],
+        }),
+      ),
+    /Unknown token/,
+  );
+  assert.throws(
+    () =>
+      audit(
+        fixture(t, {
+          ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'huge', use: 'x' }],
+        }),
+      ),
+    /Unknown kind/,
+  );
 });
 
 test('the docs section is replaced between its markers only', (t) => {
-  const root = fixture(t, { ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'text', use: 'Body copy' }] });
+  const root = fixture(t, {
+    ui: [{ foreground: 'text-primary', background: 'bg-primary', kind: 'text', use: 'Body copy' }],
+  });
   const section = renderDocs(audit(root));
-  const updated = replaceSection('# Notes\n\n<!-- contrast:start -->\nold\n<!-- contrast:end -->\n\nAfter.\n', section);
+  const updated = replaceSection(
+    '# Notes\n\n<!-- contrast:start -->\nold\n<!-- contrast:end -->\n\nAfter.\n',
+    section,
+  );
   assert.ok(updated.startsWith('# Notes\n\n<!-- contrast:start -->'));
   assert.ok(updated.endsWith('<!-- contrast:end -->\n\nAfter.\n'));
-  assert.match(updated, /\| `text-primary` on `bg-primary` \| #F6F6F6 on #030303 \| 19\.08:1 \| 4\.5 \(text\) \| Body copy \|/);
+  assert.match(
+    updated,
+    /\| `text-primary` on `bg-primary` \| #F6F6F6 on #030303 \| 19\.08:1 \| 4\.5 \(text\) \| Body copy \|/,
+  );
   assert.doesNotMatch(updated, /\nold\n/);
   assert.equal(replaceSection('# Notes without markers\n', section), null);
 });
 
 test('generated stylesheets: literals, aliases, color-mix, and the marker on line one', (t) => {
-  const root = tokenFixture(t, { kit: KIT, extensions: { color: { 'border-field': { $value: '{primitive.Dark.dark-200}' } } } });
+  const root = tokenFixture(t, {
+    kit: KIT,
+    extensions: { color: { 'border-field': { $value: '{primitive.Dark.dark-200}' } } },
+  });
   const files = render(root);
   const kitCss = files['tokens/tokens.css'];
-  assert.match(kitCss.split('\n')[0], /@generated by scripts\/gen\/tokens-css\.mjs from tokens\/tokens\.json/);
-  assert.match(kitCss, /^  --electric-blue: #0260FD;$/m);
-  assert.match(kitCss, /^  --bg-primary: var\(--dark-900\);$/m);
-  assert.match(kitCss, /^  --card-bg-translucent: color-mix\(in srgb, var\(--dark-900\) 60%, transparent\);$/m);
+  assert.match(
+    kitCss.split('\n')[0],
+    /@generated by scripts\/gen\/tokens-css\.mjs from tokens\/tokens\.json/,
+  );
+  assert.match(kitCss, /^ {2}--electric-blue: #0260FD;$/m);
+  assert.match(kitCss, /^ {2}--bg-primary: var\(--dark-900\);$/m);
+  assert.match(
+    kitCss,
+    /^ {2}--card-bg-translucent: color-mix\(in srgb, var\(--dark-900\) 60%, transparent\);$/m,
+  );
   assert.doesNotMatch(kitCss, /border-field/);
-  assert.match(files['tokens/extensions.css'], /^  --border-field: var\(--dark-200\);$/m);
+  assert.match(files['tokens/extensions.css'], /^ {2}--border-field: var\(--dark-200\);$/m);
 
   // The token-usage check reads its primitives from this file: only literals count.
-  assert.deepEqual([...loadPrimitives(kitCss)].sort(), ['blue-600', 'dark-200', 'dark-900', 'electric-blue', 'neutral-50']);
+  assert.deepEqual([...loadPrimitives(kitCss)].sort(), [
+    'blue-600',
+    'dark-200',
+    'dark-900',
+    'electric-blue',
+    'neutral-50',
+  ]);
   assert.equal(loadPrimitives(files['tokens/extensions.css']).size, 0);
 });
 

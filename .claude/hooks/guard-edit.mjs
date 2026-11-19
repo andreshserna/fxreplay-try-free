@@ -27,7 +27,8 @@ const SECRET_EXAMPLE = /^\.(?:env|dev\.vars)\.example$/i;
 const READ_ONLY = [
   {
     matches: (path) => path.startsWith('brief/'),
-    reason: 'brief/ holds the challenge and the brand kit as received. They are inputs: read them, never change them.',
+    reason:
+      'brief/ holds the challenge and the brand kit as received. They are inputs: read them, never change them.',
   },
 ];
 

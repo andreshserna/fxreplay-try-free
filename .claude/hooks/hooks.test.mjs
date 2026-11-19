@@ -32,7 +32,10 @@ const edit = (root, path, extra = {}) => ({
 /** Runs a hook the way Claude Code does: as a process fed JSON on stdin. */
 function spawnHook(script, input, args = []) {
   const stdin = typeof input === 'string' ? input : JSON.stringify(input);
-  return spawnSync(process.execPath, [join(here, script), ...args], { input: stdin, encoding: 'utf8' });
+  return spawnSync(process.execPath, [join(here, script), ...args], {
+    input: stdin,
+    encoding: 'utf8',
+  });
 }
 
 test('repoRelative: inside, outside and the root itself', () => {
@@ -42,7 +45,14 @@ test('repoRelative: inside, outside and the root itself', () => {
 });
 
 test('guard: secret files are refused, their examples are not', () => {
-  for (const path of ['.env', '.env.local', '.env.production', '.dev.vars', 'config/.env', 'certs/key.pem']) {
+  for (const path of [
+    '.env',
+    '.env.local',
+    '.env.production',
+    '.dev.vars',
+    'config/.env',
+    'certs/key.pem',
+  ]) {
     assert.match(refusal({ relativePath: path }) ?? '', /secrets/, path);
   }
   for (const path of ['.env.example', '.dev.vars.example', 'src/env.d.ts', 'docs/environment.md']) {
@@ -68,12 +78,18 @@ test('guard: generated files are refused, by existing header or by new content',
   assert.equal(guardEdit(edit(root, 'tokens/tokens.css'), { root }).exitCode, 2);
   assert.equal(guardEdit(edit(root, 'tokens/tokens.json'), { root }).exitCode, 0);
   assert.equal(guardEdit(edit(root, 'src/late.ts'), { root }).exitCode, 0);
-  assert.equal(guardEdit(edit(root, 'src/new.css', { content: `/* ${MARKER} */\n` }), { root }).exitCode, 2);
+  assert.equal(
+    guardEdit(edit(root, 'src/new.css', { content: `/* ${MARKER} */\n` }), { root }).exitCode,
+    2,
+  );
   assert.equal(guardEdit(edit(root, 'src/new.css', { content: 'body{}\n' }), { root }).exitCode, 0);
 });
 
 test('guard: files outside the repository and calls without a file pass', () => {
-  assert.equal(guardEdit({ tool_name: 'Write', tool_input: { file_path: '/tmp/scratch/notes.txt' } }).exitCode, 0);
+  assert.equal(
+    guardEdit({ tool_name: 'Write', tool_input: { file_path: '/tmp/scratch/notes.txt' } }).exitCode,
+    0,
+  );
   assert.equal(guardEdit({ tool_name: 'Bash', tool_input: { command: 'ls' } }).exitCode, 0);
   assert.equal(guardEdit({}).exitCode, 0);
 });
@@ -81,7 +97,10 @@ test('guard: files outside the repository and calls without a file pass', () => 
 test('guard process: exit 2 with the reason on stderr, exit 0 otherwise', () => {
   const blocked = spawnHook('guard-edit.mjs', edit(REPO_ROOT, '.env'));
   assert.equal(blocked.status, 2);
-  assert.match(blocked.stderr, /Blocked by \.claude\/hooks\/guard-edit\.mjs: \.env can hold secrets/);
+  assert.match(
+    blocked.stderr,
+    /Blocked by \.claude\/hooks\/guard-edit\.mjs: \.env can hold secrets/,
+  );
 
   const allowed = spawnHook('guard-edit.mjs', edit(REPO_ROOT, 'src/pages/index.astro'));
   assert.equal(allowed.status, 0);
@@ -97,7 +116,8 @@ test('guard process: unreadable input is a failure, so onFailure "block" stops t
 test('after-edit: reports token violations for the touched file only', (t) => {
   const root = fixture({
     'tokens/tokens.css': ':root{--dark-900:#030303;--bg-primary:var(--dark-900)}',
-    'src/components/Card.astro': '<div class="card"></div>\n<style>.card{background:var(--dark-900);border-color:#1c1c1c}</style>\n',
+    'src/components/Card.astro':
+      '<div class="card"></div>\n<style>.card{background:var(--dark-900);border-color:#1c1c1c}</style>\n',
     'src/styles/ok.css': '.ok{background:var(--bg-primary)}',
     'docs/brand-notes.md': 'The ground is #030303.',
   });
@@ -105,8 +125,11 @@ test('after-edit: reports token violations for the touched file only', (t) => {
 
   const bad = afterEdit(edit(root, 'src/components/Card.astro'), { root });
   assert.equal(bad.exitCode, 2);
-  assert.match(bad.message, /src\/components\/Card\.astro:2:\d+  primitive-token/);
-  assert.match(bad.message, /src\/components\/Card\.astro:2:\d+  color-literal  Hard-coded color #1c1c1c/);
+  assert.match(bad.message, /src\/components\/Card\.astro:2:\d+ {2}primitive-token/);
+  assert.match(
+    bad.message,
+    /src\/components\/Card\.astro:2:\d+ {2}color-literal {2}Hard-coded color #1c1c1c/,
+  );
 
   assert.equal(afterEdit(edit(root, 'src/styles/ok.css'), { root }).exitCode, 0);
   assert.equal(afterEdit(edit(root, 'docs/brand-notes.md'), { root }).exitCode, 0);
@@ -123,15 +146,26 @@ test('after-edit process: a clean or out-of-scope file exits 0 silently', () => 
 test('scope-writes: only the named directories are writable', () => {
   const directories = ['docs/research'];
   assert.equal(scopeWrites(edit(REPO_ROOT, 'docs/research/brief.md'), { directories }).exitCode, 0);
-  assert.equal(scopeWrites(edit(REPO_ROOT, 'docs/research/shots/home.md'), { directories }).exitCode, 0);
+  assert.equal(
+    scopeWrites(edit(REPO_ROOT, 'docs/research/shots/home.md'), { directories }).exitCode,
+    0,
+  );
   assert.equal(scopeWrites(edit(REPO_ROOT, 'docs/research-notes.md'), { directories }).exitCode, 2);
   assert.equal(scopeWrites(edit(REPO_ROOT, 'src/pages/index.astro'), { directories }).exitCode, 2);
-  assert.equal(scopeWrites({ tool_input: { file_path: '/tmp/out.md' } }, { directories }).exitCode, 2);
-  assert.equal(scopeWrites(edit(REPO_ROOT, 'docs/research/brief.md'), { directories: [] }).exitCode, 2);
+  assert.equal(
+    scopeWrites({ tool_input: { file_path: '/tmp/out.md' } }, { directories }).exitCode,
+    2,
+  );
+  assert.equal(
+    scopeWrites(edit(REPO_ROOT, 'docs/research/brief.md'), { directories: [] }).exitCode,
+    2,
+  );
 });
 
 test('scope-writes process: directories come from the arguments', () => {
-  const inside = spawnHook('scope-writes.mjs', edit(REPO_ROOT, 'docs/research/brief.md'), ['./docs/research/']);
+  const inside = spawnHook('scope-writes.mjs', edit(REPO_ROOT, 'docs/research/brief.md'), [
+    './docs/research/',
+  ]);
   assert.equal(inside.status, 0);
 
   const outside = spawnHook('scope-writes.mjs', edit(REPO_ROOT, 'CLAUDE.md'), ['docs/research']);

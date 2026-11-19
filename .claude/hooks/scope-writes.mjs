@@ -10,7 +10,8 @@
  */
 import { REPO_ROOT, allow, block, repoRelative, runAsHook, targetFile } from './lib.mjs';
 
-const normalize = (directory) => directory.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
+const normalize = (directory) =>
+  directory.replace(/\\/g, '/').replace(/^\.\//, '').replace(/\/+$/, '');
 
 export function run(input, { root = REPO_ROOT, directories = process.argv.slice(2) } = {}) {
   const file = targetFile(input);
@@ -18,10 +19,14 @@ export function run(input, { root = REPO_ROOT, directories = process.argv.slice(
 
   const allowed = directories.map(normalize).filter(Boolean);
   const relativePath = repoRelative(file, root);
-  if (relativePath !== null && allowed.some((directory) => relativePath.startsWith(`${directory}/`))) {
+  if (
+    relativePath !== null &&
+    allowed.some((directory) => relativePath.startsWith(`${directory}/`))
+  ) {
     return allow();
   }
-  const where = allowed.length > 0 ? allowed.map((directory) => `${directory}/`).join(', ') : 'nowhere';
+  const where =
+    allowed.length > 0 ? allowed.map((directory) => `${directory}/`).join(', ') : 'nowhere';
   return block(
     `Blocked by .claude/hooks/scope-writes.mjs: this agent writes under ${where} only. Refused: ${relativePath ?? file}. Put the content in your report instead.`,
   );

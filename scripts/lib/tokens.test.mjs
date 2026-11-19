@@ -24,7 +24,10 @@ test('hex parsing covers every length and rejects the rest', () => {
 
 test('a translucent color is composited over its backdrop', () => {
   const painted = composite({ ...parseHex('#000000'), a: 0.6 }, parseHex('#FFFFFF'));
-  assert.deepEqual([painted.r, painted.g, painted.b].map((channel) => channel.toFixed(2)), ['0.40', '0.40', '0.40']);
+  assert.deepEqual(
+    [painted.r, painted.g, painted.b].map((channel) => channel.toFixed(2)),
+    ['0.40', '0.40', '0.40'],
+  );
 });
 
 test('one naming rule gives every token its CSS name', () => {
@@ -39,11 +42,17 @@ test('tokens load in tiers and resolve through their aliases', (t) => {
   });
   const { tokens, byName } = loadTokens(root);
   assert.deepEqual(
-    Object.fromEntries(['dark-900', 'bg-primary', 'border-field'].map((name) => [name, byName.get(name).tier])),
+    Object.fromEntries(
+      ['dark-900', 'bg-primary', 'border-field'].map((name) => [name, byName.get(name).tier]),
+    ),
     { 'dark-900': 'primitive', 'bg-primary': 'semantic', 'border-field': 'extension' },
   );
   assert.equal(tokens.length, 10);
-  assert.deepEqual(resolveToken(byName, 'bg-primary'), { hex: '#030303', alpha: 1, chain: ['bg-primary', 'dark-900'] });
+  assert.deepEqual(resolveToken(byName, 'bg-primary'), {
+    hex: '#030303',
+    alpha: 1,
+    chain: ['bg-primary', 'dark-900'],
+  });
   assert.equal(resolveToken(byName, 'card-bg-translucent').alpha, 0.6);
   assert.throws(() => resolveToken(byName, 'no-such-token'), /Unknown token/);
 });
@@ -59,7 +68,10 @@ test('a translucent token needs a backdrop to be measured', (t) => {
 test('broken token files are rejected with the reason', (t) => {
   const withSemantic = (semantic) => ({ ...KIT, semantic: { $type: 'color', Bad: semantic } });
   assert.throws(
-    () => loadTokens(tokenFixture(t, { kit: withSemantic({ 'bg-x': { $value: '{primitive.Blue.blue-950}' } }) })),
+    () =>
+      loadTokens(
+        tokenFixture(t, { kit: withSemantic({ 'bg-x': { $value: '{primitive.Blue.blue-950}' } }) }),
+      ),
     /bg-x points at blue-950, which is not defined/,
   );
   assert.throws(
@@ -67,11 +79,22 @@ test('broken token files are rejected with the reason', (t) => {
     /must alias another token/,
   );
   assert.throws(
-    () => loadTokens(tokenFixture(t, { kit: withSemantic({ 'dark-900': { $value: '{primitive.Dark.dark-200}' } }) })),
+    () =>
+      loadTokens(
+        tokenFixture(t, {
+          kit: withSemantic({ 'dark-900': { $value: '{primitive.Dark.dark-200}' } }),
+        }),
+      ),
     /Duplicate token name: dark-900/,
   );
   assert.throws(
-    () => loadTokens(tokenFixture(t, { kit: KIT, extensions: { color: { 'electric blue': { $value: '{primitive.Dark.dark-200}' } } } })),
+    () =>
+      loadTokens(
+        tokenFixture(t, {
+          kit: KIT,
+          extensions: { color: { 'electric blue': { $value: '{primitive.Dark.dark-200}' } } },
+        }),
+      ),
     /share the CSS name --electric-blue/,
   );
 });

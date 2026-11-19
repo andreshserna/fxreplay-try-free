@@ -32,7 +32,8 @@ export const formatRatio = (ratio) => (Math.floor(ratio * 100) / 100).toFixed(2)
 /** Measures one pair. Throws on an unknown token or kind. */
 export function measure(byName, pair) {
   const threshold = THRESHOLDS[pair.kind];
-  if (threshold === undefined) throw new Error(`Unknown kind "${pair.kind}" for ${pair.foreground} on ${pair.background}`);
+  if (threshold === undefined)
+    throw new Error(`Unknown kind "${pair.kind}" for ${pair.foreground} on ${pair.background}`);
   const background = paintedColor(byName, pair.background, pair.over);
   const foreground = paintedColor(byName, pair.foreground, pair.background);
   const ratio = contrastRatio(foreground, background);
@@ -55,12 +56,16 @@ export function audit(root = REPO_ROOT) {
   const ui = pairs.ui.map((pair) => {
     for (const name of [pair.foreground, pair.background]) {
       if (byName.get(name)?.tier === 'primitive') {
-        problems.push(`${name} is a primitive. A pair the interface uses names semantic or extension tokens only.`);
+        problems.push(
+          `${name} is a primitive. A pair the interface uses names semantic or extension tokens only.`,
+        );
       }
     }
     const result = measure(byName, pair);
     if (!result.passes) {
-      problems.push(`${pair.foreground} on ${pair.background} is ${formatRatio(result.ratio)}:1 and needs ${result.threshold}:1 (${pair.use}).`);
+      problems.push(
+        `${pair.foreground} on ${pair.background} is ${formatRatio(result.ratio)}:1 and needs ${result.threshold}:1 (${pair.use}).`,
+      );
     }
     return result;
   });
@@ -82,13 +87,30 @@ export function renderDocs({ ui, kit }) {
     '',
     row(['Pair', 'Values', 'Ratio', 'Needs', 'Use']),
     row(['---', '---', '---', '---', '---']),
-    ...ui.map((result) => row([pairCell(result), hexCell(result), `${formatRatio(result.ratio)}:1`, needsCell(result), result.use])),
+    ...ui.map((result) =>
+      row([
+        pairCell(result),
+        hexCell(result),
+        `${formatRatio(result.ratio)}:1`,
+        needsCell(result),
+        result.use,
+      ]),
+    ),
     '',
     `**The kit's own pairings (${kit.length}).** An audit, not a gate.`,
     '',
     row(['Pair', 'Values', 'Ratio', 'Needs', 'Result', 'What it means for us']),
     row(['---', '---', '---', '---', '---', '---']),
-    ...kit.map((result) => row([pairCell(result), hexCell(result), `${formatRatio(result.ratio)}:1`, needsCell(result), result.passes ? 'pass' : '**fail**', result.note])),
+    ...kit.map((result) =>
+      row([
+        pairCell(result),
+        hexCell(result),
+        `${formatRatio(result.ratio)}:1`,
+        needsCell(result),
+        result.passes ? 'pass' : '**fail**',
+        result.note,
+      ]),
+    ),
     '',
     'Ratios use the WCAG 2 formula. They are compared unrounded and shown truncated to two decimals.',
     MARKER.end,
@@ -106,7 +128,9 @@ export function replaceSection(document, section) {
 function main(argv) {
   const results = audit();
   for (const result of results.ui) {
-    console.log(`${result.passes ? 'pass' : 'FAIL'}  ${formatRatio(result.ratio).padStart(5)}:1  needs ${String(result.threshold).padEnd(3)}  ${result.foreground} on ${result.background}`);
+    console.log(
+      `${result.passes ? 'pass' : 'FAIL'}  ${formatRatio(result.ratio).padStart(5)}:1  needs ${String(result.threshold).padEnd(3)}  ${result.foreground} on ${result.background}`,
+    );
   }
   let failed = results.problems.length > 0;
   for (const problem of results.problems) console.error(`contrast: ${problem}`);

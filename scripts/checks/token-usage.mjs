@@ -30,8 +30,22 @@ export const SCANNED_DIRS = ['src', 'public'];
 export const TOKENS_CSS = 'tokens/tokens.css';
 
 const TEXT_EXTENSIONS = new Set([
-  '.astro', '.css', '.scss', '.pcss', '.html', '.svg', '.md', '.mdx',
-  '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs', '.json', '.webmanifest',
+  '.astro',
+  '.css',
+  '.scss',
+  '.pcss',
+  '.html',
+  '.svg',
+  '.md',
+  '.mdx',
+  '.ts',
+  '.tsx',
+  '.js',
+  '.jsx',
+  '.mjs',
+  '.cjs',
+  '.json',
+  '.webmanifest',
 ]);
 const STYLESHEET_EXTENSIONS = new Set(['.css', '.scss', '.pcss']);
 const STYLE_BLOCK_EXTENSIONS = new Set(['.astro', '.html', '.svg', '.mdx']);
@@ -45,28 +59,54 @@ const EXEMPT = [
 ];
 
 const HEX_SOURCE = String.raw`(?<![&\w.])#(?:[0-9a-f]{8}|[0-9a-f]{6}|[0-9a-f]{3,4})(?![\w-])`;
-const COLOR_FUNCTION_SOURCE =
-  String.raw`\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(\s*(?!var\(|from\b|calc\()[-+.\d]`;
-const COLOR_SPACE_SOURCE =
-  String.raw`\bcolor\(\s*(?:srgb(?:-linear)?|display-p3|a98-rgb|prophoto-rgb|rec2020|xyz(?:-d50|-d65)?)\b`;
+const COLOR_FUNCTION_SOURCE = String.raw`\b(?:rgba?|hsla?|hwb|lab|lch|oklab|oklch)\(\s*(?!var\(|from\b|calc\()[-+.\d]`;
+const COLOR_SPACE_SOURCE = String.raw`\bcolor\(\s*(?:srgb(?:-linear)?|display-p3|a98-rgb|prophoto-rgb|rec2020|xyz(?:-d50|-d65)?)\b`;
 const NAMED_COLORS = [
-  'white', 'black', 'red', 'green', 'blue', 'yellow', 'orange', 'purple', 'pink', 'gray', 'grey',
-  'silver', 'maroon', 'navy', 'teal', 'aqua', 'lime', 'olive', 'fuchsia', 'cyan', 'magenta', 'brown',
+  'white',
+  'black',
+  'red',
+  'green',
+  'blue',
+  'yellow',
+  'orange',
+  'purple',
+  'pink',
+  'gray',
+  'grey',
+  'silver',
+  'maroon',
+  'navy',
+  'teal',
+  'aqua',
+  'lime',
+  'olive',
+  'fuchsia',
+  'cyan',
+  'magenta',
+  'brown',
 ];
 const NAMED_SOURCE = String.raw`(?<![-\w.#])(?:${NAMED_COLORS.join('|')})(?![-\w(])`;
 const CUSTOM_PROPERTY_SOURCE = String.raw`(?<![\w-])--([a-z0-9_-]+)`;
 const DECLARATION_SOURCE = String.raw`(?:^|[;{])\s*(--[\w-]+|[a-z-]+)\s*:\s*([^;{}]+)`;
 
 /** A "#abc" that is a URL fragment or an SVG reference, not a color. */
-const FRAGMENT_CONTEXT = /(?:\b(?:xlink:)?href|\bto|\baction|\bsrc)\s*=\s*[{"'`]*[^"'`\s]*$|url\(\s*["']?$/i;
+const FRAGMENT_CONTEXT =
+  /(?:\b(?:xlink:)?href|\bto|\baction|\bsrc)\s*=\s*[{"'`]*[^"'`\s]*$|url\(\s*["']?$/i;
 
 /** Properties whose values are names, not colors ("font-family: Arial Black"). */
 const NAME_VALUED_PROPERTIES = new Set([
-  'font', 'font-family', 'content', 'animation', 'animation-name', 'grid-area',
-  'grid-template-areas', 'view-transition-name',
+  'font',
+  'font-family',
+  'content',
+  'animation',
+  'animation-name',
+  'grid-area',
+  'grid-template-areas',
+  'view-transition-name',
 ]);
 
-const SEMANTIC_HINT = 'Use a semantic token from tokens/tokens.css, for example var(--text-primary).';
+const SEMANTIC_HINT =
+  'Use a semantic token from tokens/tokens.css, for example var(--text-primary).';
 
 /** Replaces every match with spaces so offsets and line numbers stay valid. */
 function blank(text, pattern) {
@@ -125,7 +165,12 @@ export function checkText(text, { extension = '', primitives = new Set() } = {})
   for (const match of text.matchAll(new RegExp(HEX_SOURCE, 'gi'))) {
     const before = text.slice(Math.max(0, match.index - 80), match.index);
     if (FRAGMENT_CONTEXT.test(before)) continue;
-    report(match.index, 'color-literal', match[0], `Hard-coded color ${match[0]}. ${SEMANTIC_HINT}`);
+    report(
+      match.index,
+      'color-literal',
+      match[0],
+      `Hard-coded color ${match[0]}. ${SEMANTIC_HINT}`,
+    );
   }
 
   for (const source of [COLOR_FUNCTION_SOURCE, COLOR_SPACE_SOURCE]) {
@@ -141,16 +186,24 @@ export function checkText(text, { extension = '', primitives = new Set() } = {})
     if (NAME_VALUED_PROPERTIES.has(property.toLowerCase())) continue;
     const valueOffset = declaration.index + whole.length - value.length;
     for (const match of value.matchAll(new RegExp(NAMED_SOURCE, 'gi'))) {
-      report(valueOffset + match.index, 'color-literal', match[0],
-        `Named color "${match[0]}". ${SEMANTIC_HINT}`);
+      report(
+        valueOffset + match.index,
+        'color-literal',
+        match[0],
+        `Named color "${match[0]}". ${SEMANTIC_HINT}`,
+      );
     }
   }
 
   if (primitives.size > 0) {
     for (const match of text.matchAll(new RegExp(CUSTOM_PROPERTY_SOURCE, 'gi'))) {
       if (!primitives.has(match[1].toLowerCase())) continue;
-      report(match.index, 'primitive-token', match[0],
-        `${match[0]} is a primitive. Components use semantic tokens, for example var(--bg-primary).`);
+      report(
+        match.index,
+        'primitive-token',
+        match[0],
+        `${match[0]} is a primitive. Components use semantic tokens, for example var(--bg-primary).`,
+      );
     }
   }
 
@@ -189,7 +242,9 @@ export function checkFiles({ root = REPO_ROOT, files } = {}) {
 
   const candidates = files
     ? files.map((file) => resolve(root, file))
-    : SCANNED_DIRS.map((dir) => join(root, dir)).filter(existsSync).flatMap((dir) => walk(dir));
+    : SCANNED_DIRS.map((dir) => join(root, dir))
+        .filter(existsSync)
+        .flatMap((dir) => walk(dir));
 
   const violations = [];
   let checked = 0;

@@ -128,3 +128,15 @@ project or is costly to reverse also has an ADR in this folder.
 - **npm's install-script gate stays closed.** `workerd` and `esbuild` ask to run install
   scripts, and both work without them, so none is approved.
 - **Framework telemetry is off** on the development machine, and will be in CI.
+- **Prettier formats code and config, not Markdown or the token data.** Tables in the
+  documents stay compact, `tokens.json` stays byte-identical to what its script writes, and
+  the kit's logo files are never touched.
+- **ESLint runs without type information.** One file lints in about a second, which is what
+  an edit hook can afford. Types are checked by `astro check`.
+- **Accessibility lint uses `eslint-plugin-jsx-a11y-x`.** The original plugin does not
+  support ESLint 10, and Astro's own ESLint plugin lists this fork as its peer.
+- **The edit hook now formats and lints** the touched file, then applies the token rules. A
+  tool that is not installed is skipped, so the hook works on a fresh clone.
+- **One open advisory, accepted:** a moderate denial-of-service report against `minimatch`
+  inside the accessibility lint plugin. It is a development tool matching patterns we wrote.
+  The offered fix is a downgrade that breaks the plugin.

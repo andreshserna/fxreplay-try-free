@@ -7,9 +7,9 @@
   // Prerendered pages and hashed assets are served from here without running the Worker.
   "assets": {
     "binding": "ASSETS",
-    "directory": "./dist"
+    "directory": "./dist",
   },
   "observability": {
-    "enabled": true
-  }
+    "enabled": true,
+  },
 }

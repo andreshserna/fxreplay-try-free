@@ -20,9 +20,10 @@ const header = (source) =>
 function declaration(token) {
   if (!token.alias) return `  ${cssName(token.name)}: ${token.value};`;
   const target = `var(${cssName(token.alias)})`;
-  const value = token.alpha === 1
-    ? target
-    : `color-mix(in srgb, ${target} ${Math.round(token.alpha * 100)}%, transparent)`;
+  const value =
+    token.alpha === 1
+      ? target
+      : `color-mix(in srgb, ${target} ${Math.round(token.alpha * 100)}%, transparent)`;
   return `  ${cssName(token.name)}: ${value};`;
 }
 
@@ -47,10 +48,16 @@ export function renderKitCss(tokens) {
   const semantic = tokens.filter((token) => token.tier === 'semantic');
   return [
     header('tokens/tokens.json'),
-    '/* FX Replay color tokens, rebuilt from the brand kit. Names are the kit\'s. */\n',
-    block(`Primitives (${primitives.length}): the raw palette, and the only place literal color lives. Components never use these.`, primitives),
+    "/* FX Replay color tokens, rebuilt from the brand kit. Names are the kit's. */\n",
+    block(
+      `Primitives (${primitives.length}): the raw palette, and the only place literal color lives. Components never use these.`,
+      primitives,
+    ),
     '',
-    block(`Semantic tokens (${semantic.length}): purpose-named aliases of the primitives. Build with these.`, semantic),
+    block(
+      `Semantic tokens (${semantic.length}): purpose-named aliases of the primitives. Build with these.`,
+      semantic,
+    ),
     '',
   ].join('\n');
 }
@@ -59,7 +66,11 @@ export function renderExtensionsCss(tokens) {
   const extensions = tokens.filter((token) => token.tier === 'extension');
   return [
     header('tokens/extensions.json'),
-    block(`Extensions (${extensions.length}): tokens this project adds to the kit. Each aliases a kit value. Reasons and contrast: docs/brand-notes.md.`, extensions, { labelGroups: false }),
+    block(
+      `Extensions (${extensions.length}): tokens this project adds to the kit. Each aliases a kit value. Reasons and contrast: docs/brand-notes.md.`,
+      extensions,
+      { labelGroups: false },
+    ),
     '',
   ].join('\n');
 }

@@ -67,24 +67,29 @@ export function buildTokens(primitives, semantic) {
     for (const [name, reference] of rows) {
       const special = SPECIAL_REFERENCES[reference];
       const target = special?.alias ?? reference;
-      if (!groupOf.has(target)) throw new Error(`${name} points at ${reference}, which the kit does not define`);
+      if (!groupOf.has(target))
+        throw new Error(`${name} points at ${reference}, which the kit does not define`);
       semanticTree[group][name] = {
         $value: `{primitive.${groupOf.get(target)}.${target}}`,
-        ...(special ? { $description: special.note, $extensions: { [EXTENSION_KEY]: special.data } } : {}),
+        ...(special
+          ? { $description: special.note, $extensions: { [EXTENSION_KEY]: special.data } }
+          : {}),
       };
     }
   }
 
   return {
     $description:
-      'FX Replay color tokens, rebuilt from the brand kit page (brand-kit.html, PRIM and SEM) because the kit shipped without its token files. Names are the kit\'s. Primitives hold the literal values and semantic tokens alias them. What this project adds is in extensions.json. Rebuild or verify with scripts/kit/tokens-from-kit.mjs.',
+      "FX Replay color tokens, rebuilt from the brand kit page (brand-kit.html, PRIM and SEM) because the kit shipped without its token files. Names are the kit's. Primitives hold the literal values and semantic tokens alias them. What this project adds is in extensions.json. Rebuild or verify with scripts/kit/tokens-from-kit.mjs.",
     primitive: primitiveTree,
     semantic: semanticTree,
   };
 }
 
 const count = (tree) =>
-  Object.entries(tree).filter(([key]) => !key.startsWith('$')).reduce((sum, [, group]) => sum + Object.keys(group).length, 0);
+  Object.entries(tree)
+    .filter(([key]) => !key.startsWith('$'))
+    .reduce((sum, [, group]) => sum + Object.keys(group).length, 0);
 
 function main(argv) {
   const kitPage = join(REPO_ROOT, KIT_PAGE);
@@ -97,7 +102,9 @@ function main(argv) {
 
   const found = { primitives: count(built.primitive), semantic: count(built.semantic) };
   if (found.primitives !== EXPECTED.primitives || found.semantic !== EXPECTED.semantic) {
-    console.error(`tokens-from-kit: the kit README promises ${EXPECTED.primitives} primitives and ${EXPECTED.semantic} semantic tokens; the page holds ${found.primitives} and ${found.semantic}.`);
+    console.error(
+      `tokens-from-kit: the kit README promises ${EXPECTED.primitives} primitives and ${EXPECTED.semantic} semantic tokens; the page holds ${found.primitives} and ${found.semantic}.`,
+    );
     return 1;
   }
 
@@ -105,14 +112,20 @@ function main(argv) {
   const target = join(REPO_ROOT, KIT_TOKENS);
   if (argv.includes('--write')) {
     writeFileSync(target, output);
-    console.log(`tokens-from-kit: wrote ${KIT_TOKENS} (${found.primitives} primitives, ${found.semantic} semantic).`);
+    console.log(
+      `tokens-from-kit: wrote ${KIT_TOKENS} (${found.primitives} primitives, ${found.semantic} semantic).`,
+    );
     return 0;
   }
   if (!existsSync(target) || readFileSync(target, 'utf8') !== output) {
-    console.error(`tokens-from-kit: ${KIT_TOKENS} does not match the kit. Run with --write, or explain the difference.`);
+    console.error(
+      `tokens-from-kit: ${KIT_TOKENS} does not match the kit. Run with --write, or explain the difference.`,
+    );
     return 1;
   }
-  console.log(`tokens-from-kit: ${KIT_TOKENS} matches the kit (${found.primitives} primitives, ${found.semantic} semantic).`);
+  console.log(
+    `tokens-from-kit: ${KIT_TOKENS} matches the kit (${found.primitives} primitives, ${found.semantic} semantic).`,
+  );
   return 0;
 }
 

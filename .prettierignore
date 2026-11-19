@@ -1,0 +1,20 @@
+# Build output, dependencies, inputs and private notes
+dist/
+.astro/
+.wrangler/
+.artifacts/
+node_modules/
+brief/
+notes/
+package-lock.json
+worker-configuration.d.ts
+
+# Token data: tokens.json is written by a script and compared byte for byte with the kit.
+# The stylesheets are generated. The pair list keeps one pair per line.
+tokens/
+
+# The kit's logo files are used exactly as shipped
+src/assets/brand/
+
+# Markdown is written by hand, with compact tables
+*.md

@@ -16,11 +16,7 @@
       "mcp__astro-docs__search_astro_docs",
       "mcp__chrome-devtools__*"
     ],
-    "ask": [
-      "Bash(gh repo *)",
-      "Bash(git push --force*)",
-      "Bash(git push -f*)"
-    ],
+    "ask": ["Bash(gh repo *)", "Bash(git push --force*)", "Bash(git push -f*)"],
     "deny": [
       "Read(.env)",
       "Read(.env.*)",

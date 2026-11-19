@@ -23,7 +23,12 @@ export function luminance({ r, g, b }) {
 /** Paints a translucent color over an opaque backdrop. */
 export function composite(color, backdrop) {
   const mix = (top, bottom) => top * color.a + bottom * (1 - color.a);
-  return { r: mix(color.r, backdrop.r), g: mix(color.g, backdrop.g), b: mix(color.b, backdrop.b), a: 1 };
+  return {
+    r: mix(color.r, backdrop.r),
+    g: mix(color.g, backdrop.g),
+    b: mix(color.b, backdrop.b),
+    a: 1,
+  };
 }
 
 /** Contrast ratio between two opaque colors, from 1 to 21. Not rounded. */

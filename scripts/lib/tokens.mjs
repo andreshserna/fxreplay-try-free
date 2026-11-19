@@ -24,7 +24,8 @@ export const EXTENSION_KEY = 'fxreplay-try-free';
 export const cssName = (name) => `--${name.trim().toLowerCase().replace(/\s+/g, '-')}`;
 
 const isToken = (node) => node !== null && typeof node === 'object' && '$value' in node;
-const aliasTarget = (value) => /^\{(.+)\}$/.exec(String(value).trim())?.[1].split('.').at(-1) ?? null;
+const aliasTarget = (value) =>
+  /^\{(.+)\}$/.exec(String(value).trim())?.[1].split('.').at(-1) ?? null;
 
 /** Walks a token tree and returns its tokens in file order. */
 function collect(tree, tier) {
@@ -67,7 +68,8 @@ export function loadTokens(root = REPO_ROOT) {
   for (const token of tokens) {
     if (byName.has(token.name)) throw new Error(`Duplicate token name: ${token.name}`);
     const css = cssName(token.name);
-    if (cssNames.has(css)) throw new Error(`${token.name} and ${cssNames.get(css)} share the CSS name ${css}`);
+    if (cssNames.has(css))
+      throw new Error(`${token.name} and ${cssNames.get(css)} share the CSS name ${css}`);
     byName.set(token.name, token);
     cssNames.set(css, token.name);
   }
@@ -76,7 +78,9 @@ export function loadTokens(root = REPO_ROOT) {
       throw new Error(`${token.name} points at ${token.alias}, which is not defined`);
     }
     if (!token.alias && token.tier !== 'primitive') {
-      throw new Error(`${token.name} is ${token.tier} and must alias another token, not hold a literal`);
+      throw new Error(
+        `${token.name} is ${token.tier} and must alias another token, not hold a literal`,
+      );
     }
   }
   return { tokens, byName };
@@ -91,7 +95,8 @@ export function resolveToken(byName, name) {
   let alpha = 1;
   let token = byName.get(name);
   while (token) {
-    if (chain.includes(token.name)) throw new Error(`Alias loop: ${[...chain, token.name].join(' -> ')}`);
+    if (chain.includes(token.name))
+      throw new Error(`Alias loop: ${[...chain, token.name].join(' -> ')}`);
     chain.push(token.name);
     alpha *= token.alpha;
     if (!token.alias) return { hex: token.value, alpha, chain };
