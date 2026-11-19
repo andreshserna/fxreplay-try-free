@@ -108,3 +108,23 @@ project or is costly to reverse also has an ADR in this folder.
   written with hooks only, so both run it. The scaffold starts on React, the stack ADR 0001
   names, and the two are compared on bytes shipped and blocking time before the choice is
   recorded.
+
+## Phase 2: foundation (started 2026-11-18)
+
+- **Scaffolded by hand on Astro 7.4, `@astrojs/cloudflare` 14.4 and React 19,** with
+  TypeScript 6 on Astro's `strictest` preset. Every file in the scaffold is one that was
+  chosen, and the strictest preset catches unchecked index access and misuse of optional
+  properties.
+- **Fonts use the local provider, pointed at six files inside the Fontsource packages.** The
+  package provider emitted every subset: 21 files, 27 `@font-face` rules and 5.4 KB of inline
+  CSS. Naming the files gives exactly six, and the license still ships with the install.
+  Only Lato 900, the headline face, is preloaded.
+- **The page's CSS is inlined.** One page, a few kilobytes: inlining removes the only
+  render-blocking request. To be confirmed by measurement in the performance pass.
+- **Astro's session store is switched off.** The signup issues its own signed cookie, and the
+  adapter would otherwise provision a KV namespace on deploy that nothing uses.
+- **Images are optimized at build time only** (`imageService: 'compile'`). Nothing is
+  transformed at request time, so the deployment needs no image service.
+- **npm's install-script gate stays closed.** `workerd` and `esbuild` ask to run install
+  scripts, and both work without them, so none is approved.
+- **Framework telemetry is off** on the development machine, and will be in CI.

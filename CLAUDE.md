@@ -23,14 +23,15 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 
 | Command | What it does |
 |---|---|
+| `npm run dev`, `build`, `preview`, `typecheck` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it), `astro check` |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner, no dependencies) |
 | `npm run gen` | Regenerate `tokens/*.css` and the contrast tables in `docs/brand-notes.md` (`gen:check` fails if stale) |
 | `npm run check:tokens` | Token rules over `src/` and `public/`: no color literals, no primitive tokens |
 | `npm run check:contrast` | Every pair in `tokens/contrast-pairs.json` against its WCAG threshold |
 | `npm run check:kit` | `tokens/tokens.json` still matches the kit (skipped where `brief/` is absent) |
 
-Arriving with the Phase 2 scaffold: `dev`, `build`, `preview`, `typecheck`, `lint`, `test`,
-`test:e2e`, `lighthouse`. A command that does not exist yet is "not available", never "passed".
+Still to come: `lint`, `test`, `test:e2e`, `lighthouse`. A command that does not exist yet is
+"not available", never "passed".
 
 ## Map
 
@@ -38,6 +39,7 @@ Arriving with the Phase 2 scaffold: `dev`, `build`, `preview`, `typecheck`, `lin
 |---|---|
 | `.claude/` | The AI system: `settings.json` (hooks, permissions), `hooks/`, `agents/`, `skills/`, `rules/` |
 | `.mcp.json` | MCP servers: `chrome-devtools` (eyes on the page) and `astro-docs` (the current API) |
+| `src/` | `pages/`, `layouts/`, `styles/global.css`, `assets/brand/` (the kit's logos, as shipped). Config: `astro.config.mjs`, `wrangler.jsonc` |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
 | `scripts/` | `checks/` (shared by the edit hook and CI), `gen/`, `kit/` (rebuild and verify against the kit), `lib/` |
 | `docs/decisions/` | `log.md` (every decision, one line each) and the ADRs (the important ones) |
@@ -48,15 +50,14 @@ Planned, not built yet. Update this table when each lands:
 
 | Path | What will live there |
 |---|---|
-| `src/pages/` | The landing page and the Users API endpoints under `api/` |
+| `src/pages/api/` | The Users API endpoints |
 | `src/components/` | Page sections, and the signup form: the only island that hydrates |
 | `src/lib/api/` | The contract: shared schemas, the typed client, the error mapping |
 | `src/lib/analytics/`, `src/lib/experiments/` | Event registry and `track()`; edge assignment and exposure |
 | `src/server/` | Repository interface and implementations, session cookie, rate limiting |
 | `tests/` | Unit and contract tests, end-to-end tests with axe |
 
-Area rules load with the files they govern: `.claude/rules/` (brand, copy, experience, API,
-analytics, docs). `/ship-check` reports go to `docs/ai/reports/`.
+Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.
 
 ## Invariants
 

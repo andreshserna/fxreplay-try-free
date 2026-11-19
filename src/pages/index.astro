@@ -1,0 +1,55 @@
+---
+import wordmark from '../assets/brand/FXReplayLogo.svg';
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Try FX Replay Free (candidate demo)"
+  description="A candidate challenge demo of a Try FX Replay Free landing page. Not the official FX Replay site."
+>
+  <main class="skeleton">
+    <img
+      class="wordmark"
+      src={wordmark.src}
+      width={wordmark.width}
+      height={wordmark.height}
+      alt="FX Replay"
+    />
+    <h1>Try FX Replay Free</h1>
+    <p class="status">This page is being built.</p>
+    <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
+  </main>
+</Base>
+
+<style>
+  .skeleton {
+    display: grid;
+    align-content: center;
+    justify-items: start;
+    gap: 1.5rem;
+    min-height: 100svh;
+    max-width: 40rem;
+    margin-inline: auto;
+    padding: 2rem 1.25rem;
+  }
+
+  .wordmark {
+    width: min(11rem, 60vw);
+    height: auto;
+  }
+
+  h1 {
+    font-size: clamp(2.25rem, 1.5rem + 3.5vw, 4rem);
+  }
+
+  .status {
+    color: var(--text-secondary);
+  }
+
+  .notice {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-primary);
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+  }
+</style>

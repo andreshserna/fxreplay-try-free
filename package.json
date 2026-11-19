@@ -8,11 +8,31 @@
     "node": ">=22.23.4"
   },
   "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "typecheck": "astro check",
     "gen": "node scripts/gen/tokens-css.mjs && node scripts/checks/contrast.mjs --write-docs",
     "gen:check": "node scripts/gen/tokens-css.mjs --check && node scripts/checks/contrast.mjs --check-docs",
     "check:tokens": "node scripts/checks/token-usage.mjs",
     "check:contrast": "node scripts/checks/contrast.mjs",
     "check:kit": "node scripts/kit/tokens-from-kit.mjs",
     "test:system": "node --test \"scripts/**/*.test.mjs\" \".claude/hooks/*.test.mjs\""
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.4.9",
+    "@astrojs/react": "^7.1.9",
+    "astro": "^7.4.13",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.12",
+    "@fontsource/lato": "^5.3.0",
+    "@fontsource/nunito-sans": "^5.3.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.165.0"
   }
 }

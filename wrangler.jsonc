@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "fxreplay-try-free",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-11-18",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  // Prerendered pages and hashed assets are served from here without running the Worker.
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

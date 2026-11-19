@@ -6,6 +6,8 @@ notes/
 node_modules/
 dist/
 .astro/
+.wrangler/
+worker-configuration.d.ts
 
 # Secrets and local environment
 .env

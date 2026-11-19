@@ -1,0 +1,32 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+
+// The demo carries someone else's brand, so it stays out of search unless
+// indexing is switched on at build time (ADR 0009).
+const allowIndexing = import.meta.env.ALLOW_INDEXING === 'true';
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    {!allowIndexing && <meta name="robots" content="noindex, nofollow" />}
+    {/* Only the headline face is preloaded: it paints the largest text on the page. */}
+    <Font cssVariable="--font-display" preload={[{ weight: 900 }]} />
+    <Font cssVariable="--font-body" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
