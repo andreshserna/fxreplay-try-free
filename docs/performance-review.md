@@ -11,7 +11,10 @@ calibrating anywhere else. On a fixed 4x the same commit measured a total blocki
 was the host's, not the page's. The check now reads the host's benchmark in a first, unjudged
 run and scales the slowdown by it (4x at a benchmark of 1750, the middle of Lighthouse's
 "high-end desktop" bracket), so every host simulates the same phone. On the machine these
-numbers come from, that is 6.4x: harder than the default, not easier.
+numbers come from, that is 6.4x: harder than the default, not easier. Calibration does not
+remove a shared runner's noise. The benchmark is printed with every run, so a result can
+be read against the machine that produced it: the first calibrated CI run had a benchmark
+of 2248, ran at 5.1x and measured 84 and 43 ms.
 
 ## Core Web Vitals
 
