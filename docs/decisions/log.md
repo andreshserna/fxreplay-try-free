@@ -92,3 +92,7 @@ project or is costly to reverse also has an ADR in this folder.
   The tables in `docs/brand-notes.md` are generated from the same file.
 - **Ratios are compared unrounded and shown truncated to two decimals,** so a displayed value
   never overstates the real one.
+- **Hosting and persistence: Cloudflare Workers with D1**
+  ([ADR 0011](0011-cloudflare-workers-with-d1.md)). One platform covers static assets, the
+  API, edge logic, the database, rate limiting and the CDN, and development runs on the
+  production runtime with a local database and no account.

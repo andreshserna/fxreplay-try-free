@@ -1,6 +1,7 @@
 # 0003. Persistence behind a repository interface; the platform is decided in Phase 1
 
-- **Status:** accepted for the interface. The hosting platform and the database are **open**.
+- **Status:** accepted. The hosting platform and the database were open here and are decided
+  in [ADR 0011](0011-cloudflare-workers-with-d1.md).
 - **Date:** 2026-11-18
 - **Phase:** 0
 
