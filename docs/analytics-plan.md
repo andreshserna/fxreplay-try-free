@@ -35,6 +35,10 @@ the page was fast for the people in it, and which arm they saw.
   unknown.
 - In an experiment the denominator is `experiment_exposed`, which the server records, so both
   sides of the ratio are immune to blocked scripts ([experiment plan](experiments/hero_signup.md)).
+  One gap: a document a browser asks for ahead of a visit (a prefetch or a prerender) is not
+  counted as an exposure, and when that page is then shown no new request reaches the edge.
+  Those visitors can convert without an exposure. It is the same in both arms, so it costs
+  sample and adds no bias.
 - "Account" here means a user row. FX Replay's own `signup_step_completed` fires later, after
   the plan choice, so the two are not the same number
   ([ADR 0013](decisions/0013-event-taxonomy-and-primary-metric.md)).
@@ -139,7 +143,7 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 | A property with the wrong shape at runtime | The collector validates every event and drops what does not fit |
 | Personal data in a payload | The registry has no free-text type, unknown keys are dropped at the collector, and campaign parameters are forced into lowercase labels that cannot contain "@". A test sends an email in every place it could hide and asserts it never leaves |
 | The conversion lost to an ad blocker | It is emitted by the server after the row is committed, not by the browser |
-| A conversion counted twice | It is not emitted for an idempotent replay. Every event carries an `event_id` to deduplicate on in analysis, also sent as PostHog's own `uuid` (on the deployment, 2026-11-20, every stored event's `uuid` equals its `event_id`). PostHog documents that a repeated uuid inside one request is dropped, and does not document what it does across requests |
+| A conversion counted twice | It is not emitted for an idempotent replay. Every event carries an `event_id`, also sent as PostHog's own `uuid`. PostHog treats events with the same uuid, name, distinct id and UTC day as duplicates and merges them in the background (its "Event deduplication" documentation), so a batch sent twice converges to one copy. Until the merge both copies count, so analysis still deduplicates on `event_id`. Checked on the deployment on 2026-11-20 for release `0c993dd`: each of its stored events had a `uuid` equal to its `event_id` |
 | Events lost while offline | A batch the collector could not be reached with is kept and sent again when the connection returns, with the same `event_id`s. That is when a failed signup happens, so it is when the failure event matters |
 | A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
 | The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |

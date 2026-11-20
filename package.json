@@ -22,6 +22,7 @@
     "test:api": "vitest run --config vitest.api.config.ts",
     "test:e2e": "playwright test",
     "lighthouse": "node scripts/checks/lighthouse.mjs",
+    "deploy": "node scripts/dev/deploy.mjs",
     "gen": "node scripts/gen/tokens-css.mjs && node scripts/checks/contrast.mjs --write-docs && node scripts/gen/analytics-docs.mjs",
     "gen:og": "node scripts/gen/og-image.mjs",
     "gen:check": "node scripts/gen/tokens-css.mjs --check && node scripts/checks/contrast.mjs --check-docs && node scripts/gen/analytics-docs.mjs --check",

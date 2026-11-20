@@ -24,7 +24,8 @@ line: what was built for each, with what, and where to check it.
 3. **Turn JavaScript off and sign up again.** It still creates the account.
 4. **Open the network panel, on `/`.** No third-party request. Events go to `/api/events`
    on the same origin, and the conversion is recorded by the server, not by the browser.
-   (The `/variants/…` addresses are previews and record nothing, by design.)
+   (The `/variants/…` addresses are previews: the browser sends no events from them, by
+   design. A signup made there still creates the account and its conversion.)
 
 ## Where each deliverable lives
 
@@ -67,7 +68,7 @@ With the preview running:
 
 ```sh
 npm run test:api                       # the API contract over HTTP, against the Worker and a real D1
-npm run test:e2e                       # 82 browser tests on desktop and phone, with axe
+npm run test:e2e                       # 90 browser tests on desktop and phone, with axe
 npm run lighthouse                     # the performance budgets, on both experiment arms
 ```
 
@@ -83,7 +84,8 @@ generated secrets: `SESSION_SECRET`, and `ADMIN_TOKEN`, which the list operation
 as `Authorization: Bearer …`. The build reads `SITE_URL` (the canonical address),
 `ALLOW_INDEXING` and `RELEASE` (the commit, by default). The Worker reads `POSTHOG_KEY` and
 `POSTHOG_HOST`: without a key, events are validated and then discarded. Deployment is by
-hand: `SITE_URL=… npm run build`, then `npx wrangler deploy`.
+hand: `SITE_URL=… npm run deploy`, which builds and then publishes, and refuses to run
+without the address.
 
 ## What it is made of
 

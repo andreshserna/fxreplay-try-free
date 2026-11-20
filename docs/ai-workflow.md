@@ -263,7 +263,7 @@ By the system's reviewers and checks. What I sent back myself is under
 - **A check that measured one arm twice.** The Lighthouse check printed two tables, one per
   experiment arm, and both were the same page: a calibration run added to the script had
   left a cookie that chose the arm for every run after it. `code-reviewer` found it in the
-  release gate by comparing the two stored reports byte for byte. Each audit now proves
+  release gate by reading the document's size and element count in the two stored reports. Each audit now proves
   which arm it measured, or the check fails.
 - **A header nobody had looked at between a phone and a desktop.** At 768 px it cut off its
   own call to action, at 320 px it made the page scroll sideways, and it covered the skip
@@ -280,14 +280,17 @@ By the system's reviewers and checks. What I sent back myself is under
 [the report](ai/reports/ship-check-2026-11-19-1917.md). Eleven deterministic checks passed.
 Of the four reviewers, run in parallel against that commit on the local Workers runtime,
 three said fix first and one said ship. Their findings were fixed in the commits after it,
-and what was not applied is in [the decision log](decisions/log.md) with the reason.
+and what was not applied is in [the decision log](decisions/log.md), most of it with its
+reason: the second gate found a few smaller points the log had not recorded, and it has
+them now.
 
 It ran again on `fa7778b`, the commit that holds those fixes:
 [the second report](ai/reports/ship-check-2026-11-19-2304.md). Every check passed again and
 the reviewers confirmed the first gate's three blockers closed. Three of the four still said
 fix first, for a defect the fixes themselves had introduced: a bar of buttons kept at the
 bottom of a phone's screen that hid the option with keyboard focus. A gate that finds its
-own fixes wanting is the gate working.
+own fixes wanting is the gate working. That bar is gone, and what was done about the rest is
+in the log.
 
 ## Not done yet
 

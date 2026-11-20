@@ -28,6 +28,7 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 | `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
 | `npm run test:api` | The API contract, the collector and edge assignment over HTTP against a running preview: the real Worker and a real D1 |
 | `npm run test:e2e` | The signup states and the funnel in a real browser, with axe, against a running preview |
+| `npm run deploy` | Builds for `SITE_URL` and publishes with Wrangler. Refuses without the address, or with indexing on |
 | `npm run lighthouse` | The lab budgets on both experiment arms, against a running preview: median of three mobile runs, each in a new Chrome profile and checked to be the arm it names. `--seo` also judges SEO, on a build made with `ALLOW_INDEXING=true` |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
 | `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale). `gen:og` redraws the share image |

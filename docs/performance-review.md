@@ -41,8 +41,8 @@ passed.
 
 | Metric | Budget | Local Workers runtime | CI, four-core runner | Deployed on Cloudflare |
 |---|---|---|---|---|
-| LCP | ≤ 2.0 s | 1.16 s, 1.17 s | 1.17 s, 1.19 s | 1.10 s, 1.05 s |
-| CLS | ≤ 0.05 | 0.001 | 0.001 | 0.000, 0.001 |
+| LCP | ≤ 2.0 s | 1.17 s, 1.18 s | 1.17 s, 1.19 s | 1.10 s, 1.04 s |
+| CLS | ≤ 0.05 | under 0.001 | 0.001 | under 0.001 |
 | TBT (lab stand-in for INP) | ≤ 150 ms | 0 ms | 1 ms, 10 ms | 0 ms |
 | Performance score | ≥ 95 | 100 | 100 | 100 |
 | Accessibility | 100 | 100 | 100 | 100 |
@@ -50,8 +50,8 @@ passed.
 | SEO | 100 | 66: `noindex` | 100, on a second build with indexing on | 69: the demo ships `noindex` on purpose |
 
 Where a cell has two values they are the `cta_button` and the `inline_email` arm. Local and
-deployed: this machine (12 cores, benchmark index about 2800), median of five and of three
-runs. CI: run 44655382182 on commit `0c993dd` (benchmark index about 2700), median of five,
+deployed: this machine (12 cores, benchmark index about 2800), median of three runs
+(`.artifacts/lighthouse/summary.json` and `live/summary.json`, written by the check). CI: run 44655382182 on commit `0c993dd` (benchmark index about 2700), median of five,
 and of three for the indexable build. On the deployment the page is 15 requests and
 184 KiB, none to another origin. The root document's first byte, from one location over one
 day, took between 30 and 320 ms.
@@ -68,8 +68,8 @@ LCP and 300 ms INP at p75 on phones (Chrome UX Report, `docs/research/brief.md`,
 |---|---|
 | Every arm of the page is a prerendered document | Nothing is rendered per request. Time to first byte is the asset store's |
 | The largest element is text | LCP does not wait for an image. The hero illustration is inline SVG: no request, no decode |
-| CSS travels in the HTML | No render-blocking request. The HTML, with every illustration inline, is 17 KB compressed |
-| Fonts are self-hosted: two families, six files, 111 KB, four of them (67 KB) on a first view | Only the headline weight is preloaded: the headline settles into its face about 100 ms sooner. It does not move LCP, which is body text painted first in the fallback face. The fallbacks are metric-matched to Arial. Android ships no Arial and falls back to its own sans-serif unadjusted: measured with such a fallback at 360 px, CLS stayed at 0.0001, because the lines above the fold break in the same places |
+| CSS travels in the HTML | No render-blocking request. The HTML, with every illustration inline, is 17 KB with brotli and 19 KB on the wire to Chrome, which is sent zstd |
+| Fonts are self-hosted: two families, six files, 111 KB, four of them (64 KB) on a first view | Only the headline weight is preloaded: the headline settles into its face about 100 ms sooner. It does not move LCP, which is body text painted first in the fallback face. The fallbacks are metric-matched to Arial. Android ships no Arial and falls back to its own sans-serif unadjusted: measured with such a fallback at 360 px, CLS stayed at 0.0001, because the lines above the fold break in the same places |
 | One island | 87 KB of script, compressed, all of it deferred: the island's 79 KB, and 8 KB of plain script for the page, the tracker and the playable illustration. Nothing blocks the first paint |
 | No third-party script | The analytics tracker is 2.6 KB of our own code posting to our own origin ([ADR 0014](decisions/0014-first-party-event-collector.md)) |
 | The form reserves the space for its error message | A validation error does not move the page |
@@ -120,7 +120,8 @@ Target: WCAG 2.2 AA.
   region announces "Creating your account…" to a screen reader whose focus is in the field,
   and a second press is ignored.
 - **Keyboard:** a skip link that shows above the header, a visible focus ring with an
-  offset, native controls throughout. What takes focus stops below the header that stays on
+  offset, native controls but for the profile step's options, which are drawn from the kit's
+  colors and fall back to the browser's own under forced colors. What takes focus stops below the header that stays on
   screen (`scroll-padding-top`), and browser tests hold both.
 - **Targets:** the form's controls are 52 px tall, the header's call to action and the
   illustration's keys 44 px.
@@ -143,8 +144,8 @@ request was rejected: it would spend the Worker's CPU budget on HTML that never 
 | What | Cache-Control | Why |
 |---|---|---|
 | `/_astro/*` (scripts, fonts, images) | `public, max-age=31536000, immutable` | File names carry a content hash |
-| Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 17 KB at most |
-| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. The same holds: no validator reaches the browser, so a repeat view is 17 KB |
+| Prerendered pages | `public, max-age=0, must-revalidate` | Always current. On this host their HTML carries no validator, so a repeat view downloads the document again: 17 to 19 KB, by the compression the browser takes |
+| `/` | `private, no-cache`, `Vary: Cookie` | Decided per visitor. The same holds: no validator reaches the browser, so a repeat view is the same 17 to 19 KB |
 | The API | `no-store` | Personal data and one-time answers |
 
 Everything is served from Cloudflare's edge. The one compromise is `/`: because the arm is

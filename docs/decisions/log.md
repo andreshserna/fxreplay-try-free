@@ -503,8 +503,9 @@ The phases overlapped from here, so the lines stay in the order the decisions we
 - **The header gives way before it overflows.** Its notice shows whole only from 62rem,
   shortens below it, and leaves the bar under 360px, where the wordmark and the call to
   action are all that fits. The skip link sits above the header, and `scroll-padding-top`
-  keeps whatever takes focus below it. Browser tests hold all three at 320, 360 and 768px:
-  the "phone" project is 412px wide and saw none of it.
+  keeps whatever takes focus below it. Browser tests hold the fit at 320, 360 and 768px,
+  the skip link at desktop and phone width, and focus at 360px: the "phone" project is
+  412px wide and saw none of it.
 - **The easing of the journey to the form moved from the stylesheet to the click.**
   `scroll-behavior: smooth` on the page also slowed every move of keyboard focus by about a
   second. Without the script the link still works and cuts to the form.
@@ -521,9 +522,11 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   id and computed an arm the visitor may never have seen.
 - **The exposure is timed when the document is served,** not when the deferred work sends
   it, and no document says "before the HTML is sent" any more: the rate limit runs first.
-- **The event id also goes to PostHog as its `uuid`.** Its documentation states that a
-  repeated uuid inside one request is dropped and says nothing about later requests, so the
-  plan still deduplicates on `event_id` in analysis.
+- **The event id also goes to PostHog as its `uuid`.** PostHog merges events that share a
+  uuid, name, distinct id and UTC day, in the background, so a batch sent twice converges
+  to one copy. Until then both count, so the plan still deduplicates on `event_id` in
+  analysis. (This line first said PostHog documents nothing across requests: that came from
+  its capture API pages alone, and the second gate's reviewer found the page that does.)
 - **Not applied from the ship-check, and why.** The footer's tape of candles stays (a
   third of the page's elements, 3.5 KB compressed: a visual choice, and the budgets pass).
   Server events get no device class: parsing user agents is more than the split is worth,
@@ -541,3 +544,39 @@ The phases overlapped from here, so the lines stay in the order the decisions we
 - **The main session ran on Opus 5.5 from `fa7778b`,** set by the candidate, where
   [ADR 0012](0012-models-by-kind-of-work.md) puts it on Fable. The reviewers kept the models
   their definitions name, so the critique of the work stayed where the ADR wants it.
+- **The profile step's buttons are no longer kept at the bottom of a phone's screen.** The
+  bar came from the first gate's advice and nothing reserved its space: it hid the option
+  with keyboard focus, hid the whole step at 400% zoom, and in the narrower closing card
+  covered the step's own explanation. Three reviewers of the second gate reported it.
+  Removed, not repaired: the buttons are below the first screen again at success, which the
+  first gate rated minor. A browser test walks focus through the step: its 320px case fails
+  on the removed code, its two 360px cases did not reproduce it and stay as guards.
+- **A call to action adds a history entry again,** as the link itself did before the click
+  handler took over the scroll. With `replaceState`, Back left the page: in the control
+  arm, where the hero's button carries the visitor far down the page, that was the natural
+  way to return. A browser test presses Back.
+- **Closed from the second gate, small:** a click on a call to action is counted from the
+  last counted click and not at all once the account exists; the focus that follows the
+  journey to the form no longer fires on a fixed 1.2 s timer; the FAQ's opening is still
+  under reduced motion; a chosen option shows under forced colors; the error pages' codes
+  break on a narrow screen; the confirmation card's top lands below the header; CI's
+  second Lighthouse run takes five runs; `npm run deploy` builds first and refuses without
+  `SITE_URL`.
+- **Not applied from either gate, and not logged until now.** The duplicated drawing code
+  of the three illustrations and the `--step--1` alias that equals the body size: tidying
+  with no effect a visitor or a reviewer sees. Feedback on tap for the FAQ's questions, the
+  hairline doubled under the audience list and the closing promises wrapping at 360px:
+  small visual points left for a design pass. The React island's size differs by 2 KB
+  between ADR 0016 and ADR 0017: each records what was measured that day. ADR 0015 lists
+  three backlog items and the proposal four: the fourth came later. Three statuses of the
+  API (404, 500, 503) have no captured example, because the local runtime does not produce
+  the fault behind them, and `docs/api.md` says so.
+- **Known limits of the arm stored with a user,** from the second gate: a signup posted
+  from a `/variants/` preview is stored under the visitor cookie's arm, not the previewed
+  one, and a second signup under a cookie the API itself set carries an arm no exposure
+  recorded. Both need the preview addresses, which only a reviewer uses. The D1 half of
+  "`profile_completed` once" has no test of its own: the events are not visible over HTTP,
+  and the batch's order is held by the unit tests on the in-memory repository only.
+- **In the control arm the hero's button stays after a signup.** It leads to the
+  confirmation, which is not a dead end, and its clicks are no longer counted. What to show
+  in its place is wording, and waits for the candidate.
