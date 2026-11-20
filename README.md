@@ -47,7 +47,7 @@ the first run.
 
 ```sh
 npm ci
-npm run preview        # the build on the real Workers runtime, at http://localhost:4321
+npm run preview        # builds, then serves the build on the real Workers runtime, at http://127.0.0.1:4321
 ```
 
 `npm run dev` works too, with hot reload. `npx astro preview stop` ends the preview.

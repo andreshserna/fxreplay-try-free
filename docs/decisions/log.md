@@ -469,3 +469,8 @@ project or is costly to reverse also has an ADR in this folder.
   experiment's candidates, the AI system, the scope) is the larger part of the candidate's
   decisions, and the first version listed only the starting positions and the later calls.
   The delegated list is what was left to recommendation inside the specification.
+- **`npm run preview` builds before it serves, and listens on `127.0.0.1`.** On a fresh
+  clone the README's two commands failed: the adapter's preview needs a build and the
+  script ran only the setup. Where `localhost` resolves to `::1` first, the server also
+  listened only there while the tests default to `127.0.0.1:4321`. Both were found during
+  the first ship-check and reproduced in a fresh clone.

@@ -23,7 +23,7 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 
 | Command | What it does |
 |---|---|
-| `npm run dev`, `build`, `preview` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it). `dev` and `preview` run `setup` first: local secrets and D1 migrations |
+| `npm run dev`, `build`, `preview` | Astro: dev server, build into `dist/`, the build on the local Workers runtime (`npx astro preview stop` ends it). `dev` and `preview` run `setup` first (local secrets and D1 migrations), and `preview` builds before it serves, on `127.0.0.1:4321` |
 | `npm run typecheck`, `lint`, `format` | `wrangler types` and `astro check`; ESLint and Prettier's check; Prettier's write |
 | `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
 | `npm run test:api` | The API contract, the collector and edge assignment over HTTP against a running preview: the real Worker and a real D1 |
