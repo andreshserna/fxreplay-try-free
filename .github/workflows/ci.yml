@@ -55,6 +55,22 @@ jobs:
           # Five runs: on a shared runner one slow run in three moved the median past a budget.
           npm run lighthouse -- --runs 5 | tee lighthouse.txt
 
+      # SEO is judged on a build that may be indexed. The flag is read at build time, so the
+      # first preview is stopped and `npm run preview` builds again with it on. Another port,
+      # so a server that failed to stop can never be the one audited. The reports go to their
+      # own directory, inside the uploaded one, so the first run's reports are kept.
+      - name: SEO budget on an indexable build
+        env:
+          ALLOW_INDEXING: 'true'
+        run: |
+          set -o pipefail
+          npx astro preview stop
+          npm run preview -- --port 4322 --host 127.0.0.1 > preview-seo.log 2>&1 &
+          curl --silent --show-error --retry 30 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4322/ || { cat preview-seo.log; exit 1; }
+          # Three runs: the check judges every budget again here, not SEO alone, and a single
+          # run on a shared runner is too noisy for the timing budgets.
+          LIGHTHOUSE_BASE_URL=http://127.0.0.1:4322 npm run lighthouse -- --seo --runs 3 --out .artifacts/lighthouse/seo | tee lighthouse-seo.txt
+
       # The Lighthouse table on the run's own page and the full reports to download, whether
       # the budgets were met or not: a missed budget can then be read, not only seen.
       - name: Show the Lighthouse results on the run's page
@@ -62,6 +78,9 @@ jobs:
         run: |
           if [ -f lighthouse.txt ]; then
             { echo '## Lighthouse, mobile profile'; echo; echo '```'; cat lighthouse.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          if [ -f lighthouse-seo.txt ]; then
+            { echo '## Lighthouse, mobile profile, indexable build (SEO judged)'; echo; echo '```'; cat lighthouse-seo.txt; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
           fi
       - uses: actions/upload-artifact@v7
         if: always()

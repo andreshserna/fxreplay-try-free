@@ -5,8 +5,8 @@ import { assign, EXPERIMENTS } from '../../src/lib/experiments/registry.ts';
 import {
   BUDGETS,
   EXPERIMENT,
+  armMismatch,
   auditWithRetry,
-  calibratedSlowdown,
   contributors,
   extract,
   findVisitorIds,
@@ -14,6 +14,7 @@ import {
   median,
   medianIndex,
   render,
+  servedArm,
   summarize,
 } from './lighthouse.mjs';
 
@@ -221,21 +222,40 @@ test('contributors lists the LCP element and its phases, and the top three scrip
   assert.deepEqual(contributors({ audits: {} }), []);
 });
 
-test('the slowdown is 4x on the reference host and scales with the host elsewhere', () => {
-  assert.equal(calibratedSlowdown(1750), 4);
-  // A slower runner needs less slowdown to simulate the same phone, a faster laptop more.
-  assert.equal(calibratedSlowdown(1300), 3);
-  assert.equal(calibratedSlowdown(2800), 6.4);
+/** A served document as the build writes it: the arm is named on <html>. */
+const documentFor = (experiments) =>
+  `<!DOCTYPE html><html lang="en"${experiments === undefined ? '' : ` data-experiments="${experiments}"`}><head><meta charset="utf-8"></head><body><main data-experiments="${EXPERIMENT}:not_this_one"></main></body></html>`;
+
+test('an audit of the arm it asked for passes the arm check', () => {
+  assert.equal(servedArm(documentFor(`${EXPERIMENT}:cta_button`)), 'cta_button');
+  assert.equal(armMismatch(documentFor(`${EXPERIMENT}:cta_button`), 'cta_button'), null);
+  assert.equal(armMismatch(documentFor(`${EXPERIMENT}:inline_email`), 'inline_email'), null);
+  // Other experiments may sit beside it.
+  assert.equal(
+    armMismatch(documentFor(`other:x,${EXPERIMENT}:inline_email`), 'inline_email'),
+    null,
+  );
 });
 
-test('the slowdown stays within what Lighthouse lists, and falls back to its default', () => {
-  assert.equal(calibratedSlowdown(100), 1);
-  assert.equal(calibratedSlowdown(9000), 10);
-  assert.equal(calibratedSlowdown(undefined), 4);
-  assert.equal(calibratedSlowdown(Number.NaN), 4);
+test('an audit served the other arm fails the arm check, naming both arms', () => {
+  const mismatch = armMismatch(documentFor(`${EXPERIMENT}:cta_button`), 'inline_email');
+  assert.match(mismatch, /asked for inline_email, served cta_button/);
 });
 
-test('a run Lighthouse could not audit is run again, and never counts as a pass', async () => {
+test('an audit of a document that names no arm fails the arm check', () => {
+  // No attribute on <html>: one deeper in the page does not count.
+  assert.match(
+    armMismatch(documentFor(undefined), 'cta_button'),
+    /asked for cta_button, served none/,
+  );
+  // An attribute that names only other experiments.
+  assert.match(armMismatch(documentFor('other:x'), 'cta_button'), /served none/);
+  // No document at all: the artifact missing, or Lighthouse's error in its place.
+  assert.match(armMismatch(undefined, 'cta_button'), /served none/);
+  assert.match(armMismatch(new Error('no body'), 'cta_button'), /served none/);
+});
+
+test('a run Lighthouse could not audit is run again, recorded, and never counts as a pass', async () => {
   const good = { lhr: {} };
   const broken = { lhr: { runtimeError: { code: 'NO_NAVSTART' } } };
   const sequence = (results) => {
@@ -245,15 +265,21 @@ test('a run Lighthouse could not audit is run again, and never counts as a pass'
   const logged = [];
   const log = (line) => logged.push(line);
 
-  assert.equal(await auditWithRetry(sequence([good]), 3, log), good);
+  assert.deepEqual(await auditWithRetry(sequence([good]), 3, log), {
+    result: good,
+    discarded: [],
+  });
   assert.deepEqual(logged, []);
 
-  assert.equal(await auditWithRetry(sequence([broken, undefined, good]), 3, log), good);
+  const retried = await auditWithRetry(sequence([broken, undefined, good]), 3, log);
+  assert.equal(retried.result, good);
+  // Every discarded attempt is returned with its reason, for the printed and stored record.
+  assert.deepEqual(retried.discarded, ['NO_NAVSTART', 'no result']);
   assert.equal(logged.length, 2);
   assert.match(logged[0], /NO_NAVSTART/);
 
   await assert.rejects(
     auditWithRetry(sequence([broken, broken, broken, good]), 3, log),
-    /could not audit the page in 3 attempts: NO_NAVSTART/,
+    /could not audit the page in 3 attempts: NO_NAVSTART, NO_NAVSTART, NO_NAVSTART/,
   );
 });

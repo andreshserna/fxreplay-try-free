@@ -9,26 +9,29 @@
  *   node scripts/checks/lighthouse.mjs            3 runs per arm, SEO reported only
  *   node scripts/checks/lighthouse.mjs --runs 5   5 runs per arm
  *   node scripts/checks/lighthouse.mjs --seo      also judge SEO (a build made with ALLOW_INDEXING=true)
+ *   node scripts/checks/lighthouse.mjs --out dir  write the output to dir (default .artifacts/lighthouse)
  *
  * Base URL: LIGHTHOUSE_BASE_URL, default http://127.0.0.1:4321.
- * Exit codes: 0 every judged budget passes, 1 a budget fails, 2 internal error.
+ * Exit codes: 0 every judged budget passes, 1 a budget fails, 2 internal error, including
+ * an audit of the wrong arm.
  *
  * Each arm is reached through the visitor cookie: a fixed id that the registry's own
- * `assign` puts in that arm, so every run audits the same visitors. Lighthouse runs
- * headless with its default mobile profile and simulated throttling. Single runs vary,
- * so each metric is judged on its median across the runs.
+ * `assign` puts in that arm, so every run audits the same visitors. Every audit, retries
+ * included, runs in its own Chrome with a new, empty profile, so no cookie the server set
+ * in one audit can be sent in the next one in place of the arm's own. Each audit then
+ * proves which arm it measured: the document Lighthouse loaded names its arm on <html>
+ * (`data-experiments`), and a document of another arm, or of none, stops the check.
  *
- * The CPU slowdown is calibrated to the machine. Lighthouse's 4x turns a high-end desktop
- * into a mid-tier phone, and says to calibrate anywhere else (its docs/throttling.md). On
- * a fixed 4x the same commit measured a total blocking time of 173 ms and of 36 ms on two
- * shared CI runners, and 0 ms on a fast laptop: the number was the host's, not the page's.
- * A first, unjudged run reads the host's benchmark, and the judged runs scale the
- * slowdown by it, so every host simulates the same phone.
+ * Lighthouse runs headless with its default mobile profile and simulated throttling,
+ * including its default CPU slowdown. Single runs vary, so each metric is judged on its
+ * median across the runs. The host's core count and the median benchmark index of the
+ * judged runs are printed and stored, for information only: they show what kind of
+ * machine produced the numbers, and change nothing in how they are judged.
  *
  * Total blocking time is judged only on a host with four cores or more. It is wall-clock
  * time on the main thread, and with fewer cores Chrome's own processes stretch it by
  * competing for them, which the benchmark does not see: one machine, one benchmark, and
- * 0 ms on twelve cores, 0 to 10 ms with Chrome and the server pinned to four, 72 to 122 ms
+ * 0 ms on twelve cores, 0 to 10 ms with Chrome and the server pinned to four, 109 to 122 ms
  * pinned to two. A shared two-core CI runner measured about 190 ms, a four-core one 13 ms.
  * Lighthouse (its docs/variability.md) asks for dedicated cores and recommends four. Below
  * that the number is printed and stored, not judged.
@@ -36,9 +39,9 @@
  * Budgets are compared on unrounded values. The table rounds against the budget (a
  * maximum up, a minimum down), so a displayed value never looks better than the real one.
  *
- * Output goes to .artifacts/lighthouse/: summary.json (medians, per-run values, budgets,
- * version, date, base URL) and <arm>.json, the full report of the run with the median
- * performance score.
+ * Output goes to the output directory: summary.json (medians, per-run values, the arm each
+ * run was served, discarded attempts, budgets, host, version, date, base URL) and
+ * <arm>.json, the full report of the run with the median performance score.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { availableParallelism } from 'node:os';
@@ -65,21 +68,6 @@ export const BUDGETS = {
 };
 
 export const METRICS = Object.keys(BUDGETS);
-
-/**
- * Lighthouse's default slowdown, and the host it assumes: the middle of the "high-end
- * desktop" bracket of its benchmark index (1500 to 2000). The linear scaling between
- * brackets is this project's reading of that table, within the 1x to 10x it lists.
- */
-export const DEFAULT_SLOWDOWN = 4;
-export const REFERENCE_BENCHMARK = 1750;
-
-/** The slowdown that makes this host simulate the phone a reference host simulates at 4x. */
-export function calibratedSlowdown(benchmarkIndex) {
-  if (!Number.isFinite(benchmarkIndex) || benchmarkIndex <= 0) return DEFAULT_SLOWDOWN;
-  const scaled = (DEFAULT_SLOWDOWN * benchmarkIndex) / REFERENCE_BENCHMARK;
-  return Math.min(10, Math.max(1, Math.round(scaled * 10) / 10));
-}
 
 const SEO_NOTE =
   'SEO is reported, not judged: the build ships noindex unless ALLOW_INDEXING=true, and Lighthouse scores that down by design. Judge it with --seo on an indexable build.';
@@ -253,19 +241,54 @@ async function serverAnswers(baseUrl) {
 }
 
 /**
- * A run that Lighthouse could not audit says nothing about the page (NO_NAVSTART, a trace
- * without its first event, was seen once in CI and under pinned cores), so it is run
- * again. A page that cannot be audited in three attempts is an error, never a pass.
+ * The arm of `EXPERIMENT` that a served document names on its <html> element, as
+ * `data-experiments="hero_signup:<arm>"` (other experiments may sit beside it, separated
+ * by commas). Undefined when the document names none.
+ */
+export function servedArm(html) {
+  if (typeof html !== 'string') return undefined;
+  const element = /<html\b[^>]*>/i.exec(html)?.[0];
+  const value = element && /\sdata-experiments="([^"]*)"/i.exec(element)?.[1];
+  if (!value) return undefined;
+  for (const pair of value.split(',')) {
+    const [key, variant] = pair.trim().split(':');
+    if (key === EXPERIMENT && variant) return variant;
+  }
+  return undefined;
+}
+
+/**
+ * Null when the document audited for `arm` is that arm's document. Otherwise the reason it
+ * is not, naming the arm asked for and the arm served. A mismatch is never a pass.
+ */
+export function armMismatch(html, arm) {
+  const served = servedArm(html);
+  if (served === arm) return null;
+  return served === undefined
+    ? `the audit of ${arm} measured a document that names no ${EXPERIMENT} arm (asked for ${arm}, served none)`
+    : `the audit of ${arm} measured another arm's document (asked for ${arm}, served ${served})`;
+}
+
+/**
+ * A run that Lighthouse could not audit says nothing about the page, so it is run again.
+ * NO_NAVSTART, a trace without its first event, has been seen repeatedly in CI and under
+ * pinned cores, and its cause is not established. A page that cannot be audited in three
+ * attempts is an error, never a pass. The discarded attempts are returned with their
+ * reasons, so the output keeps a record of them.
  */
 export const AUDIT_ATTEMPTS = 3;
 
 export async function auditWithRetry(audit, attempts = AUDIT_ATTEMPTS, log = console.error) {
+  const discarded = [];
   for (let attempt = 1; ; attempt += 1) {
     const result = await audit();
     const reason = result ? result.lhr.runtimeError?.code : 'no result';
-    if (!reason) return result;
+    if (!reason) return { result, discarded };
+    discarded.push(reason);
     if (attempt >= attempts) {
-      throw new Error(`Lighthouse could not audit the page in ${attempts} attempts: ${reason}`);
+      throw new Error(
+        `Lighthouse could not audit the page in ${attempts} attempts: ${discarded.join(', ')}`,
+      );
     }
     log(
       `lighthouse: a run could not audit the page (${reason}), running it again (${attempt + 1} of ${attempts}).`,
@@ -273,30 +296,70 @@ export async function auditWithRetry(audit, attempts = AUDIT_ATTEMPTS, log = con
   }
 }
 
-async function auditArm({ lighthouse, port, url, visitorId, runs, slowdown }) {
-  const results = [];
-  for (let run = 0; run < runs; run += 1) {
-    const result = await auditWithRetry(() =>
-      lighthouse(url, {
-        port,
-        output: 'json',
-        logLevel: 'error',
-        onlyCategories: CATEGORIES,
-        extraHeaders: { Cookie: `${VISITOR_COOKIE}=${visitorId}` },
-        throttling: { cpuSlowdownMultiplier: slowdown },
-      }),
-    );
-    const { lhr } = result;
-    for (const warning of lhr.runWarnings ?? []) console.error(`lighthouse: warning: ${warning}`);
-    results.push({ lhr, report: result.report, values: extract(lhr) });
+/** One audit in a Chrome of its own, with a new profile that it deletes on the way out. */
+async function auditInFreshChrome({ lighthouse, chromeLauncher, url, cookie }) {
+  // A CI runner has no user namespace for Chrome's sandbox. The page under test is our own.
+  const chromeFlags = ['--headless=new', ...(process.env.CI ? ['--no-sandbox'] : [])];
+  const chrome = await chromeLauncher.launch({ chromeFlags });
+  try {
+    return await lighthouse(url, {
+      port: chrome.port,
+      output: 'json',
+      logLevel: 'error',
+      // Best practices' charset audit is what makes Lighthouse keep the main document's
+      // content (the MainDocumentContent artifact), which proves the arm.
+      onlyCategories: CATEGORIES,
+      extraHeaders: { Cookie: cookie },
+    });
+  } finally {
+    chrome.kill();
   }
-  return results;
 }
+
+async function auditArm({ lighthouse, chromeLauncher, url, arm, visitorId, runs, checkArm }) {
+  const cookie = `${VISITOR_COOKIE}=${visitorId}`;
+  const results = [];
+  const discarded = [];
+  for (let run = 0; run < runs; run += 1) {
+    const attempt = await auditWithRetry(() =>
+      auditInFreshChrome({ lighthouse, chromeLauncher, url, cookie }),
+    );
+    discarded.push(...attempt.discarded);
+    const { lhr, artifacts, report } = attempt.result;
+    // Checked once Lighthouse has audited the page, and never retried: a document of the
+    // wrong arm means the check measures something other than it says.
+    const html = artifacts?.MainDocumentContent;
+    if (checkArm) {
+      const mismatch = armMismatch(html, arm);
+      if (mismatch) throw new Error(`${mismatch}. The run is not counted.`);
+    }
+    for (const warning of lhr.runWarnings ?? []) console.error(`lighthouse: warning: ${warning}`);
+    results.push({
+      lhr,
+      report,
+      values: extract(lhr),
+      servedArm: servedArm(html) ?? null,
+      benchmarkIndex: lhr.environment?.benchmarkIndex,
+    });
+  }
+  return { results, discarded };
+}
+
+const describeDiscarded = (discarded) => {
+  if (discarded.length === 0) return 'none';
+  const counts = new Map();
+  for (const reason of discarded) counts.set(reason, (counts.get(reason) ?? 0) + 1);
+  return `${discarded.length} (${[...counts].map(([reason, count]) => `${reason} x${count}`).join(', ')}), each run again`;
+};
 
 async function main(argv) {
   const { values: flags } = parseArgs({
     args: argv,
-    options: { runs: { type: 'string', default: '3' }, seo: { type: 'boolean', default: false } },
+    options: {
+      runs: { type: 'string', default: '3' },
+      seo: { type: 'boolean', default: false },
+      out: { type: 'string', default: OUT_DIR },
+    },
   });
   const runs = Number(flags.runs);
   if (!Number.isInteger(runs) || runs < 1) throw new Error(`--runs must be a positive integer`);
@@ -318,18 +381,20 @@ async function main(argv) {
     const reached = new Set(arms.map(([variant]) => variant));
     const missing = experiment.variants.filter((variant) => !reached.has(variant));
     if (experiment.enabled) throw new Error(`no visitor id reaches ${missing.join(', ')}`);
-    console.log(`lighthouse: ${EXPERIMENT} is off, so only its control is served and audited.`);
+    // Switched off, the document names no arm (every visitor gets the control), so there
+    // is no arm to prove and no other arm a stray cookie could reach.
+    console.log(
+      `lighthouse: ${EXPERIMENT} is off, so only its control is served and audited, and the served arm is not checked.`,
+    );
   }
 
   const { default: lighthouse } = await import('lighthouse');
   const chromeLauncher = await import('chrome-launcher');
-  // A CI runner has no user namespace for Chrome's sandbox. The page under test is our own.
-  const chromeFlags = ['--headless=new', ...(process.env.CI ? ['--no-sandbox'] : [])];
-  const chrome = await chromeLauncher.launch({ chromeFlags });
 
   const url = new URL('/', baseUrl).href;
-  const outDir = join(REPO_ROOT, OUT_DIR);
+  const outDir = resolve(REPO_ROOT, flags.out);
   mkdirSync(outDir, { recursive: true });
+  const cores = availableParallelism();
   const summaryFile = {
     lighthouseVersion: undefined,
     date: new Date().toISOString(),
@@ -338,70 +403,63 @@ async function main(argv) {
     runsPerArm: runs,
     seoJudged: flags.seo,
     budgets: BUDGETS,
-    hostBenchmarkIndex: undefined,
-    hostCores: undefined,
+    hostCores: cores,
     cpuSlowdownMultiplier: undefined,
     arms: {},
   };
+  console.log(`lighthouse: ${cores} core(s) on this host, a new Chrome profile for every audit.`);
 
   let failed = false;
-  try {
-    // An unjudged run, to learn how fast this machine is.
-    const probe = await lighthouse(url, {
-      port: chrome.port,
-      output: 'json',
-      logLevel: 'error',
-      onlyCategories: ['performance'],
+  for (const [arm, visitorId] of arms) {
+    const { results, discarded } = await auditArm({
+      lighthouse,
+      chromeLauncher,
+      url,
+      arm,
+      visitorId,
+      runs,
+      checkArm: experiment.enabled,
     });
-    const benchmark = probe?.lhr.environment?.benchmarkIndex;
-    const slowdown = calibratedSlowdown(benchmark);
-    const cores = availableParallelism();
-    summaryFile.hostBenchmarkIndex = benchmark;
-    summaryFile.hostCores = cores;
+    const values = results.map((result) => result.values);
+    const summary = summarize(values);
+    const rows = judge(summary, BUDGETS, { seo: flags.seo, cores });
+    const representative = results[medianIndex(values.map((value) => value.performance))];
+    const benchmarks = results
+      .map((result) => result.benchmarkIndex)
+      .filter((value) => Number.isFinite(value));
+    const benchmarkIndex = benchmarks.length > 0 ? median(benchmarks) : null;
+    const slowdown = representative.lhr.configSettings?.throttling?.cpuSlowdownMultiplier;
+    summaryFile.lighthouseVersion = representative.lhr.lighthouseVersion;
     summaryFile.cpuSlowdownMultiplier = slowdown;
+
+    writeFileSync(join(outDir, `${arm}.json`), representative.report);
+    summaryFile.arms[arm] = {
+      cookie: `${VISITOR_COOKIE}=${visitorId}`,
+      servedArms: results.map((result) => result.servedArm),
+      benchmarkIndex,
+      discardedAttempts: discarded,
+      medians: summary,
+      runs: values,
+      results: rows.map(({ metric, value, result }) => ({ metric, value, result })),
+    };
+
+    console.log(`\n${arm} (${VISITOR_COOKIE}=${visitorId}, median of ${runs} run(s))`);
+    console.log(render(rows));
     console.log(
-      `lighthouse: host benchmark ${Math.round(benchmark ?? 0)}, ${cores} core(s), CPU slowdown ${slowdown}x (${DEFAULT_SLOWDOWN}x on a reference host of ${REFERENCE_BENCHMARK}).`,
+      `Served: ${experiment.enabled ? `${arm} in every run` : 'not checked'}. CPU slowdown ${slowdown}x. Benchmark index, median of the judged runs: ${benchmarkIndex === null ? 'unknown' : Math.round(benchmarkIndex)} (for information).`,
     );
-
-    for (const [arm, visitorId] of arms) {
-      const results = await auditArm({
-        lighthouse,
-        port: chrome.port,
-        url,
-        visitorId,
-        runs,
-        slowdown,
-      });
-      const values = results.map((result) => result.values);
-      const summary = summarize(values);
-      const rows = judge(summary, BUDGETS, { seo: flags.seo, cores });
-      const representative = results[medianIndex(values.map((value) => value.performance))];
-      summaryFile.lighthouseVersion = representative.lhr.lighthouseVersion;
-
-      writeFileSync(join(outDir, `${arm}.json`), representative.report);
-      summaryFile.arms[arm] = {
-        cookie: `${VISITOR_COOKIE}=${visitorId}`,
-        medians: summary,
-        runs: values,
-        results: rows.map(({ metric, value, result }) => ({ metric, value, result })),
-      };
-
-      console.log(`\n${arm} (${VISITOR_COOKIE}=${visitorId}, median of ${runs} run(s))`);
-      console.log(render(rows));
-      const lines = contributors(representative.lhr);
-      if (lines.length > 0) {
-        console.log(`Largest contributors, from the median-performance run:`);
-        for (const line of lines) console.log(`  ${line}`);
-      }
-      failed ||= rows.some((row) => row.result === 'fail');
+    console.log(`Discarded attempts: ${describeDiscarded(discarded)}.`);
+    const lines = contributors(representative.lhr);
+    if (lines.length > 0) {
+      console.log(`Largest contributors, from the median-performance run:`);
+      for (const line of lines) console.log(`  ${line}`);
     }
-  } finally {
-    chrome.kill();
+    failed ||= rows.some((row) => row.result === 'fail');
   }
 
   writeFileSync(join(outDir, 'summary.json'), `${JSON.stringify(summaryFile, null, 2)}\n`);
   console.log(
-    `\nlighthouse: ${failed ? 'FAIL, a lab budget is missed' : 'OK, every judged budget passes'} (${arms.length} arm(s), ${runs} run(s) each, reports in ${OUT_DIR}/).`,
+    `\nlighthouse: ${failed ? 'FAIL, a lab budget is missed' : 'OK, every judged budget passes'} (${arms.length} arm(s), ${runs} run(s) each, reports in ${flags.out.replace(/\/+$/, '')}/).`,
   );
   return failed ? 1 : 0;
 }
