@@ -596,3 +596,23 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   assumes and the place a signup form most often breaks, so it is tested for first. A
   headless Chrome is now read as Chrome, Opera on iOS as Opera, and the plan says what each
   label lumps together.
+- **An eleventh event, `section_viewed`:** each section below the hero, once per page
+  load, when it has stayed across the middle of the screen for a second. It answers what
+  a heat map would be bought for (how far down the page visitors read, by arm and by
+  device) without a third-party script, which the page does not load
+  ([ADR 0014](0014-first-party-event-collector.md)). The second is what tells reading
+  from travelling: a call to action carries the page past every section on its way to the
+  form. FX Replay's own tag setup has a `scroll_depth` event (`docs/research/brief.md`,
+  section 5), so this is a signal they already read. Verified by a browser test, not by
+  the measurement reviewer: its two earlier runs covered the tracker this event uses.
+- **The call to action stays "Start for free".** It is the label FX Replay's own plan card
+  and campaign pages use for the free plan, and it names the offer the page is built on. A
+  test of the label against their "Backtest now" joins the backlog, last.
+- **On a phone, the card that follows a signup takes the closing panel's place.** A card
+  inside the panel left the profile's questions a 220px column: one market to a row and a
+  card 1,086px tall at 360px. It is 869px now, with the markets two to a row, as in the
+  hero. From the second gate's design review.
+- **Not done from the second gate:** in the variant arm the header's button still leads to
+  the form at the end of the page, past the one in the hero. Choosing the nearer form
+  touches the journey and its history entry again, and that code was wrong twice this
+  week.

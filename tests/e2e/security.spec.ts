@@ -130,7 +130,8 @@ test.describe('the policy breaks nothing', () => {
       expect(fonts.some((family) => family.startsWith('Lato'))).toBe(true);
       expect(fonts.some((family) => family.includes('Nunito Sans'))).toBe(true);
       await flushEvents(page);
-      expect(collected.length).toBeGreaterThan(0);
+      // The answer comes back when it comes back: wait for it instead of for a fixed time.
+      await expect.poll(() => collected.length).toBeGreaterThan(0);
       expect(collected.every((status) => status >= 200 && status < 300)).toBe(true);
 
       expect(

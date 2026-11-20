@@ -25,8 +25,8 @@ already publishes a marketing event spec with `cta_name` and `cta_location`, and
 
 ## Decision
 
-Option 1. Nine events, `object_action` in the past tense. (A tenth, `replay_demo_used`, was
-added on 2026-11-19 with the playable illustration: the registry and the generated table in
+Option 1. Nine events, `object_action` in the past tense. (Two were added later: `replay_demo_used` on 2026-11-19 with the playable illustration, and
+`section_viewed` on 2026-11-20. The registry and the generated table in
 `docs/analytics-plan.md` are current, this table is the decision as taken.)
 
 | Event | Fires | The decision it informs |

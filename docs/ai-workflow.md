@@ -81,7 +81,7 @@ One change, the browser tracker, as it actually went:
 1. **A decision first.** The taxonomy and the collector were decided and recorded
    ([ADR 0013](decisions/0013-event-taxonomy-and-primary-metric.md),
    [0014](decisions/0014-first-party-event-collector.md)) before any tracking code.
-2. **The registry by hand, in the main session,** because it is the design: nine events then (ten now), each
+2. **The registry by hand, in the main session,** because it is the design: nine events then (eleven now), each
    with the decision it informs, and no free-text type.
 3. **A written specification to `implementer`** for the tracker: the dependencies to inject,
    the batching rule, what must never throw, the tests to write, the size to report.

@@ -69,6 +69,20 @@ export const EVENTS = {
       },
     },
   },
+  section_viewed: {
+    source: 'client',
+    trigger:
+      'A section below the hero has stayed across the middle of the screen for one second, for the first time in this page load. Once per section per page load. A section the page only travels past, on the way to the form, is not counted.',
+    decision:
+      'Which sections earn their place and their position: a section few visitors reach cannot be what convinces them, and is moved up or cut. Read by arm and by device.',
+    properties: {
+      section: {
+        type: 'enum',
+        values: ['figures', 'how_it_works', 'audience', 'plan', 'faq', 'signup'],
+        description: 'The section reached, in the order of the page.',
+      },
+    },
+  },
   replay_demo_used: {
     source: 'client',
     trigger:

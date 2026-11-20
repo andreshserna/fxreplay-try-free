@@ -38,7 +38,9 @@ test.describe('the variant: an email field in the hero', () => {
     await expect(page.getByRole('heading', { name: 'You are all set.' })).toBeFocused();
 
     await flushEvents(page);
-    const names = sent.events.map((event) => event.name).filter((name) => name !== 'web_vitals');
+    const names = sent.events
+      .map((event) => event.name)
+      .filter((name) => name !== 'web_vitals' && name !== 'section_viewed');
     expect(names).toEqual(['landing_viewed', 'signup_started', 'signup_submitted']);
     expect(sent.events.find((event) => event.name === 'signup_submitted')).toMatchObject({
       properties: { form_location: 'hero', attempt: 1 },
@@ -195,7 +197,9 @@ test.describe('the control: a button that leads to the form', () => {
     await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeVisible();
 
     await flushEvents(page);
-    const names = sent.events.map((event) => event.name).filter((name) => name !== 'web_vitals');
+    const names = sent.events
+      .map((event) => event.name)
+      .filter((name) => name !== 'web_vitals' && name !== 'section_viewed');
     expect(names).toEqual(['landing_viewed', 'cta_clicked', 'signup_started', 'signup_submitted']);
     expect(sent.events.find((event) => event.name === 'cta_clicked')?.properties).toEqual({
       cta_name: 'start_free',
@@ -515,6 +519,36 @@ test.describe('the header', () => {
     await page.getByRole('main').getByRole('link', { name: 'Start for free' }).first().dblclick();
     await flushEvents(page);
     expect(sent.events.filter((event) => event.name === 'cta_clicked')).toHaveLength(1);
+  });
+});
+
+test.describe('how far a visitor reads', () => {
+  test('records a section once it has been read, and not one the page only travels past', async ({
+    page,
+    baseURL,
+  }) => {
+    const sent = recordEvents(page);
+    await openAs(page, baseURL, 'cta_button');
+    const seen = () =>
+      sent.events
+        .filter((event) => event.name === 'section_viewed')
+        .map((event) => event.properties['section']);
+
+    // The call to action carries the page past every section to the form. Only the form's
+    // section, where the journey ends, is one the visitor has in front of them.
+    await page.getByRole('main').getByRole('link', { name: 'Start for free' }).first().click();
+    await expect(page.getByLabel('Email', { exact: true }).last()).toBeFocused();
+    await expect.poll(async () => (await flushEvents(page), seen())).toEqual(['signup']);
+
+    // Reading a section counts it. Coming back to it does not count it again.
+    const faq = page.getByRole('heading', { name: 'Fair questions.' });
+    await faq.evaluate((heading) => heading.scrollIntoView({ block: 'center' }));
+    await expect.poll(async () => (await flushEvents(page), seen())).toEqual(['signup', 'faq']);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await faq.evaluate((heading) => heading.scrollIntoView({ block: 'center' }));
+    await page.waitForTimeout(1300);
+    await flushEvents(page);
+    expect(seen()).toEqual(['signup', 'faq']);
   });
 });
 

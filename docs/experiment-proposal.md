@@ -1,6 +1,6 @@
 # Experiment proposal
 
-One experiment is specified in full and wired end to end. Four more are ranked behind it.
+One experiment is specified in full and wired end to end. Five more are ranked behind it.
 The method matters more than the idea: the plan is committed before any data exists, both
 sides of the metric are recorded on the server, and the decision table is written first.
 
@@ -61,3 +61,4 @@ Ranked by what is learned per visitor spent.
 | 3 | **The profile step before or after the account** | It trades signups for signup quality, which the first experiment's guardrail will have started to measure | It needs the baseline funnel first |
 | 4 | **The offer as the hero.** The hero becomes the free plan itself: a card that states the limits and holds the form ("Free means free. Here is exactly what you get."). It was one of the three rendered hero directions | It attacks the ambiguity between the free plan and the trial, which their own pages show | It changes the whole hero, so it runs once the smaller questions about the current one are answered |
 | 5 | **The headline: the trader's doubt against the benefit** ("Is your edge real, or a lucky streak?" against "Test your strategy before you trust it.") | The message is the largest lever on a landing page after the offer | Two things should not change in the hero at once |
+| 6 | **The button's label** ("Start for free" against "Backtest now") | Their own pages use both: "Start for free" on the plan card and under campaign buttons, "Backtest now" on the campaign buttons themselves (`docs/research/brief.md`, section 4). One names the price, the other the action | A label alone is the smallest lever here, and "Start for free" already states the offer the page is built on |

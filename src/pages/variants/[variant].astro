@@ -106,6 +106,46 @@ const running = EXPERIMENTS.hero_signup.enabled
   }
   reportWebVitals();
 
+  // How far down the page a visitor reads: each section below the hero, once, when it has
+  // stayed across the middle of the screen for a second. The second is what tells reading
+  // from travelling: a call to action carries the page past every section on its way to
+  // the form, and none of those is a section seen.
+  type Section = EventProperties<'section_viewed'>['section'];
+  const sections = [
+    'figures',
+    'how_it_works',
+    'audience',
+    'plan',
+    'faq',
+    'signup',
+  ] as const satisfies Section[];
+  const isSection = (value: string | undefined): value is Section =>
+    (sections as readonly (string | undefined)[]).includes(value);
+  if ('IntersectionObserver' in window) {
+    const pending = new Map<Element, number>();
+    const middle = new IntersectionObserver(
+      (entries) => {
+        for (const { target, isIntersecting } of entries) {
+          window.clearTimeout(pending.get(target));
+          pending.delete(target);
+          if (!isIntersecting) continue;
+          pending.set(
+            target,
+            window.setTimeout(() => {
+              const section = target instanceof HTMLElement ? target.dataset.section : undefined;
+              if (isSection(section)) track('section_viewed', { section });
+              middle.unobserve(target);
+            }, 1000),
+          );
+        }
+      },
+      // A line across the middle of the screen: a section is "there" while it crosses it,
+      // however tall it is.
+      { rootMargin: '-50% 0px -50% 0px' },
+    );
+    for (const section of document.querySelectorAll('[data-section]')) middle.observe(section);
+  }
+
   // A double click is one intent: repeats on the same call to action within a second
   // count once.
   const lastClick = new Map<CtaLocation, number>();
