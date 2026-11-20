@@ -1,7 +1,6 @@
 ---
 name: ship-check
-description: The release gate. Runs every deterministic check, then the reviewer agents in parallel, and writes one report to docs/ai/reports/. Run by the candidate before a phase is called done and before submission.
-disable-model-invocation: true
+description: The release gate. Runs every deterministic check, then the reviewer agents in parallel, and writes one report to docs/ai/reports/. Run before a phase is called done, before submission, and again after the fixes a gate asked for. The candidate starts it, or the main session does when the work calls for it.
 argument-hint: "[scope or phase] [URL of a running production build]"
 allowed-tools: Bash(npm run *) Bash(npm test *) Bash(git status *) Bash(git diff *) Bash(git log *) Bash(git rev-parse *)
 ---

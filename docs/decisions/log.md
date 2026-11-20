@@ -531,3 +531,7 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   value is refused, which is what the attribute says. The CSP has no reporting endpoint:
   there is nowhere to send reports on a demo, and it is in the production list. The
   message under the form still takes the promises' place when it shows.
+- **The main session can start `/ship-check` too.** It was the candidate's alone, so a gate
+  that said fix first could not be run again until he typed it, and the fixed commit stood
+  unchecked meanwhile. The rule that matters is kept: the gate fixes nothing while it runs,
+  and its reviewers are agents that wrote none of the code.

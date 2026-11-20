@@ -106,7 +106,8 @@ State a disagreement, with its reason, before doing the work. Then do it the can
   output, Opus 5.5 where the output is specified beforehand and checked by tests.
   `implementer` takes such a specification. Its diff is read and its tests are run before
   anything is committed.
-- **Skills:** `/adr`, `/track-event`, `/new-experiment`, `/ship-check` (the gate the candidate runs).
+- **Skills:** `/adr`, `/track-event`, `/new-experiment`, `/ship-check` (the release gate: the candidate starts it, or the main session does after
+  fixes a gate asked for).
 - **Docs and the browser over memory.** Astro's API through `astro-docs`. Claude Code config
   against code.claude.com/docs. Screenshots, traces and payloads through `chrome-devtools`.
   Say plainly what was not verified.

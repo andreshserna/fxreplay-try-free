@@ -49,7 +49,8 @@ brief carries the scope, the files and what "done" means.
 - **`/new-experiment`** scaffolds a pre-registered experiment: hypothesis, metric, guardrails,
   sample size from the script, decision table, all committed before data exists.
 - **`/ship-check`** is the release gate: the deterministic checks, then the reviewers in
-  parallel, then one report. Only a person can invoke it.
+  parallel, then one report. It measures and judges and fixes nothing: fixes come after
+  the report, and a fixed gate is run again.
 
 ## MCP
 
@@ -275,12 +276,11 @@ By the system's reviewers and checks. What I sent back myself is under
 
 ## The release gate
 
-`/ship-check` ran once, on commit `8098e81`:
+`/ship-check` ran first on commit `8098e81`:
 [the report](ai/reports/ship-check-2026-11-19-1917.md). Eleven deterministic checks passed.
 Of the four reviewers, run in parallel against that commit on the local Workers runtime,
 three said fix first and one said ship. Their findings were fixed in the commits after it,
-and what was not applied is in [the decision log](decisions/log.md) with the reason. The
-gate has not been run again on the fixed commit: that run is the candidate's to start.
+and what was not applied is in [the decision log](decisions/log.md) with the reason.
 
 ## Not done yet
 
