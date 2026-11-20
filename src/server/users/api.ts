@@ -23,6 +23,7 @@ import {
   type RequestContext,
 } from '../http/respond';
 import {
+  clientOf,
   looksAutomated,
   readVisitor,
   requestCountry,
@@ -425,6 +426,7 @@ function visitorContext(request: Request, user: UserRecord): VisitorContext {
     anonymous_id: user.anonymous_id ?? user.id,
     ...(experiments ? { experiments } : {}),
     is_bot: looksAutomated(request),
+    ...clientOf(request),
     ...(country ? { country } : {}),
     ...(user.attribution ? toContext(user.attribution) : {}),
   };

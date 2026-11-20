@@ -95,7 +95,7 @@ fit inside.
 - **Structured data:** one entity that is both a `WebPage` and a `FAQPage`, built from the
   same list the FAQ renders. Google shows FAQ rich results only for government and health
   sites, so it is there for meaning, not for a richer listing.
-- **Title and description** fit a search result whole: 35 and 153 characters.
+- **Title and description** fit a search result whole: 35 and 105 characters.
 - **Indexing is off by default** behind `ALLOW_INDEXING`, because the page carries another
   company's brand ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)). With the
   flag on, the SEO audit scores 100: CI builds a second time with it on and judges it on

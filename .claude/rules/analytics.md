@@ -17,7 +17,9 @@ paths:
 - Call sites use the vendor-neutral `track()`. No vendor SDK is called outside an adapter.
 - Every event carries an anonymous id, attribution when it is known (UTMs plus the affiliate
   parameters `via` and `aff`), experiment assignments, the release SHA and an event id for
-  deduplication. Events sent by the browser also carry a session id and a device class.
+  deduplication, and the browser family and operating system of the request, with no
+  version, set by the server. Events sent by the browser also carry a session id and a
+  device class.
   Events emitted by the server carry neither: they join the visitor's browser events by
   anonymous id.
 - **No PII in any payload.** Never an email, a name, or text a visitor typed.

@@ -96,6 +96,8 @@ describe('the landing page at the edge', () => {
           page_path: '/',
           experiments: `hero_signup:${arm}`,
           is_bot: false,
+          browser: 'chrome',
+          os: 'android',
         }) as unknown,
       }),
     ]);

@@ -11,7 +11,13 @@ import { EVENTS, isEventName } from '../../lib/analytics/registry';
 import { checkContext, checkProperties } from '../../lib/analytics/validate';
 import { readBodyText } from '../http/body';
 import { clientKey, jsonResponse, problemResponse, requestContext } from '../http/respond';
-import { looksAutomated, readVisitor, requestCountry, visitorCookie } from '../http/visitor';
+import {
+  clientOf,
+  looksAutomated,
+  readVisitor,
+  requestCountry,
+  visitorCookie,
+} from '../http/visitor';
 import type { Defer, Log } from './emitter';
 import type { AnalyticsEvent, EventSink } from './sink';
 
@@ -81,6 +87,7 @@ export class Collector {
       source: 'client',
       country: requestCountry(request),
       is_bot: looksAutomated(request),
+      ...clientOf(request),
     };
 
     const accepted: AnalyticsEvent[] = [];

@@ -24,8 +24,9 @@ The URL of a running build, and what changed. If nothing is running, say so and 
 - The funnel: `landing_viewed`, `cta_clicked`, `signup_started`, `signup_submitted`,
   `signup_completed` (server-side, the primary conversion), `profile_completed`.
 - Every event carries an anonymous id, attribution when it is known, experiment assignments,
-  the release SHA and an event id. Events sent by the browser also carry a session id and a
-  device class. Events emitted by the server carry neither.
+  the release SHA, an event id, and the browser family and operating system the server
+  reads from the request. Events sent by the browser also carry a session id and a device
+  class. Events emitted by the server carry neither.
 - No PII in any payload. Email goes to the database and nowhere else.
 - Analytics never blocks rendering or the signup.
 - Experiments are assigned at the edge and are sticky. Exposure is recorded by the edge when

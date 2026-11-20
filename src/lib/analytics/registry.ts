@@ -267,6 +267,20 @@ export const CONTEXT = {
     optional: true,
     description: 'The user agent looks automated. Set by the server, to filter in analysis.',
   },
+  browser: {
+    type: 'enum',
+    values: ['chrome', 'safari', 'firefox', 'edge', 'samsung', 'opera', 'other'],
+    optional: true,
+    description:
+      'The browser family of the request, with no version. Set by the server. A funnel step or a failure reason that is worse in one family is a bug to fix, not a conversion problem.',
+  },
+  os: {
+    type: 'enum',
+    values: ['android', 'ios', 'windows', 'macos', 'linux', 'chromeos', 'other'],
+    optional: true,
+    description:
+      'The operating system of the request, with no version. Set by the server, for the same reading as `browser`.',
+  },
 } as const satisfies Record<string, PropertySpec>;
 
 type ValueOf<Spec> = Spec extends { type: 'enum'; values: readonly (infer Value)[] }

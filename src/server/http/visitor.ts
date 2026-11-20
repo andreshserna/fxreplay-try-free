@@ -5,7 +5,7 @@
  * event and to the signup, so the id cannot be altered or leaked by a script, and it
  * is not subject to the short lifetimes browsers give to cookies written from script.
  */
-import { ID_PATTERN } from '../../lib/analytics/registry';
+import { CONTEXT, ID_PATTERN } from '../../lib/analytics/registry';
 import { readCookie } from './session';
 
 export const VISITOR_COOKIE = 'fxr_aid';
@@ -49,6 +49,52 @@ export function isPageView(request: Request): boolean {
   if (/prefetch|prerender/i.test(request.headers.get('Sec-Purpose') ?? '')) return false;
   const destination = request.headers.get('Sec-Fetch-Dest');
   return destination === null || destination === 'document';
+}
+
+type Browser = (typeof CONTEXT.browser.values)[number];
+type System = (typeof CONTEXT.os.values)[number];
+
+// The order matters: Edge, Samsung Internet and Opera also say "Chrome", every Chromium
+// browser also says "Safari", and Android also says "Linux".
+const BROWSERS: readonly (readonly [Browser, RegExp])[] = [
+  ['edge', /\bEdg(?:e|A|iOS)?\//],
+  ['samsung', /\bSamsungBrowser\//],
+  ['opera', /\b(?:OPR|OPT)\//],
+  ['firefox', /\b(?:Firefox|FxiOS)\//],
+  ['chrome', /\b(?:Chrome|CriOS)\//],
+  ['safari', /\bSafari\//],
+];
+const SYSTEMS: readonly (readonly [System, RegExp])[] = [
+  ['android', /\bAndroid\b/],
+  ['ios', /\b(?:iPhone|iPad|iPod)\b/],
+  ['chromeos', /\bCrOS\b/],
+  ['windows', /\bWindows\b/],
+  ['macos', /\bMacintosh\b|\bMac OS X\b/],
+  ['linux', /\bLinux\b|\bX11\b/],
+];
+/** What Chromium browsers say in `Sec-CH-UA-Platform`, which is cleaner than the agent. */
+const HINTED: Readonly<Record<string, System>> = {
+  android: 'android',
+  ios: 'ios',
+  windows: 'windows',
+  macos: 'macos',
+  linux: 'linux',
+  'chrome os': 'chromeos',
+  'chromium os': 'chromeos',
+};
+
+/**
+ * The browser family and the operating system of a request: two coarse labels, no
+ * version, so they say where a bug lives without telling one visitor from another. An
+ * iPad that asks for the desktop site calls itself a Mac, and is counted as one.
+ */
+export function clientOf(request: Request): { browser: Browser; os: System } {
+  const agent = request.headers.get('User-Agent') ?? '';
+  const hint = (request.headers.get('Sec-CH-UA-Platform') ?? '').replaceAll('"', '').toLowerCase();
+  return {
+    browser: BROWSERS.find(([, pattern]) => pattern.test(agent))?.[0] ?? 'other',
+    os: HINTED[hint] ?? SYSTEMS.find(([, pattern]) => pattern.test(agent))?.[0] ?? 'other',
+  };
 }
 
 /** The country Cloudflare resolved for the request, as a lowercase label. */

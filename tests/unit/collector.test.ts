@@ -284,6 +284,87 @@ describe('the PostHog sink', () => {
     expect(requests).toHaveLength(2);
   });
 
+  it('names the browser family and the system from the request, never from the body', async () => {
+    await send({
+      context: { ...shared, browser: 'firefox', os: 'ios' },
+      events: [event('landing_viewed')],
+    });
+    // The request is Chrome on Android. What the body claimed is overwritten.
+    expect(sink.events[0]?.context).toMatchObject({ browser: 'chrome', os: 'android' });
+  });
+
+  it.each([
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+      {},
+      'safari',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/131.0 Mobile/15E148 Safari/604.1',
+      {},
+      'chrome',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15',
+      {},
+      'safari',
+      'macos',
+    ],
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0',
+      {},
+      'edge',
+      'windows',
+    ],
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0',
+      {},
+      'firefox',
+      'windows',
+    ],
+    [
+      'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36',
+      {},
+      'samsung',
+      'android',
+    ],
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 OPR/116.0.0.0',
+      {},
+      'opera',
+      'windows',
+    ],
+    [
+      'Mozilla/5.0 (X11; CrOS x86_64 14541.0.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      {},
+      'chrome',
+      'chromeos',
+    ],
+    [
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      {},
+      'chrome',
+      'linux',
+    ],
+    // Chromium's reduced agent says "Linux; Android 10; K" or "X11; Linux": the hint is the truth.
+    [
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      { 'Sec-CH-UA-Platform': '"Chrome OS"' },
+      'chrome',
+      'chromeos',
+    ],
+    ['curl/8.11.0', {}, 'other', 'other'],
+    ['', {}, 'other', 'other'],
+  ])('reads %s as %s on %s', async (agent, hints, _browser, _os) => {
+    await send(
+      { context: shared, events: [event('landing_viewed')] },
+      { 'User-Agent': agent, ...(hints as Record<string, string>) },
+    );
+    expect(sink.events[0]?.context).toMatchObject({ browser: _browser, os: _os });
+  });
+
   it('takes the country from the edge, never from the body, and flags a request with no agent', async () => {
     await send({ context: { ...shared, country: 'zz' }, events: [event('landing_viewed')] });
     expect(sink.events[0]?.context.country).toBeUndefined();

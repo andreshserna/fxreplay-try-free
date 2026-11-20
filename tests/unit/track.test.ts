@@ -434,6 +434,8 @@ describe('the tracker and the collector', () => {
       aff: 'partner_1',
       source: 'client',
       is_bot: false,
+      browser: 'chrome',
+      os: 'linux',
     });
   });
 });

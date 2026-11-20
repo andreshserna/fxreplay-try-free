@@ -13,6 +13,7 @@ import type { Defer, ServerEvents } from './analytics/emitter';
 import { clientKey } from './http/respond';
 import {
   isPageView,
+  clientOf,
   looksAutomated,
   readVisitor,
   requestCountry,
@@ -75,6 +76,7 @@ export async function serveLanding(
       page_path: '/',
       experiments: formatAssignments({ [EXPERIMENT]: variant }),
       is_bot: looksAutomated(request),
+      ...clientOf(request),
       ...(country ? { country } : {}),
       ...(touch ? toContext({ last_touch: touch }) : {}),
     };

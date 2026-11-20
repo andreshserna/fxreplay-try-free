@@ -28,11 +28,15 @@ the page was fast for the people in it, and which arm they saw.
 
 - The unit is the visitor (the anonymous id), not the session or the page view.
 - Split by first-touch source, device class and experiment arm.
-- The device split has a limit. The server's events (the conversion, the profile, the
-  exposure) carry no device class and no session id: the server does not parse user agents.
-  The split joins the server's conversion to the visitor's browser events by anonymous id, so
-  a converter whose browser analytics were blocked has no device class and is reported as
-  unknown.
+- The device split has a limit. `device_class` comes from the viewport, which only the
+  browser knows, so the server's events (the conversion, the profile, the exposure) carry
+  no device class and no session id. The split joins the server's conversion to the
+  visitor's browser events by anonymous id, so a converter whose browser analytics were
+  blocked has no device class and is reported as unknown.
+- Every event that has a request behind it, the server's included, carries the browser
+  family and the operating system, read by the server from the request with no version
+  number. They are for finding bugs: a step or a failure reason that is worse in one
+  browser is a defect before it is a conversion problem.
 - In an experiment the denominator is `experiment_exposed`, which the server records, so both
   sides of the ratio are immune to blocked scripts ([experiment plan](experiments/hero_signup.md)).
   One gap: a document a browser asks for ahead of a visit (a prefetch or a prerender) is not
@@ -93,6 +97,8 @@ Call sites pass only an event's own properties. The tracker and the server attac
 | `source` | `client`, `server`, optional | Where the event was emitted. Set by the server, never by the browser. |
 | `country` | label (lowercase slug), optional | Two-letter country of the request, from the edge. Set by the server. |
 | `is_bot` | boolean, optional | The user agent looks automated. Set by the server, to filter in analysis. |
+| `browser` | `chrome`, `safari`, `firefox`, `edge`, `samsung`, `opera`, `other`, optional | The browser family of the request, with no version. Set by the server. A funnel step or a failure reason that is worse in one family is a bug to fix, not a conversion problem. |
+| `os` | `android`, `ios`, `windows`, `macos`, `linux`, `chromeos`, `other`, optional | The operating system of the request, with no version. Set by the server, for the same reading as `browser`. |
 
 <!-- context:end -->
 

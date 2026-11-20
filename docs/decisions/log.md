@@ -580,3 +580,13 @@ The phases overlapped from here, so the lines stay in the order the decisions we
 - **In the control arm the hero's button stays after a signup.** It leads to the
   confirmation, which is not a dead end, and its clicks are no longer counted. What to show
   in its place is wording, and waits for the candidate.
+- **The header no longer says the page is a demo, and neither does the description.** The
+  notice was in eight places, where the starting position asks for a discreet one, and the
+  header's one-word form beside the wordmark read as "FX Replay Demo". It stays in the
+  footer, in the FAQ, in the tab's title and on the pages outside the landing page. The
+  page still ships `noindex`.
+- **Every event carries the browser family and the operating system,** read by the server
+  from the request's client hints or user agent: two coarse labels, no version, so they
+  point at a bug without singling out a visitor. The server's own events carry them too.
+  This reverses "the server does not parse user agents" for these two labels only: the
+  device class still comes from the viewport.
