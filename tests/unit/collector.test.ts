@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import type { Problem } from '../../src/lib/api/problems';
 import { Collector } from '../../src/server/analytics/collector';
+import { ServerEvents } from '../../src/server/analytics/emitter';
 import { MemorySink, PostHogSink, toPostHog } from '../../src/server/analytics/sink';
 import { VISITOR_COOKIE } from '../../src/server/http/visitor';
 
@@ -230,6 +231,38 @@ describe('the PostHog sink', () => {
         $process_person_profile: false,
       },
     });
+  });
+
+  it("sends a UUID event id as PostHog's own uuid too, the same on a resend", () => {
+    const id = '0b5c1b0e-6a54-4d0f-9d43-2f6f0e7a9c11';
+    const mapped = toPostHog({
+      ...analyticsEvent,
+      context: { ...analyticsEvent.context, event_id: id },
+    });
+    expect(mapped).toMatchObject({ uuid: id, properties: { event_id: id } });
+    // The same event resent maps to the same uuid.
+    expect(
+      toPostHog({ ...analyticsEvent, context: { ...analyticsEvent.context, event_id: id } }).uuid,
+    ).toBe(id);
+  });
+
+  it('sends no uuid for an event id that is not a UUID, rather than a malformed one', () => {
+    for (const eventId of ['e1', 'a'.repeat(32), '0b5c1b0e6a544d0f9d432f6f0e7a9c11']) {
+      const mapped = toPostHog({
+        ...analyticsEvent,
+        context: { ...analyticsEvent.context, event_id: eventId },
+      });
+      expect(mapped).not.toHaveProperty('uuid');
+      expect(mapped.properties.event_id).toBe(eventId);
+    }
+  });
+
+  it('gives every server event an id PostHog takes as its uuid', async () => {
+    const memory = new MemorySink();
+    const emitter = new ServerEvents({ sink: memory, release: 'test' });
+    await emitter.emit('signup_completed', { user_id: 'usr_1' }, { anonymous_id: 'visitor-1' });
+    const [emitted] = memory.events;
+    expect(emitted && toPostHog(emitted).uuid).toBe(emitted?.context.event_id);
   });
 
   it('posts one batch with the project key, and fails loudly on a bad answer', async () => {

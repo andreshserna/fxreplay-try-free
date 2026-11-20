@@ -1,6 +1,6 @@
 import type { CreateUserInput, ProfilePatch } from '../../lib/api/schemas';
 import { newUserId, USER_ID_PATTERN } from '../ids';
-import type { UserRecord, UsersRepository } from './repository';
+import type { ProfileUpdate, UserRecord, UsersRepository } from './repository';
 
 /** How long an idempotency key is honored. */
 const IDEMPOTENCY_TTL_MS = 24 * 60 * 60 * 1000;
@@ -109,8 +109,11 @@ export class UsersService {
     return user ? { kind: 'replayed', user } : null;
   }
 
-  /** The store applies the patch in one step. Repeated markets are stored once. */
-  updateProfile(id: string, patch: ProfilePatch): Promise<UserRecord | null> {
+  /**
+   * The store applies the patch in one step and returns the profile as it was before it.
+   * Repeated markets are stored once.
+   */
+  updateProfile(id: string, patch: ProfilePatch): Promise<ProfileUpdate | null> {
     const markets = patch.markets ? { markets: [...new Set(patch.markets)] } : {};
     return this.#repository.patchProfile(id, { ...patch, ...markets }, this.#now().toISOString());
   }

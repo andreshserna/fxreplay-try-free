@@ -27,9 +27,17 @@ export class MemorySink implements EventSink {
   }
 }
 
+/** PostHog takes an event's `uuid` only in this shape. */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** An event in the shape PostHog's capture API takes. */
 export function toPostHog(event: AnalyticsEvent) {
   const { anonymous_id, occurred_at, experiments, ...context } = event.context;
+  // The event id also goes as PostHog's own `uuid`, the identity it gives an event. Its
+  // documentation states that a repeated uuid inside one request is dropped; it does not
+  // state what happens across requests, so analysis still deduplicates on `event_id`. An id
+  // that is not a UUID is not sent as one: PostHog refuses a request with a malformed uuid.
+  const uuid = UUID_PATTERN.test(context.event_id) ? { uuid: context.event_id } : {};
   // One property per experiment, so a chart can be broken down by variant.
   const assignments = Object.fromEntries(
     (experiments ?? '')
@@ -40,6 +48,7 @@ export function toPostHog(event: AnalyticsEvent) {
   );
   return {
     event: event.name,
+    ...uuid,
     distinct_id: anonymous_id,
     timestamp: occurred_at,
     properties: {

@@ -4,6 +4,7 @@ import { STORAGE_KEY } from '../../src/lib/analytics/attribution';
 import {
   SESSION_KEY,
   createTracker,
+  randomId,
   track as defaultTrack,
   type TrackerDeps,
 } from '../../src/lib/analytics/track';
@@ -363,6 +364,21 @@ describe('the tracker', () => {
 
   it('is a no-op on the server, where there is no window', () => {
     expect(() => defaultTrack('landing_viewed')).not.toThrow();
+  });
+
+  it('makes a UUID v4 event id even where the browser offers no randomUUID', () => {
+    const uuidV4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    expect(randomId()).toMatch(uuidV4);
+    // An insecure context (a LAN dev URL) has getRandomValues but not randomUUID.
+    const insecure = { getRandomValues: crypto.getRandomValues.bind(crypto) };
+    vi.stubGlobal('crypto', insecure);
+    try {
+      const made = Array.from({ length: 50 }, () => randomId());
+      for (const id of made) expect(id).toMatch(uuidV4);
+      expect(new Set(made).size).toBe(50);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

@@ -1,5 +1,11 @@
 import type { ProfilePatch } from '../../lib/api/schemas';
-import type { CreateOutcome, IdempotencyRecord, UserRecord, UsersRepository } from './repository';
+import type {
+  CreateOutcome,
+  IdempotencyRecord,
+  ProfileUpdate,
+  UserRecord,
+  UsersRepository,
+} from './repository';
 
 /** The repository for tests: same rules as the database, nothing to set up. */
 export class MemoryUsersRepository implements UsersRepository {
@@ -40,10 +46,11 @@ export class MemoryUsersRepository implements UsersRepository {
     id: string,
     patch: ProfilePatch,
     updatedAt: string,
-  ): Promise<UserRecord | null> {
-    // No await between the read and the write: one step, like the database's single UPDATE.
+  ): Promise<ProfileUpdate | null> {
+    // No await between the read and the write: one step, like the database's transaction.
     const user = this.#users.get(id);
     if (!user) return null;
+    const before = structuredClone(user.profile);
     const profile = structuredClone(user.profile);
     if (patch.markets === null) delete profile.markets;
     else if (patch.markets !== undefined) profile.markets = [...patch.markets];
@@ -53,7 +60,7 @@ export class MemoryUsersRepository implements UsersRepository {
     else if (patch.goal !== undefined) profile.goal = patch.goal;
     const updated = { ...user, profile, updated_at: updatedAt };
     this.#users.set(id, updated);
-    return structuredClone(updated);
+    return { user: structuredClone(updated), before };
   }
 
   async list(limit: number, before?: string): Promise<UserRecord[]> {

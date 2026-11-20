@@ -9,6 +9,7 @@ import {
   parseCreateUser,
   parseProfilePatch,
   type CreateUserInput,
+  type Profile,
   type User,
 } from '../../lib/api/schemas';
 import { assignAll, formatAssignments } from '../../lib/experiments/registry';
@@ -223,10 +224,12 @@ export class UsersApi {
     | { kind: 'created' | 'replayed'; user: UserRecord; cookies: string[] }
   > {
     // The visitor and the experiment arms come from the server's own cookie, never from
-    // the body, so they cannot be forged or forgotten by a client.
+    // the body, so they cannot be forged or forgotten by a client. A visitor without the
+    // cookie was never served an arm under this id: recording one would credit an arm they
+    // may not have seen, to an id no exposure carries. They are stored with no arm.
     const result = await this.#options.service.create(input, idempotencyKey, {
       anonymous_id: visitor.id,
-      experiments: assignAll(visitor.id),
+      experiments: visitor.isNew ? {} : assignAll(visitor.id),
     });
     if (result.kind === 'email_taken' || result.kind === 'key_reused') return result;
 
@@ -269,11 +272,14 @@ export class UsersApi {
       const parsed = parseProfilePatch(body.value);
       if (!parsed.ok) return this.#invalid(context, parsed.errors);
 
-      const user = await this.#options.service.updateProfile(id, parsed.data);
-      if (!user) return problemResponse(context, 'not_found');
+      const updated = await this.#options.service.updateProfile(id, parsed.data);
+      if (!updated) return problemResponse(context, 'not_found');
+      const { user, before } = updated;
 
+      // Emitted once, when the profile goes from no answer to an answer. A PATCH that is
+      // retried after its answer was lost, or one that changes answers, emits nothing.
       const { markets = [], experience, goal } = user.profile;
-      if (this.#options.events && (markets.length > 0 || experience || goal)) {
+      if (this.#options.events && !hasAnswer(before) && hasAnswer(user.profile)) {
         defer(
           this.#options.events.emit(
             'profile_completed',
@@ -414,14 +420,18 @@ function touchOf(request: Request, own: URL, now: Date): Touch | null {
 
 function visitorContext(request: Request, user: UserRecord): VisitorContext {
   const country = requestCountry(request);
+  const experiments = formatAssignments(user.experiments);
   return {
     anonymous_id: user.anonymous_id ?? user.id,
-    experiments: formatAssignments(user.experiments),
+    ...(experiments ? { experiments } : {}),
     is_bot: looksAutomated(request),
     ...(country ? { country } : {}),
     ...(user.attribution ? toContext(user.attribution) : {}),
   };
 }
+
+const hasAnswer = ({ markets = [], experience, goal }: Profile): boolean =>
+  markets.length > 0 || Boolean(experience) || Boolean(goal);
 
 async function readJson(request: Request): Promise<BodyResult> {
   const contentType = request.headers.get('Content-Type') ?? '';

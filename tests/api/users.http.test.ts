@@ -101,6 +101,13 @@ describe('Users API over HTTP', () => {
       markets: ['forex'],
       goal: 'prop_firm',
     });
+    // The same PATCH again, as the client's retry sends it: the same answer.
+    const repeated = await patch(user.id, sessionOf(first));
+    expect(repeated.status).toBe(200);
+    expect(((await repeated.json()) as User).profile).toEqual({
+      markets: ['forex'],
+      goal: 'prop_firm',
+    });
     expect((await patch(other.id, sessionOf(first))).status).toBe(403);
   });
 

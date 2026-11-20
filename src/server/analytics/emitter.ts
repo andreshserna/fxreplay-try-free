@@ -30,16 +30,21 @@ export class ServerEvents {
     this.#options = options;
   }
 
+  /**
+   * `occurredAt` is when the thing happened, for a caller that emits it later (after the
+   * response, behind a rate limit). Absent: now.
+   */
   async emit<Name extends ServerEventName>(
     name: Name,
     properties: EventProperties<Name>,
     visitor: VisitorContext,
+    occurredAt?: Date,
   ): Promise<void> {
     try {
       const context = checkContext({
         ...visitor,
         event_id: crypto.randomUUID(),
-        occurred_at: (this.#options.now?.() ?? new Date()).toISOString(),
+        occurred_at: (occurredAt ?? this.#options.now?.() ?? new Date()).toISOString(),
         release: this.#options.release,
         source: 'server',
       });

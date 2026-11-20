@@ -12,6 +12,12 @@ export interface UserRecord {
   updated_at: string;
 }
 
+/** A saved profile update: the user after it, and the profile just before it. */
+export interface ProfileUpdate {
+  user: UserRecord;
+  before: Profile;
+}
+
 export interface IdempotencyRecord {
   requestHash: string;
   userId: string;
@@ -47,9 +53,10 @@ export interface UsersRepository {
   /**
    * Applies the patch in one step, so concurrent patches of different fields all land.
    * An absent key leaves the field alone, null clears it, a value sets it. Returns the
-   * updated user, or null when there is no such user.
+   * updated user with the profile as it was just before, read in the same step, so two
+   * patches can never both see the profile empty. Null when there is no such user.
    */
-  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<UserRecord | null>;
+  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<ProfileUpdate | null>;
   /** Newest first. `before` is the id the previous page ended on. */
   list(limit: number, before?: string): Promise<UserRecord[]>;
 }

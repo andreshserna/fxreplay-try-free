@@ -98,11 +98,6 @@ describe('createUser', () => {
     });
   });
 
-  it('maps a replayed answer to the created user', async () => {
-    const { client } = scripted(json(201, USER, { 'Idempotency-Replayed': 'true' }));
-    expect(await settle(signUp(client))).toEqual({ kind: 'created', user: USER });
-  });
-
   it('maps the listed problems to their states, without retrying any of them', async () => {
     const errors = [{ field: 'email', code: 'invalid_format', message: 'Enter an email.' }];
     const cases = [

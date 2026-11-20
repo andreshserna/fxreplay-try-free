@@ -28,6 +28,11 @@ the page was fast for the people in it, and which arm they saw.
 
 - The unit is the visitor (the anonymous id), not the session or the page view.
 - Split by first-touch source, device class and experiment arm.
+- The device split has a limit. The server's events (the conversion, the profile, the
+  exposure) carry no device class and no session id: the server does not parse user agents.
+  The split joins the server's conversion to the visitor's browser events by anonymous id, so
+  a converter whose browser analytics were blocked has no device class and is reported as
+  unknown.
 - In an experiment the denominator is `experiment_exposed`, which the server records, so both
   sides of the ratio are immune to blocked scripts ([experiment plan](experiments/hero_signup.md)).
 - "Account" here means a user row. FX Replay's own `signup_step_completed` fires later, after
@@ -44,14 +49,14 @@ Each event names the decision it informs. One that informs none is removed.
 | Event | Fires | Trigger | Properties | Decision it informs |
 | --- | --- | --- | --- | --- |
 | `landing_viewed` | browser | Once per page load, after the landing page has rendered in a browser. | none | The denominator of the funnel: whether traffic from a source is worth buying. |
-| `cta_clicked` | browser | A visitor activates a call to action that leads to the signup form. | `cta_name`: `start_free`<br>`cta_location`: `header`, `hero`, `plan` | Which calls to action earn their place on the page. |
-| `replay_demo_used` | browser | The visitor's first use of the hero illustration's controls or a tap on its chart, once per page load. | `control`: `play`, `step`, `speed` | Whether the interactive illustration earns its place: do visitors who play it sign up more than those who do not. |
+| `cta_clicked` | browser | A click on a call to action; repeats on the same location within a second count once. | `cta_name`: `start_free`<br>`cta_location`: `header`, `hero`, `plan` | Which calls to action earn their place on the page. |
+| `replay_demo_used` | browser | The visitor's first use of the hero illustration's controls or a tap on its chart, once per page load. | `control`: `play`, `step`, `speed` | Whether the illustration keeps its place and its weight on the page: whether visitors use it at all, and which control they reach for first. |
 | `signup_started` | browser | The first input into the email field, once per page load. | `form_location`: `hero`, `closing` | Whether visitors are lost before the form (interest) or in it (friction). |
 | `signup_submitted` | browser | The form passes client validation and a create request is sent. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50 | How many attempts never become accounts. |
 | `signup_failed` | browser | A submission ends in anything other than an account, including client validation. | `form_location`: `hero`, `closing`<br>`attempt`: integer, 1 to 50<br>`reason`: `invalid_email`, `email_taken`, `rate_limited`, `offline`, `timeout`, `network`, `server` | Which failure to fix first, and whether a release broke the signup. |
 | `signup_completed` | server | The user row has been committed. Not emitted for an idempotent replay. | `user_id`: opaque id | The primary conversion. The numerator of the signup conversion rate. |
-| `profile_completed` | server | A profile update that leaves at least one answer has been saved. | `user_id`: opaque id<br>`markets_count`: integer, 0 to 5<br>`experience`: `beginner`, `intermediate`, `advanced`, optional<br>`goal`: `strategy_testing`, `prop_firm`, `practice`, optional | Signup quality: the guardrail that stops a variant winning with empty accounts. |
-| `experiment_exposed` | server | The edge serves a variant of the page to a visitor, before the HTML is sent. | `experiment`: opaque id<br>`variant`: opaque id | The denominator of each arm, and the sample-ratio check that validates a run. |
+| `profile_completed` | server | A saved profile update takes the profile from no answer to at least one. Later updates send nothing; a profile cleared of every answer and answered again sends it again. | `user_id`: opaque id<br>`markets_count`: integer, 0 to 5<br>`experience`: `beginner`, `intermediate`, `advanced`, optional<br>`goal`: `strategy_testing`, `prop_firm`, `practice`, optional | Signup quality: the guardrail that stops a variant winning with empty accounts. |
+| `experiment_exposed` | server | Recorded by the edge when it serves a variant's document to a visitor, timed at serving, independent of the browser rendering anything. | `experiment`: opaque id<br>`variant`: opaque id | The denominator of each arm, and the sample-ratio check that validates a run. |
 | `web_vitals` | browser | A Core Web Vital is final for this page load: once per metric. | `metric`: `LCP`, `INP`, `CLS`<br>`value`: number, 0 to 600000<br>`rating`: `good`, `needs-improvement`, `poor` | Whether real visitors get the page the lab budgets promise, by device and variant. |
 
 <!-- events:end -->
@@ -134,7 +139,7 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 | A property with the wrong shape at runtime | The collector validates every event and drops what does not fit |
 | Personal data in a payload | The registry has no free-text type, unknown keys are dropped at the collector, and campaign parameters are forced into lowercase labels that cannot contain "@". A test sends an email in every place it could hide and asserts it never leaves |
 | The conversion lost to an ad blocker | It is emitted by the server after the row is committed, not by the browser |
-| A conversion counted twice | It is not emitted for an idempotent replay, and every event carries an `event_id` to deduplicate on in analysis |
+| A conversion counted twice | It is not emitted for an idempotent replay. Every event carries an `event_id` to deduplicate on in analysis, also sent as PostHog's own `uuid`: PostHog documents that a repeated uuid inside one request is dropped, and does not document what it does across requests |
 | Events lost while offline | A batch the collector could not be reached with is kept and sent again when the connection returns, with the same `event_id`s. That is when a failed signup happens, so it is when the failure event matters |
 | A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
 | The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |

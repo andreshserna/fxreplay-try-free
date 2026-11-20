@@ -162,6 +162,25 @@ describe('POST /api/users', () => {
     expect(cookie).toContain('Secure');
   });
 
+  it('records no arm for a visitor without the cookie, who was never served one under this id', async () => {
+    const created = await post({ email: 'ada@example.com' });
+    expect(created.status).toBe(201);
+    const minted = created.headers
+      .getSetCookie()
+      .find((value) => value.startsWith(`${VISITOR_COOKIE}=`));
+    const id = /=([^;]+)/.exec(minted ?? '')?.[1];
+    expect(id).toBeTruthy();
+
+    const page = (await (await list()).json()) as ListResult;
+    expect(page.data[0]).toMatchObject({ anonymous_id: id, experiments: {} });
+    expect(sink.events).toHaveLength(1);
+    expect(sink.events[0]).toMatchObject({
+      name: 'signup_completed',
+      context: { anonymous_id: id },
+    });
+    expect(sink.events[0]?.context).not.toHaveProperty('experiments');
+  });
+
   it('emits the conversion once, after the user exists, and never for a replay or a refusal', async () => {
     const cookie = { Cookie: `${VISITOR_COOKIE}=visitor-1` };
     const attribution = { first_touch: { source: 'instagram', medium: 'paid_social' } };
@@ -454,6 +473,43 @@ describe('PATCH /api/users/{id}', () => {
     });
   });
 
+  describe('profile_completed', () => {
+    const answers = { markets: ['forex', 'indices'], experience: 'beginner', goal: 'prop_firm' };
+    const profileEvents = () => sink.events.filter((event) => event.name === 'profile_completed');
+
+    it('is emitted once for the first answers', async () => {
+      const { user, cookie } = await signUp('ada@example.com');
+      expect((await patch(user.id, answers, { Cookie: cookie })).status).toBe(200);
+      expect(profileEvents()).toEqual([
+        expect.objectContaining({
+          properties: {
+            user_id: user.id,
+            markets_count: 2,
+            experience: 'beginner',
+            goal: 'prop_firm',
+          },
+        }),
+      ]);
+    });
+
+    it('is not emitted again when the same PATCH is retried after its answer was lost', async () => {
+      const { user, cookie } = await signUp('ada@example.com');
+      await patch(user.id, answers, { Cookie: cookie });
+      const retry = await patch(user.id, answers, { Cookie: cookie });
+      expect(retry.status).toBe(200);
+      expect(((await retry.json()) as User).profile).toEqual(answers);
+      expect(profileEvents()).toHaveLength(1);
+    });
+
+    it('is not emitted for a PATCH that changes answers already given', async () => {
+      const { user, cookie } = await signUp('ada@example.com');
+      await patch(user.id, { goal: 'practice' }, { Cookie: cookie });
+      const changed = await patch(user.id, { goal: null, markets: ['crypto'] }, { Cookie: cookie });
+      expect(((await changed.json()) as User).profile).toEqual({ markets: ['crypto'] });
+      expect(profileEvents()).toHaveLength(1);
+    });
+  });
+
   it('keeps every field when single-field patches arrive at the same time', async () => {
     const { user, cookie } = await signUp('ada@example.com');
     const session = { Cookie: cookie };
@@ -677,8 +733,33 @@ describe('POST /signup (the plain form)', () => {
 
     const page = (await (await list()).json()) as ListResult;
     expect(page.data).toHaveLength(1);
-    expect(page.data[0]).toMatchObject({ email: 'ada@example.com', anonymous_id: 'visitor-1' });
+    const arm = assign('hero_signup', 'visitor-1');
+    expect(page.data[0]).toMatchObject({
+      email: 'ada@example.com',
+      anonymous_id: 'visitor-1',
+      experiments: { hero_signup: arm },
+    });
     expect(sink.events.map((event) => event.name)).toEqual(['signup_completed']);
+    expect(sink.events[0]?.context.experiments).toBe(`hero_signup:${arm}`);
+  });
+
+  it('records no arm for a visitor without the cookie, like the API', async () => {
+    const response = await submit({ email: 'ada@example.com' });
+    expect(landedOn(response)).toBe('/signup/done/');
+    const minted = response.headers
+      .getSetCookie()
+      .find((value) => value.startsWith(`${VISITOR_COOKIE}=`));
+    const id = /=([^;]+)/.exec(minted ?? '')?.[1];
+    expect(id).toBeTruthy();
+
+    const page = (await (await list()).json()) as ListResult;
+    expect(page.data[0]).toMatchObject({ anonymous_id: id, experiments: {} });
+    expect(sink.events).toHaveLength(1);
+    expect(sink.events[0]).toMatchObject({
+      name: 'signup_completed',
+      context: { anonymous_id: id },
+    });
+    expect(sink.events[0]?.context).not.toHaveProperty('experiments');
   });
 
   it('repeats harmlessly: a refresh or a second press is the same request', async () => {

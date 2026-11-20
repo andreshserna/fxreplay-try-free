@@ -3,6 +3,7 @@ import {
   StorageUnavailableError,
   type CreateOutcome,
   type IdempotencyRecord,
+  type ProfileUpdate,
   type UserRecord,
   type UsersRepository,
 } from './repository';
@@ -121,31 +122,37 @@ export class D1UsersRepository implements UsersRepository {
     });
   }
 
-  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<UserRecord | null> {
-    // One statement, so concurrent patches of different fields cannot overwrite each other.
+  patchProfile(id: string, patch: ProfilePatch, updatedAt: string): Promise<ProfileUpdate | null> {
+    // One UPDATE, so concurrent patches of different fields cannot overwrite each other.
     // For each field: a flag says whether the patch has it, the value sets it (null clears).
     const field = <T>(value: T | null | undefined, encode: (present: T) => string) =>
       value === undefined ? [0, null] : [1, value === null ? null : encode(value)];
     return this.#run(async () => {
-      const row = await this.#db
-        .prepare(
-          `UPDATE users SET
-             markets = CASE WHEN ?3 THEN ?4 ELSE markets END,
-             experience = CASE WHEN ?5 THEN ?6 ELSE experience END,
-             goal = CASE WHEN ?7 THEN ?8 ELSE goal END,
-             updated_at = ?2
-           WHERE id = ?1
-           RETURNING ${COLUMNS}`,
-        )
-        .bind(
-          id,
-          updatedAt,
-          ...field(patch.markets, (markets) => JSON.stringify(markets)),
-          ...field(patch.experience, String),
-          ...field(patch.goal, String),
-        )
-        .first<UserRow>();
-      return row ? toRecord(row) : null;
+      // A batch is one transaction: the row as it was and the update cannot be split by
+      // another patch, so only one of two concurrent patches can see the profile empty.
+      const [previous, updated] = await this.#db.batch<UserRow>([
+        this.#db.prepare(`SELECT ${COLUMNS} FROM users WHERE id = ?1`).bind(id),
+        this.#db
+          .prepare(
+            `UPDATE users SET
+               markets = CASE WHEN ?3 THEN ?4 ELSE markets END,
+               experience = CASE WHEN ?5 THEN ?6 ELSE experience END,
+               goal = CASE WHEN ?7 THEN ?8 ELSE goal END,
+               updated_at = ?2
+             WHERE id = ?1
+             RETURNING ${COLUMNS}`,
+          )
+          .bind(
+            id,
+            updatedAt,
+            ...field(patch.markets, (markets) => JSON.stringify(markets)),
+            ...field(patch.experience, String),
+            ...field(patch.goal, String),
+          ),
+      ]);
+      const before = previous?.results[0];
+      const after = updated?.results[0];
+      return before && after ? { user: toRecord(after), before: toRecord(before).profile } : null;
     });
   }
 

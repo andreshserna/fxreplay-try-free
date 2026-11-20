@@ -83,7 +83,7 @@ describe('the landing page at the edge', () => {
     expect(response.headers.get('Vary')).toContain('Cookie');
   });
 
-  it('records the exposure on the server, with the arm, before any HTML is read', async () => {
+  it('records the exposure on the server, with the arm', async () => {
     await visit({ Cookie: `${VISITOR_COOKIE}=visitor-a` });
     const arm = assign('hero_signup', 'visitor-a');
     expect(sink.events).toEqual([
@@ -99,6 +99,30 @@ describe('the landing page at the edge', () => {
         }) as unknown,
       }),
     ]);
+  });
+
+  it('times the exposure when the document is served, not when the deferred work runs', async () => {
+    let clock = new Date('2026-11-19T10:00:00.000Z');
+    const servedAt = clock.toISOString();
+    events = new ServerEvents({ sink, release: 'test', now: () => clock });
+    // The limiter answers only when the test says so: the response is already returned.
+    let answer!: (result: { success: boolean }) => void;
+    const limiter = {
+      limit: () => new Promise<{ success: boolean }>((resolve) => (answer = resolve)),
+    };
+
+    const response = await serveLanding(
+      new Request(`${ORIGIN}/`, { headers: { 'User-Agent': BROWSER } }),
+      { assets, events, limiter, now: () => clock },
+      (work) => deferred.push(work),
+    );
+    expect(response.status).toBe(200);
+    expect(sink.events).toHaveLength(0);
+
+    clock = new Date('2026-11-19T10:00:07.000Z');
+    answer({ success: true });
+    await Promise.all(deferred);
+    expect(sink.events.map((event) => event.context.occurred_at)).toEqual([servedAt]);
   });
 
   it('answers a revalidation with 304 and still counts the exposure', async () => {

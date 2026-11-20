@@ -4,7 +4,8 @@
  * Each arm is a complete prerendered document. This handler picks the visitor's arm
  * before any HTML is sent and streams that document from the asset store, so there is
  * no flicker, no layout shift and no rendering work per request. The exposure is
- * recorded here too, which means it is logged before the variant can render.
+ * recorded here too, by the edge that served the document, stamped with the time it was
+ * served: it does not depend on the browser rendering anything or running any script.
  */
 import { readTouch, toContext } from '../lib/analytics/attribution';
 import { assign, EXPERIMENTS, formatAssignments } from '../lib/experiments/registry';
@@ -62,14 +63,13 @@ export async function serveLanding(
   // An exposure is a document on its way to a person: not a prefetch, a HEAD, an image
   // tag on another site, or an error page.
   if (events && EXPERIMENTS[EXPERIMENT].enabled && document.status < 400 && isPageView(request)) {
+    // The exposure happens now, as the document is served. The event may leave later, after
+    // the rate limit below, so it carries this time rather than the time it is sent.
+    const servedAt = now?.() ?? new Date();
     const country = requestCountry(request);
     // The campaign is in the address the server was asked for, so the exposure carries it
     // without waiting for the browser: internal traffic can be excluded on this event alone.
-    const touch = readTouch(
-      new URL(request.url),
-      request.headers.get('Referer') ?? '',
-      now?.() ?? new Date(),
-    );
+    const touch = readTouch(new URL(request.url), request.headers.get('Referer') ?? '', servedAt);
     const exposure = {
       anonymous_id: visitor.id,
       page_path: '/',
@@ -86,7 +86,12 @@ export async function serveLanding(
           const { success } = await limiter.limit({ key: `exposure:${clientKey(request)}` });
           if (!success) return;
         }
-        await events.emit('experiment_exposed', { experiment: EXPERIMENT, variant }, exposure);
+        await events.emit(
+          'experiment_exposed',
+          { experiment: EXPERIMENT, variant },
+          exposure,
+          servedAt,
+        );
       })().catch(() => undefined),
     );
   }

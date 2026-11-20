@@ -53,7 +53,8 @@ export const EVENTS = {
   },
   cta_clicked: {
     source: 'client',
-    trigger: 'A visitor activates a call to action that leads to the signup form.',
+    trigger:
+      'A click on a call to action; repeats on the same location within a second count once.',
     decision: 'Which calls to action earn their place on the page.',
     properties: {
       cta_name: {
@@ -73,7 +74,7 @@ export const EVENTS = {
     trigger:
       "The visitor's first use of the hero illustration's controls or a tap on its chart, once per page load.",
     decision:
-      'Whether the interactive illustration earns its place: do visitors who play it sign up more than those who do not.',
+      'Whether the illustration keeps its place and its weight on the page: whether visitors use it at all, and which control they reach for first.',
     properties: {
       control: {
         type: 'enum',
@@ -153,7 +154,8 @@ export const EVENTS = {
   },
   profile_completed: {
     source: 'server',
-    trigger: 'A profile update that leaves at least one answer has been saved.',
+    trigger:
+      'A saved profile update takes the profile from no answer to at least one. Later updates send nothing; a profile cleared of every answer and answered again sends it again.',
     decision: 'Signup quality: the guardrail that stops a variant winning with empty accounts.',
     properties: {
       user_id: { type: 'id', description: 'The user who answered.' },
@@ -179,7 +181,8 @@ export const EVENTS = {
   },
   experiment_exposed: {
     source: 'server',
-    trigger: 'The edge serves a variant of the page to a visitor, before the HTML is sent.',
+    trigger:
+      "Recorded by the edge when it serves a variant's document to a visitor, timed at serving, independent of the browser rendering anything.",
     decision: 'The denominator of each arm, and the sample-ratio check that validates a run.',
     properties: {
       experiment: { type: 'id', description: 'The experiment key.' },

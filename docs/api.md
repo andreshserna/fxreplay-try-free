@@ -71,7 +71,10 @@ Three things are stored with the user so acquisition data survives when client a
 blocked. `attribution` comes from the body, because only the browser saw the landing URL. The
 visitor's anonymous id and experiment arms do not: the server reads its own `HttpOnly` visitor
 cookie and computes the arms from it, so a client can neither forge nor forget them. Sending
-`anonymous_id` or `experiments` in the body is a validation error.
+`anonymous_id` or `experiments` in the body is a validation error. A request without the
+visitor cookie gets a new anonymous id, set in the response, and is stored with
+`experiments: {}`: no arm was ever served under that id, so none is credited, and its
+`signup_completed` carries no assignment.
 
 After the row is committed, and only then, the server emits the `signup_completed` event
 (`docs/analytics-plan.md`). A replay emits nothing.
