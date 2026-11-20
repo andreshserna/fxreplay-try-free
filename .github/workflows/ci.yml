@@ -48,7 +48,7 @@ jobs:
           # The preview server may stay in the foreground on a runner, so it is sent to the
           # background here and awaited by polling. `npm run preview` builds first, so the
           # wait is up to two minutes.
-          npm run preview -- --port 4321 --host 127.0.0.1 > preview.log 2>&1 &
+          npm run preview -- --port 4321 > preview.log 2>&1 &
           curl --silent --show-error --retry 120 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4321/ || { cat preview.log; exit 1; }
           npm run test:api || { cat preview.log; exit 1; }
           npx playwright install --with-deps chromium
@@ -66,7 +66,7 @@ jobs:
         run: |
           set -o pipefail
           npx astro preview stop
-          npm run preview -- --port 4322 --host 127.0.0.1 > preview-seo.log 2>&1 &
+          npm run preview -- --port 4322 > preview-seo.log 2>&1 &
           curl --silent --show-error --retry 120 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4322/ || { cat preview-seo.log; exit 1; }
           # Three runs: the check judges every budget again here, not SEO alone, and a single
           # run on a shared runner is too noisy for the timing budgets.
