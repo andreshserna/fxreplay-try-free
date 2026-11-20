@@ -9,7 +9,7 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
 
 <header class="site-header">
   <div class="shell bar">
-    <a class="home" href="/" aria-label="FX Replay, candidate demo: top of the page">
+    <a class="home" href="#top" aria-label="FX Replay, candidate demo: top of the page">
       <img src={wordmark.src} width={wordmark.width} height={wordmark.height} alt="FX Replay" />
     </a>
     <p>
@@ -28,10 +28,12 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
     top: 0;
     z-index: 10;
     border-bottom: 1px solid var(--border-primary);
-    background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+    background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
     backdrop-filter: blur(12px);
   }
 
+  /* Three items in one row. The notice is the one that gives way: it shrinks, and below
+     the widths where even its short form fits, it leaves the bar to the footer's copy. */
   .bar {
     display: flex;
     align-items: center;
@@ -39,9 +41,12 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
     min-height: var(--header-height);
   }
 
+  /* A target as tall as the button beside it, around a wordmark that is not. */
   .home {
-    display: block;
+    display: flex;
     flex: none;
+    align-items: center;
+    min-height: 2.75rem;
     border-radius: 0.25rem;
   }
 
@@ -53,8 +58,11 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
 
   p {
     flex: 1;
+    min-width: 0;
+    overflow: hidden;
     color: var(--text-secondary);
     line-height: 1.3;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 
@@ -82,9 +90,39 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
     }
   }
 
-  @media (width < 48rem) {
-    .wide {
+  /* A tap gets an answer too: a phone has no hover. */
+  .cta:active {
+    border-color: var(--icon-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .wide {
+    display: none;
+  }
+
+  /* The narrowest phones: a tighter row, and under 360px the bar is the wordmark and the
+     call to action. The page still says what it is in the FAQ and the footer. */
+  @media (width < 24rem) {
+    .bar {
+      gap: var(--space-2);
+    }
+
+    img {
+      height: 1rem;
+    }
+
+    .cta {
+      padding-inline: var(--space-3);
+    }
+  }
+
+  @media (width < 22.5rem) {
+    p {
       display: none;
+    }
+
+    .bar {
+      justify-content: space-between;
     }
   }
 
@@ -100,9 +138,16 @@ import wordmark from '../../assets/brand/FXReplayLogo.svg';
     p {
       text-align: right;
     }
+  }
 
+  /* The whole sentence only where the column holds it beside the other two. */
+  @media (width >= 62rem) {
     .narrow {
       display: none;
+    }
+
+    .wide {
+      display: inline;
     }
   }
 </style>

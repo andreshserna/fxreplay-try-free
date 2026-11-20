@@ -122,11 +122,9 @@ const journal = [
                 ))}
                 <path class="entry" d={`M${ENTRY_X} ${ENTRY_Y}H${WIDTH}`} />
                 <circle class="marker" cx={ENTRY_X} cy={ENTRY_Y} r="5" />
-                {/* The two levels, with the handles a trader drags. */}
+                {/* The two levels of the trade. Lines only: nothing here is a control. */}
                 <path class="level up" d={`M${ENTRY_X} 46H${WIDTH}`} />
                 <path class="level" d={`M${ENTRY_X} ${ENTRY_Y + 42}H${WIDTH}`} />
-                <rect class="grip up" x={WIDTH - 44} y="38" width="28" height="16" rx="4" />
-                <rect class="grip" x={WIDTH - 44} y={ENTRY_Y + 34} width="28" height="16" rx="4" />
               </>
             )}
 
@@ -215,16 +213,12 @@ const journal = [
     gap: var(--space-3);
   }
 
-  /* Side by side on a wide screen, the drawing changing sides from one row to the next. */
-  @media (width >= 62rem) {
-    ol {
-      gap: var(--space-8);
-    }
-
+  /* Side by side from a tablet up, the drawing changing sides from one row to the next. */
+  @media (width >= 48rem) {
     li {
       grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
       align-items: center;
-      gap: var(--space-8);
+      gap: var(--space-6);
     }
 
     li:nth-child(even) {
@@ -233,6 +227,13 @@ const journal = [
 
     li:nth-child(even) .moment {
       order: 2;
+    }
+  }
+
+  @media (width >= 62rem) {
+    ol,
+    li {
+      gap: var(--space-8);
     }
   }
 
@@ -319,16 +320,6 @@ const journal = [
 
   .level.up {
     stroke: var(--chart-up);
-    opacity: 1;
-  }
-
-  .grip {
-    fill: var(--chart-down);
-    opacity: 0.6;
-  }
-
-  .grip.up {
-    fill: var(--chart-up);
     opacity: 1;
   }
 

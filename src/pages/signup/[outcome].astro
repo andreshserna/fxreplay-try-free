@@ -21,8 +21,8 @@ const PAGES = {
     good: true,
   },
   'email-taken': {
-    title: 'This email already has an account.',
-    text: 'Use another email, or log in with the one you have.',
+    title: 'This email already has an account on this demo.',
+    text: 'Use another email here. On the real site you would log in with this one.',
     good: false,
   },
   invalid: {
@@ -47,13 +47,20 @@ const page = PAGES[outcome];
     <p>{page.text}</p>
     <p>
       {page.good ? (
-        <a href="/">Back to the page</a>
+        <>
+          <a class="button" href="https://fxreplay.com/">
+            See the real FX Replay
+          </a>
+          <a href="/">Back to the page</a>
+        </>
       ) : (
         <a class="button" href="/#signup">
           Try again
         </a>
       )}
-      {outcome === 'email-taken' && <a href="https://app.fxreplay.com/">Log in on the real site</a>}
+      {outcome === 'email-taken' && (
+        <a href="https://app.fxreplay.com/">The real site's login, at app.fxreplay.com</a>
+      )}
     </p>
     <p class="notice">Candidate challenge demo. Not the official FX Replay site.</p>
   </main>

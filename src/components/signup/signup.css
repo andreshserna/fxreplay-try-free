@@ -172,12 +172,38 @@
   cursor: pointer;
 }
 
+/* Short answers sit two to a row on a phone, so the step stays about a screen long. */
+.signup-choices-short > div {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 7.5rem), 1fr));
+}
+
+/* Drawn from the kit's tokens: the browser's own boxes bring a grey that is not in it. */
 .signup-choices input {
   flex: none;
-  width: 1rem;
-  height: 1rem;
+  width: 1.125rem;
+  height: 1.125rem;
   margin: 0;
-  accent-color: var(--btn-bg-primary-active);
+  border: 1px solid var(--border-field);
+  border-radius: 0.25rem;
+  background: var(--bg-secondary);
+  appearance: none;
+}
+
+.signup-choices input[type='radio'] {
+  border-radius: 50%;
+}
+
+/* Checked: the mark is the Electric Blue fill inside a ring of the box's own ground. */
+.signup-choices input:checked {
+  border-color: var(--btn-bg-primary-active);
+  background: var(--btn-bg-primary-active);
+  box-shadow: inset 0 0 0 3px var(--bg-secondary);
+}
+
+@media (hover: hover) {
+  .signup-choices label:hover {
+    background: var(--bg-secondary);
+  }
 }
 
 .signup-choices label:has(input:checked) {
@@ -199,6 +225,31 @@
   flex-wrap: wrap;
   gap: var(--space-3);
   align-items: center;
+}
+
+/* It takes the row's free width, so "Skip" does not move under the thumb while it saves.
+   Where the row cannot hold both, each gets a row of its own. */
+.signup-actions button[type='submit'] {
+  flex: 1 1 11.5rem;
+}
+
+@media (width >= 62rem) {
+  .signup-actions button[type='submit'] {
+    flex: none;
+    min-width: 12rem;
+  }
+}
+
+/* On a phone the step is taller than the screen: the way out stays in reach. */
+@media (width < 62rem) {
+  .signup-actions {
+    position: sticky;
+    bottom: 0;
+    margin-inline: calc(-1 * var(--space-5));
+    padding: var(--space-3) var(--space-5);
+    border-top: 1px solid var(--border-primary);
+    background: var(--bg-card);
+  }
 }
 
 .signup-skip {

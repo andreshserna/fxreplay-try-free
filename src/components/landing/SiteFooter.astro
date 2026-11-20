@@ -24,12 +24,14 @@ const tape = Array.from({ length: PLAYHEAD / PITCH }, (_, index) => {
   level = Math.min(74, Math.max(24, open + drift + (random() - 0.5) * 24));
   const top = Math.min(open, level);
   const bottom = Math.max(open, level);
+  // A tenth of a unit is finer than a screen draws, and fifteen decimals are bytes.
+  const tenth = (value: number) => Math.round(value * 10) / 10;
   return {
     x: index * PITCH + PITCH / 2,
-    top,
-    height: Math.max(bottom - top, 4),
-    wickTop: top - 2 - random() * 7,
-    wickBottom: bottom + 2 + random() * 7,
+    top: tenth(top),
+    height: tenth(Math.max(bottom - top, 4)),
+    wickTop: tenth(top - 2 - random() * 7),
+    wickBottom: tenth(bottom + 2 + random() * 7),
     // On screen, up is a smaller y.
     rising: level <= open,
   };

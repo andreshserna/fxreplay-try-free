@@ -14,8 +14,9 @@
 
 html {
   color-scheme: dark;
-  /* A link to the form travels there instead of cutting to it. Off under reduced motion, below. */
-  scroll-behavior: smooth;
+  /* What scrolls into view, by a link or by keyboard focus, stops below the header that
+     stays on screen instead of under it. */
+  scroll-padding-top: calc(var(--header-height) + var(--space-3));
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
@@ -78,22 +79,13 @@ svg {
   margin-inline: auto;
 }
 
-/* The kit page's uppercase, letter-spaced label, set in the body family. */
-.kicker {
-  color: var(--text-link);
-  font-size: var(--step--1);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  line-height: 1.4;
-  text-transform: uppercase;
-}
-
 /* Visible only to a keyboard user, as the first stop of the page. */
 .skip {
   position: absolute;
   top: var(--space-4);
   left: var(--gutter);
-  z-index: 1;
+  /* Above the header that stays on screen, or it would appear behind it. */
+  z-index: 20;
   display: grid;
   place-items: center;
   min-width: 13rem;
@@ -107,6 +99,12 @@ svg {
 
 .skip:focus-visible {
   transform: none;
+}
+
+/* Once the account exists, the page stops asking for it: the header's and the plan's calls
+   to action step aside (the signup form sets the attribute). */
+html[data-signed-up] :is([data-cta='header'], [data-cta='plan']) {
+  display: none;
 }
 
 /* The primary button: the kit's Electric Blue fill and label, unchanged. */
@@ -128,6 +126,8 @@ svg {
   text-decoration: none;
   white-space: nowrap;
   cursor: pointer;
+  /* Eased like the outline controls beside it. */
+  transition: background-color 0.15s ease;
 }
 
 /* The kit's hover and pressed fills fade into the ground, so the button keeps an edge. */

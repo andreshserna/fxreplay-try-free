@@ -104,14 +104,32 @@ const running = EXPERIMENTS.hero_signup.enabled
     track('landing_viewed');
   }
   reportWebVitals();
+
+  // A double click is one intent: repeats on the same call to action within a second
+  // count once.
+  const lastClick = new Map<CtaLocation, number>();
+  const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
   document.addEventListener('click', (event) => {
     const target = event.target instanceof Element ? event.target.closest('[data-cta]') : null;
     const location = target instanceof HTMLElement ? target.dataset.cta : undefined;
     if (!isLocation(location)) return;
-    track('cta_clicked', { cta_name: 'start_free', cta_location: location });
-    // The link travels to the form: the browser's own anchor, eased by the stylesheet, and
-    // it works without this script. Once the page has arrived, put the cursor in the field
-    // too, so one tap is enough. Focusing earlier would raise a phone's keyboard mid-way.
+    const now = performance.now();
+    if (now - (lastClick.get(location) ?? -Infinity) >= 1000) {
+      track('cta_clicked', { cta_name: 'start_free', cta_location: location });
+    }
+    lastClick.set(location, now);
+    // Without this script the link is the browser's own anchor and cuts to the form. With
+    // it the page travels there. The easing is asked for here, for this one journey, and
+    // not in the stylesheet, where it would also slow every move of keyboard focus.
+    const form = document.getElementById('signup');
+    if (form) {
+      event.preventDefault();
+      form.scrollIntoView({ behavior: still.matches ? 'auto' : 'smooth', block: 'start' });
+      history.replaceState(null, '', '#signup');
+    }
+    // Once the page has arrived, put the cursor in the field too, so one tap is enough.
+    // Focusing earlier would raise a phone's keyboard mid-way.
     const field = document.querySelector<HTMLInputElement>('#signup input[type="email"]');
     if (!field) return;
     let arrived = false;

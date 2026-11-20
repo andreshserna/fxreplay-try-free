@@ -95,7 +95,7 @@ test.describe('the variant: an email field in the hero', () => {
     await page.getByLabel('Email', { exact: true }).first().press('Enter');
 
     await expect(page.getByRole('alert').first()).toContainText('already has an account');
-    await expect(page.getByRole('link', { name: 'Log in on the real site' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'log in at app.fxreplay.com' })).toBeVisible();
     await expect(page.getByLabel('Email', { exact: true }).first()).toHaveValue(email);
   });
 
@@ -126,7 +126,7 @@ test.describe('the variant: an email field in the hero', () => {
     await field.fill(email);
     await field.press('Enter');
 
-    await expect(page.getByRole('alert').first()).toContainText('could not reach the server');
+    await expect(page.getByRole('alert').first()).toContainText('went wrong on our side');
     await expect(field).toHaveValue(email);
     const retry = page.getByRole('button', { name: 'Try again' });
     await expect(retry).toBeVisible();
@@ -230,7 +230,9 @@ test.describe('without JavaScript', () => {
     await page.getByLabel('Email', { exact: true }).first().fill(email);
     await page.getByLabel('Email', { exact: true }).first().press('Enter');
     await expect(page).toHaveURL(/\/signup\/email-taken\/$/);
-    await expect(page.getByRole('link', { name: 'Log in on the real site' })).toBeVisible();
+    await expect(
+      page.getByRole('link', { name: "The real site's login, at app.fxreplay.com" }),
+    ).toBeVisible();
   });
 
   test('a bad email lands on a page that explains it and leads back', async ({ page, baseURL }) => {
@@ -377,23 +379,32 @@ test.describe('the hero illustration', () => {
   });
 });
 
+/** Every element that shows text of its own in a size below the floor. */
+const textBelowFloor = () =>
+  [...document.querySelectorAll('body *')]
+    .filter(
+      (element) =>
+        element.getClientRects().length > 0 &&
+        [...element.childNodes].some(
+          (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
+        ) &&
+        parseFloat(getComputedStyle(element).fontSize) < 16,
+    )
+    .map((element) => `${element.tagName} "${element.textContent?.trim().slice(0, 40)}"`);
+
 test.describe('legibility', () => {
   for (const arm of ['cta_button', 'inline_email'] as const) {
     test(`no text on the page is set below 16px (${arm})`, async ({ page, baseURL }) => {
       await openAs(page, baseURL, arm);
-      const small = await page.evaluate(() =>
-        [...document.querySelectorAll('body *')]
-          .filter(
-            (element) =>
-              element.getClientRects().length > 0 &&
-              [...element.childNodes].some(
-                (node) => node.nodeType === Node.TEXT_NODE && node.textContent?.trim(),
-              ) &&
-              parseFloat(getComputedStyle(element).fontSize) < 16,
-          )
-          .map((element) => `${element.tagName} "${element.textContent?.trim().slice(0, 40)}"`),
-      );
-      expect(small).toEqual([]);
+      expect(await page.evaluate(textBelowFloor)).toEqual([]);
+    });
+  }
+
+  // The pages a visitor reaches without the landing page's styles around them.
+  for (const path of ['/signup/done/', '/signup/email-taken/', '/problems/email-taken/', '/nope']) {
+    test(`no text is set below 16px on ${path}`, async ({ page }) => {
+      await page.goto(path);
+      expect(await page.evaluate(textBelowFloor)).toEqual([]);
     });
   }
 });
@@ -418,5 +429,98 @@ test.describe('the header', () => {
       cta_name: 'start_free',
       cta_location: 'header',
     });
+  });
+
+  for (const arm of ['cta_button', 'inline_email'] as const) {
+    for (const width of [320, 360, 768]) {
+      test(`fits its column and the page does not scroll sideways at ${width}px (${arm})`, async ({
+        page,
+        baseURL,
+      }) => {
+        await page.setViewportSize({ width, height: 780 });
+        await openAs(page, baseURL, arm);
+        const measured = await page.evaluate(() => {
+          const right = (selector: string) =>
+            document.querySelector(selector)?.getBoundingClientRect().right ?? Infinity;
+          return {
+            page: document.documentElement.scrollWidth,
+            screen: document.documentElement.clientWidth,
+            cta: right('header [data-cta]'),
+            column: right('header .shell'),
+          };
+        });
+        expect(measured.page).toBeLessThanOrEqual(measured.screen);
+        expect(measured.cta).toBeLessThanOrEqual(measured.column + 0.5);
+      });
+    }
+  }
+
+  test('does not cover the skip link, the first stop of the keyboard', async ({
+    page,
+    baseURL,
+  }) => {
+    await openAs(page, baseURL, 'inline_email');
+    await page.keyboard.press('Tab');
+    const skip = page.getByRole('link', { name: 'Skip to sign up' });
+    await expect(skip).toBeFocused();
+    // What a sighted keyboard user sees at the link's centre is the link, not the header.
+    const onTop = await skip.evaluate((link) => {
+      const box = link.getBoundingClientRect();
+      const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+      return top === link || link.contains(top);
+    });
+    expect(onTop).toBe(true);
+  });
+
+  test('never covers the control that has keyboard focus, walking back up the page', async ({
+    page,
+    baseURL,
+  }) => {
+    await page.setViewportSize({ width: 360, height: 780 });
+    await openAs(page, baseURL, 'inline_email');
+    await page.getByRole('contentinfo').getByRole('link').last().focus();
+    for (let stop = 0; stop < 24; stop += 1) {
+      await page.keyboard.press('Shift+Tab');
+      const covered = await page.evaluate(() => {
+        const focused = document.activeElement;
+        const header = document.querySelector('header');
+        // The skip link sits above the header on purpose, and has its own test.
+        const exempt = focused === document.body || focused?.matches('.skip');
+        if (!focused || !header || exempt || header.contains(focused)) return null;
+        const box = focused.getBoundingClientRect();
+        return box.top < header.getBoundingClientRect().bottom - 1
+          ? `${focused.tagName} "${focused.textContent?.trim().slice(0, 30)}" at ${Math.round(box.top)}`
+          : null;
+      });
+      expect(covered).toBeNull();
+    }
+  });
+
+  test('counts a double click on a call to action once', async ({ page, baseURL }) => {
+    const sent = recordEvents(page);
+    await openAs(page, baseURL, 'cta_button');
+    await page.getByRole('main').getByRole('link', { name: 'Start for free' }).first().dblclick();
+    await flushEvents(page);
+    expect(sent.events.filter((event) => event.name === 'cta_clicked')).toHaveLength(1);
+  });
+});
+
+test.describe('after the account exists', () => {
+  test('the page stops asking: the other form and the other calls to action step aside', async ({
+    page,
+    baseURL,
+  }) => {
+    await openAs(page, baseURL, 'inline_email');
+    await page.getByLabel('Email', { exact: true }).first().fill(uniqueEmail());
+    await page.getByRole('button', { name: 'Start for free' }).first().click();
+    await expect(page.getByRole('heading', { name: 'Your free account is ready.' })).toBeFocused();
+    await expect(page.getByRole('heading', { name: 'You have already signed up.' })).toBeVisible();
+
+    await expect(
+      page.getByRole('banner').getByRole('link', { name: 'Start for free' }),
+    ).toBeHidden();
+    await expect(page.getByRole('link', { name: 'Start for free' })).toHaveCount(0);
+    await expect(page.getByLabel('Email', { exact: true })).toHaveCount(0);
+    await expectAccessible(page);
   });
 });

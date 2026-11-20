@@ -120,6 +120,48 @@
       "background": "bg-secondary",
       "kind": "boundary",
       "use": "Icons of the hero illustration's controls"
+    },
+    {
+      "foreground": "text-primary",
+      "background": "bg-tertiary",
+      "kind": "text",
+      "use": "Label of the header's call to action and of the illustration's keys, hovered or pressed"
+    },
+    {
+      "foreground": "icon-primary",
+      "background": "bg-tertiary",
+      "kind": "boundary",
+      "use": "Edge and icon of the header's call to action and of the illustration's keys, hovered or pressed"
+    },
+    {
+      "foreground": "chart-playhead",
+      "background": "bg-tertiary",
+      "kind": "boundary",
+      "use": "Icon of the play control, hovered"
+    },
+    {
+      "foreground": "btn-bg-primary-active",
+      "background": "bg-secondary",
+      "kind": "boundary",
+      "use": "Mark of a checked option in the profile step, inside its box"
+    },
+    {
+      "foreground": "btn-border-primary",
+      "background": "btn-bg-primary-hover",
+      "kind": "boundary",
+      "use": "Edge that keeps the primary button its shape, hovered"
+    },
+    {
+      "foreground": "btn-border-primary",
+      "background": "bg-primary",
+      "kind": "boundary",
+      "use": "The same edge against the ground, hovered or pressed"
+    },
+    {
+      "foreground": "btn-border-outline",
+      "background": "bg-card",
+      "kind": "boundary",
+      "use": "Boundary of the Skip button in the success card"
     }
   ],
   "kit": [

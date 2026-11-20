@@ -6,7 +6,14 @@
  * always lands on what changed. The submit button is never disabled: while a request
  * is in flight it says so and ignores a second press.
  */
-import { useEffect, useId, useReducer, useRef, type SubmitEvent } from 'react';
+import {
+  useEffect,
+  useId,
+  useReducer,
+  useRef,
+  useSyncExternalStore,
+  type SubmitEvent,
+} from 'react';
 
 import { attribution, track } from '../../lib/analytics/track';
 import { apiClient, newIdempotencyKey } from '../../lib/api/client';
@@ -47,6 +54,30 @@ const LOGIN_URL = 'https://app.fxreplay.com/';
 /** Whether the visitor has started typing in a form on this page load: once, for any form. */
 let started = false;
 
+/**
+ * Whether an account was created on this page load. The page can hold two forms, and one
+ * signup is the whole page's: the other form stops asking, and the page's other calls to
+ * action step aside (global.css reads the attribute set here).
+ */
+let signedUp = false;
+const watchers = new Set<() => void>();
+const signedUpStore = {
+  subscribe(notify: () => void) {
+    watchers.add(notify);
+    return () => watchers.delete(notify);
+  },
+  get: () => signedUp,
+  // The built HTML, and the first render over it, always show the form.
+  getServer: () => false,
+};
+
+function noteSignedUp() {
+  if (signedUp) return;
+  signedUp = true;
+  document.documentElement.dataset.signedUp = '';
+  for (const notify of watchers) notify();
+}
+
 /** The first validation message for what was typed, or null when it is a usable email. */
 function emailError(value: string): string | null {
   const parsed = parseEmail(value);
@@ -58,20 +89,28 @@ function troubleMessage(trouble: Trouble): string {
     case 'invalid':
       return trouble.message;
     case 'email_taken':
-      return 'This email already has an account.';
+      return 'This email already has an account on this demo.';
     case 'rate_limited':
       return trouble.retryAfterSeconds <= 90
         ? 'Too many attempts. Try again in about a minute.'
         : `Too many attempts. Try again in about ${Math.ceil(trouble.retryAfterSeconds / 60)} minutes.`;
     case 'unavailable':
-      return trouble.reason === 'offline'
-        ? 'You appear to be offline. Your email is still here: try again when you are back.'
+      if (trouble.reason === 'offline') {
+        return 'You appear to be offline. Your email is still here: try again when you are back.';
+      }
+      return trouble.reason === 'server'
+        ? 'Something went wrong on our side. Your email is still here: try again.'
         : 'We could not reach the server. Your email is still here: try again.';
   }
 }
 
 export default function SignupForm({ location, cta, layout = 'row', promises = [] }: Props) {
   const [state, dispatch] = useReducer(reduce, initialState);
+  const elsewhere = useSyncExternalStore(
+    signedUpStore.subscribe,
+    signedUpStore.get,
+    signedUpStore.getServer,
+  );
   const id = useId();
   const input = useRef<HTMLInputElement>(null);
   const decoy = useRef<HTMLInputElement>(null);
@@ -135,7 +174,11 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
     }
 
     if (state.step !== before.step && (state.step === 'profile' || state.step === 'done')) {
-      heading.current?.focus();
+      noteSignedUp();
+      // Focus alone does not move a heading that is partly on screen, and it may be under
+      // the header: bring it into view, below the header, then name the new step.
+      heading.current?.scrollIntoView({ block: 'nearest' });
+      heading.current?.focus({ preventScroll: true });
     }
   }, [state, location]);
 
@@ -169,6 +212,19 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
             </p>
           </>
         )}
+      </div>
+    );
+  }
+
+  // The account was created in the page's other form: this one has nothing left to ask.
+  if (elsewhere) {
+    return (
+      <div className="signup signup-after">
+        <h2 className="signup-title">You have already signed up.</h2>
+        <p className="signup-note">
+          Your free account was created on this page a moment ago. This demo ends here: on the real
+          site, your first replay session would open now.
+        </p>
       </div>
     );
   }
@@ -255,7 +311,11 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
             </svg>
             <span>
               {troubleMessage(trouble)}{' '}
-              {trouble.kind === 'email_taken' && <a href={LOGIN_URL}>Log in on the real site</a>}
+              {trouble.kind === 'email_taken' && (
+                <>
+                  On the real site you would <a href={LOGIN_URL}>log in at app.fxreplay.com</a>.
+                </>
+              )}
             </span>
           </>
         )}
@@ -301,6 +361,7 @@ function ProfileStep({ saving, trouble, onSave, onSkip }: ProfileProps) {
         type="checkbox"
         values={MARKETS}
         id={id}
+        short
       />
       <Choices
         legend="How long have you traded?"
@@ -311,14 +372,23 @@ function ProfileStep({ saving, trouble, onSave, onSkip }: ProfileProps) {
       />
       <Choices legend="What brings you here?" name="goal" type="radio" values={GOALS} id={id} />
       <p className="signup-trouble" role="alert">
-        {trouble === 'unavailable' &&
-          'We could not save your answers. Your account is safe: try again.'}
-        {trouble === 'expired' && 'This step has expired. Your account is safe: you can skip it.'}
+        {trouble && (
+          <>
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M8 1.5 15 14H1L8 1.5Zm-.75 4.75v4h1.5v-4h-1.5Zm0 5.25V13h1.5v-1.5h-1.5Z" />
+            </svg>
+            <span>
+              {trouble === 'unavailable'
+                ? 'We could not save your answers. Your account is safe: try again.'
+                : 'This step has expired. Your account is safe: you can skip it.'}
+            </span>
+          </>
+        )}
       </p>
       <div className="signup-actions">
         <button type="submit" aria-busy={saving || undefined}>
           {saving && <span className="signup-spinner" aria-hidden="true" />}
-          <span>{saving ? 'Saving' : 'Save and continue'}</span>
+          <span>{saving ? 'Saving…' : 'Save and continue'}</span>
         </button>
         <button type="button" className="signup-skip" onClick={onSkip}>
           Skip
@@ -339,11 +409,13 @@ interface ChoicesProps {
   type: 'checkbox' | 'radio';
   values: readonly string[];
   id: string;
+  /** Answers of a word each, which can sit two to a row on a phone. */
+  short?: boolean;
 }
 
-function Choices({ legend, name, type, values, id }: ChoicesProps) {
+function Choices({ legend, name, type, values, id, short = false }: ChoicesProps) {
   return (
-    <fieldset className="signup-choices">
+    <fieldset className={short ? 'signup-choices signup-choices-short' : 'signup-choices'}>
       <legend>{legend}</legend>
       <div>
         {values.map((value) => (

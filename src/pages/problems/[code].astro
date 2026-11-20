@@ -1,4 +1,5 @@
 ---
+import wordmark from '../../assets/brand/FXReplayLogo.svg';
 import { PROBLEMS, type ProblemCode } from '../../lib/api/problems';
 import Base from '../../layouts/Base.astro';
 
@@ -27,6 +28,9 @@ const { status, title, when } = PROBLEMS[code];
   indexable={false}
 >
   <main class="problem">
+    <a class="home" href="/" aria-label="FX Replay, candidate demo: the page">
+      <img src={wordmark.src} width={wordmark.width} height={wordmark.height} alt="FX Replay" />
+    </a>
     <p class="kind">Users API problem type</p>
     <h1>{title}</h1>
     <p>{when}</p>
@@ -50,30 +54,46 @@ const { status, title, when } = PROBLEMS[code];
 <style>
   .problem {
     display: grid;
-    gap: 1.25rem;
+    gap: var(--space-5);
     max-width: 40rem;
     margin-inline: auto;
-    padding: 3rem 1.25rem;
+    padding: var(--space-7) var(--gutter);
+  }
+
+  .home {
+    justify-self: start;
+    border-radius: 0.25rem;
+  }
+
+  img {
+    width: min(11rem, 60vw);
+    height: auto;
   }
 
   .kind,
   .notice {
     color: var(--text-secondary);
-    font-size: 1rem;
+    font-size: var(--step--1);
   }
 
   h1 {
-    font-size: clamp(1.75rem, 1.25rem + 2vw, 2.5rem);
+    font-size: var(--step-3);
+  }
+
+  /* A code is set apart by weight, in the body family: the page has two families, not three. */
+  code {
+    font-family: inherit;
+    font-weight: 700;
   }
 
   dl {
     display: grid;
     grid-template-columns: max-content 1fr;
-    gap: 0.5rem 1.5rem;
+    gap: var(--space-2) var(--space-5);
     margin: 0;
-    padding: 1rem 1.25rem;
+    padding: var(--space-4) var(--space-5);
     border: 1px solid var(--border-primary);
-    border-radius: 0.75rem;
+    border-radius: var(--radius-surface);
     background: var(--bg-secondary);
   }
 
@@ -86,7 +106,7 @@ const { status, title, when } = PROBLEMS[code];
   }
 
   .notice {
-    padding-top: 1.25rem;
+    padding-top: var(--space-5);
     border-top: 1px solid var(--border-primary);
   }
 </style>

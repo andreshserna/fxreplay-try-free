@@ -76,10 +76,18 @@ const stop = Math.min(...sinceEntry.map((candle) => candle.low)) - 3;
 const reach = Math.max(...sinceEntry.map((candle) => candle.high)) - entryPrice;
 const target = entryPrice + Math.max(reach + 3, (entryPrice - stop) * 1.5);
 
+// The picture never shows a result. That rests on the two seeds above, so a change to the
+// walk that lets any candle after the entry touch a level fails the build instead.
+if ([...sinceEntry.slice(1), ...ahead].some((c) => c.high >= target || c.low <= stop)) {
+  throw new Error('ReplayChart: a candle reaches the target or the stop of the drawn trade.');
+}
+
 const top = Math.max(target, ...visible.map((candle) => candle.high));
 const bottom = Math.min(stop, ...visible.map((candle) => candle.low));
+/** A tenth of a unit is finer than a screen draws, and fifteen decimals are bytes. */
+const tenth = (value: number) => Math.round(value * 10) / 10;
 const y = (price: number) =>
-  PAD_TOP + ((top - price) / (top - bottom)) * (HEIGHT - PAD_TOP - PAD_BOTTOM);
+  tenth(PAD_TOP + ((top - price) / (top - bottom)) * (HEIGHT - PAD_TOP - PAD_BOTTOM));
 
 const candles = [...visible, ...ahead].map((candle, index) => {
   const center = pitch * index + pitch / 2;
@@ -91,7 +99,7 @@ const candles = [...visible, ...ahead].map((candle, index) => {
     wickBottom: y(candle.low),
     bodyX: center - bodyWidth / 2,
     bodyY: bodyTop,
-    bodyHeight: Math.max(bodyBottom - bodyTop, 4),
+    bodyHeight: tenth(Math.max(bodyBottom - bodyTop, 4)),
     rising: candle.close >= candle.open,
     step: index - SHOWN,
   };
@@ -198,8 +206,6 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
 </figure>
 
 <script>
-  import { track } from '../../lib/analytics/track';
-
   /** The time one candle takes at 1x, and the speeds the last control cycles through. */
   const TICK_MS = 600;
   const SPEEDS = [1, 2, 4];
@@ -279,7 +285,11 @@ const gridLines = [0.2, 0.4, 0.6, 0.8].map((share) => Math.round(HEIGHT * share)
       controls[control]?.();
       if (used) return;
       used = true;
-      track('replay_demo_used', { control });
+      // Asked for when it is needed: the controls must work even if the tracker's file
+      // never arrives.
+      void import('../../lib/analytics/track')
+        .then(({ track }) => track('replay_demo_used', { control }))
+        .catch(() => undefined);
     };
 
     transport.addEventListener('click', (event) => {
