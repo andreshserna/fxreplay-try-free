@@ -96,18 +96,53 @@ The brief's four questions, answered from the working record.
 
 ### What I did myself
 
-- **Set the starting positions before any code existed** (ADRs
-  [0001](decisions/0001-astro-react-islands-strict-typescript.md) to
-  [0010](decisions/0010-agents-on-fable-at-max-effort.md)): the stack, one deployable, the
-  offer as the free plan and not the trial, a signup that starts with the email alone, the
-  API contract before the code, analytics as code, experiments assigned at the edge, a demo
-  that stays out of search. Everything after was built against them.
-- **Set the working agreement the AI operates under,** now in
-  [`CLAUDE.md`](../CLAUDE.md#how-decisions-are-made): what it may decide on its
+- **Prepared the specification the project was built from,** in a planning session with
+  Claude Code before the repository existed. It fixed:
+  - **The product.** The offer is the free plan and not the trial. The signup starts with
+    the email alone and asks for no password. Every state of the form. A page where each
+    section answers an objection or is cut.
+  - **The API.** A public create that is idempotent, rate limited and guarded by a
+    honeypot. An update authorized by a signed HttpOnly cookie. A list behind an admin
+    token. Email unique in the database. Attribution and the experiment arm stored with
+    the user.
+  - **The measurement.** The funnel's events, the conversion sent by the server after the
+    row is committed, the definition of the primary metric, one typed registry as the only
+    source of events, no personal data in any payload.
+  - **The experiment.** The candidates, the email field in the hero against a button first
+    among them. A plan written before data exists, guardrails on signup quality, whole
+    weeks, no peeking.
+  - **The stack and the bar.** Astro with React islands, one deployable, Cloudflare Workers
+    with D1 as the starting assumption, the lab budgets, WCAG 2.2 AA, and what is out of
+    scope.
+
+  ADRs [0001](decisions/0001-astro-react-islands-strict-typescript.md) to
+  [0010](decisions/0010-agents-on-fable-at-max-effort.md) record the starting positions,
+  [`plan.md`](../.claude/rules/plan.md) the scope and [`CLAUDE.md`](../CLAUDE.md#invariants)
+  the invariants. Everything after was built against them.
+- **Designed the system the AI works in:** which agents exist and what each owns, reviewers
+  with no write access, the four skills, the rule that whatever a machine can check is a
+  hook or a CI step, the two MCP servers, and that nothing is reported as done without
+  evidence. Also the working agreement, now in
+  [`CLAUDE.md`](../CLAUDE.md#how-decisions-are-made): what the AI may decide on its
   recommendation, what it must brief me on at once with an ADR, what it must bring to me as
   rendered options and wait for (the visual design, the headline, the wording of the
   offer), and what it may never do alone (publish the repository, spend money, send
   anything to FX Replay).
+- **Audited the brand kit's contrast before any code** and set the rule for fixing it: the
+  smallest move inside their palette, never a new color, never a change to Electric Blue or
+  to the dark ground. The field boundary, the error outline, the link color, the focus ring
+  and the success state in [the brand notes](brand-notes.md) follow from it.
+- **Brought what I knew about FX Replay and had every claim checked** before it reached the
+  copy ([research/assumptions.md](research/assumptions.md)). Two of mine did not hold, and
+  the page was built on what the check found.
+- **Reviewed every decision that is costly to reverse, as it was made.** Each reached me at
+  once, as an ADR with its real alternatives. I confirmed the hosting
+  ([0011](decisions/0011-cloudflare-workers-with-d1.md): my starting assumption, held
+  against the alternatives), [the API contract](api.md), the taxonomy and the primary
+  metric ([0013](decisions/0013-event-taxonomy-and-primary-metric.md)) and the first
+  experiment ([0015](decisions/0015-first-experiment-hero-signup.md)). I accepted one I had
+  not specified, a first-party collector in front of PostHog
+  ([0014](decisions/0014-first-party-event-collector.md)). I overruled two, below.
 - **Chose the visual direction** from three rendered heroes, kept a second one for the
   experiment backlog (number 4 in [the proposal](experiment-proposal.md#ranked-backlog)),
   and asked for the line of sourced figures under the hero.
@@ -115,7 +150,12 @@ The brief's four questions, answered from the working record.
   ([ADR 0017](decisions/0017-react-for-the-island.md)): Preact was smaller with the same
   lab scores, React is the team's stack and its cost was not a penalty here.
 - **Changed how models are assigned** ([ADR 0012](decisions/0012-models-by-kind-of-work.md)),
-  against my own starting position of every agent on the strongest model.
+  against my own starting position of every agent on the strongest model. The seventh
+  agent, `implementer`, exists because of it.
+- **Followed the work as it ran,** the main session and the agents, and approved the
+  commands that needed my permission, the creation of the repository among them. I
+  considered T3 as a second client, to run other agents beside it, and dropped the idea on
+  reading the brief again: it asks for Claude Code at the center of the workflow.
 - **Reviewed the deployed page as a visitor would, more than once,** and sent it back each
   time (below).
 - **Signed in to Cloudflare, created the PostHog project and set the analytics key
@@ -125,13 +165,12 @@ The brief's four questions, answered from the working record.
 
 ### What I delegated
 
-The implementation and its tests, the research gathering, the reviews, and the drafting of
-the documents. Also the technical decisions inside the starting positions: hosting and
-persistence, the event taxonomy, the collector, which experiment goes first. Those were
-taken on the AI's recommendation and each was written down at once, as an ADR with its
-real alternatives or as a line in [the log](decisions/log.md), so I could read it and
-overrule it. They stood unless I did. I overruled two: the island library and the model
-policy.
+The implementation and its tests, the gathering of research, the reviews, and the drafting
+of the documents. Also the routine technical choices (libraries, tooling, mechanisms), each
+written down in [the log](decisions/log.md) with its reason, and the detail inside my
+specification: the comparison of hosts, the collector's design, the properties of each
+event, the statistics of the experiment plan. Those came to me as recommendations and
+stood unless I changed them.
 
 ### What I rejected or corrected
 

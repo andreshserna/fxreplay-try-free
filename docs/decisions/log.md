@@ -464,3 +464,8 @@ project or is costly to reverse also has an ADR in this folder.
   back, and how the work was validated. The document described the system and what its
   reviewers caught, and left the person's part to be inferred. Only what the working record
   holds is stated.
+- **The human-judgment section starts from the specification.** What the specification
+  fixed before any code (the API's behavior, the funnel and the primary metric, the
+  experiment's candidates, the AI system, the scope) is the larger part of the candidate's
+  decisions, and the first version listed only the starting positions and the later calls.
+  The delegated list is what was left to recommendation inside the specification.

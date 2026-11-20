@@ -168,8 +168,8 @@ The brief's example areas, and the agent that covers each:
 
 | The brief asks | Where it is answered |
 |---|---|
-| What was delegated to AI | [What I delegated](ai-workflow.md#what-i-delegated): the implementation, the research, the reviews, and the technical decisions inside the starting positions, each written down so it could be overruled |
-| What was kept for a person | [What I did myself](ai-workflow.md#what-i-did-myself): the starting positions, the working agreement, the visual direction, React for the island, the model policy, the reviews of the deployed page |
+| What was delegated to AI | [What I delegated](ai-workflow.md#what-i-delegated): the implementation, the gathering of research, the reviews, the routine technical choices and the detail inside the specification, each written down so it could be changed |
+| What was kept for a person | [What I did myself](ai-workflow.md#what-i-did-myself): the specification (product, API, measurement, experiment, stack, budgets, scope), the design of the AI system, the brand kit's contrast audit, the review of every decision that is costly to reverse, the visual direction, React for the island, the model policy, the reviews of the deployed page |
 | What AI output was rejected or corrected | [What I sent back](ai-workflow.md#what-i-rejected-or-corrected): seven cases. [What the system's reviewers caught](ai-workflow.md#where-ai-output-was-corrected-or-rejected): eleven more, each with how it was found |
 | How AI-generated work was validated | [By the system, by me and by a rule about the record](ai-workflow.md#how-ai-generated-work-was-validated) |
 
