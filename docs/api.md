@@ -43,7 +43,9 @@ implementation to it. Three operations, one resource, same origin as the site.
 | `profile.experience` | One of `beginner`, `intermediate`, `advanced`. Optional |
 | `profile.goal` | One of `strategy_testing`, `prop_firm`, `practice`. Optional |
 
-The profile vocabulary is provisional until the research confirms how FX Replay names these.
+The profile vocabulary is this demo's own. FX Replay has an onboarding questionnaire, but its
+questions sit behind account creation and the research could not read them
+(`docs/research/brief.md`, sections 4 and 9), so there were no names of theirs to follow.
 The list operation also returns `attribution`, `experiments` and `anonymous_id`.
 
 ## Create a user
@@ -208,6 +210,169 @@ is `null` on the last page.
 
 Any other method on these paths answers **405** `method_not_allowed` with an `Allow` header.
 
+## An example for every answer
+
+Real answers, captured from the local Workers runtime (`npm run preview`) on 2026-11-19, one
+request each. The ids, emails and times are that run's. On the deployment only the host in
+`type` differs.
+
+**201, created**
+
+```http
+POST /api/users
+
+HTTP 201
+location: /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A
+set-cookie: __Host-session=…, fxr_aid=…
+{"id": "usr_01M7V99XM5AE7FQ4ADNB7VF14A", "email": "example-de45577c@example.com", "profile": {}, "created_at": "2026-11-20T01:32:00.005Z", "updated_at": "2026-11-20T01:32:00.005Z"}
+```
+
+**201 again, a replay of the same key and body**
+
+```http
+POST /api/users
+
+HTTP 201
+idempotency-replayed: true
+location: /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A
+set-cookie: __Host-session=…, fxr_aid=…
+{"id": "usr_01M7V99XM5AE7FQ4ADNB7VF14A", "email": "example-de45577c@example.com", "profile": {}, "created_at": "2026-11-20T01:32:00.005Z", "updated_at": "2026-11-20T01:32:00.005Z"}
+```
+
+**400 `invalid_json`**
+
+```http
+POST /api/users with the body {"email":
+
+HTTP 400
+{"type": "http://127.0.0.1:4321/problems/invalid-json", "title": "The body is not valid JSON", "status": 400, "code": "invalid_json", "instance": "/api/users"}
+```
+
+**400 `idempotency_key_missing`**
+
+```http
+POST /api/users without an Idempotency-Key
+
+HTTP 400
+{"type": "http://127.0.0.1:4321/problems/idempotency-key-missing", "title": "A valid Idempotency-Key header is required", "status": 400, "code": "idempotency_key_missing", "instance": "/api/users"}
+```
+
+**409 `email_taken`**
+
+```http
+POST /api/users with the same email and a new key
+
+HTTP 409
+{"type": "http://127.0.0.1:4321/problems/email-taken", "title": "That email already has an account", "status": 409, "code": "email_taken", "instance": "/api/users"}
+```
+
+**413 `payload_too_large`**
+
+```http
+POST /api/users with a 9 KB body
+
+HTTP 413
+{"type": "http://127.0.0.1:4321/problems/payload-too-large", "title": "The body is too large", "status": 413, "code": "payload_too_large", "instance": "/api/users"}
+```
+
+**415 `unsupported_media_type`**
+
+```http
+POST /api/users with Content-Type: application/xml
+
+HTTP 415
+{"type": "http://127.0.0.1:4321/problems/unsupported-media-type", "title": "The body must be application/json", "status": 415, "code": "unsupported_media_type", "instance": "/api/users"}
+```
+
+**422 `validation_failed`**
+
+```http
+POST /api/users with the email ada@
+
+HTTP 422
+{"type": "http://127.0.0.1:4321/problems/validation-failed", "title": "The request has invalid fields", "status": 422, "code": "validation_failed", "instance": "/api/users", "detail": "1 field needs attention.", "errors": [{"field": "email", "code": "invalid_format", "message": "Enter an email like name@example.com."}]}
+```
+
+**422 `idempotency_key_reused`**
+
+```http
+POST /api/users with the first key and another email
+
+HTTP 422
+{"type": "http://127.0.0.1:4321/problems/idempotency-key-reused", "title": "That Idempotency-Key was already used with a different body", "status": 422, "code": "idempotency_key_reused", "instance": "/api/users"}
+```
+
+**429 `rate_limited`**
+
+```http
+POST /api/users, the sixth from one address in a minute
+
+HTTP 429
+retry-after: 60
+{"type": "http://127.0.0.1:4321/problems/rate-limited", "title": "Too many requests", "status": 429, "code": "rate_limited", "instance": "/api/users"}
+```
+
+**200, updated**
+
+```http
+PATCH /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A
+
+HTTP 200
+{"id": "usr_01M7V99XM5AE7FQ4ADNB7VF14A", "email": "example-de45577c@example.com", "profile": {"markets": ["forex", "indices"], "goal": "prop_firm"}, "created_at": "2026-11-20T01:32:00.005Z", "updated_at": "2026-11-20T01:32:00.217Z"}
+```
+
+**401 `unauthenticated`**
+
+```http
+PATCH /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A without the session cookie
+
+HTTP 401
+{"type": "http://127.0.0.1:4321/problems/unauthenticated", "title": "Authentication is required", "status": 401, "code": "unauthenticated", "instance": "/api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A"}
+```
+
+**403 `forbidden`**
+
+```http
+PATCH /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A with Origin: https://elsewhere.example
+
+HTTP 403
+{"type": "http://127.0.0.1:4321/problems/forbidden", "title": "This request is not allowed", "status": 403, "code": "forbidden", "instance": "/api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A"}
+```
+
+**422 `validation_failed` on an update**
+
+```http
+PATCH /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A with the goal get_rich
+
+HTTP 422
+{"type": "http://127.0.0.1:4321/problems/validation-failed", "title": "The request has invalid fields", "status": 422, "code": "validation_failed", "instance": "/api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A", "detail": "1 field needs attention.", "errors": [{"field": "goal", "code": "invalid_choice", "message": "Choose one of the listed options."}]}
+```
+
+**401 `unauthenticated` on the list**
+
+```http
+GET /api/users without a token
+
+HTTP 401
+www-authenticate: Bearer
+{"type": "http://127.0.0.1:4321/problems/unauthenticated", "title": "Authentication is required", "status": 401, "code": "unauthenticated", "instance": "/api/users"}
+```
+
+**405 `method_not_allowed`**
+
+```http
+DELETE /api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A
+
+HTTP 405
+allow: PATCH
+{"type": "http://127.0.0.1:4321/problems/method-not-allowed", "title": "Method not allowed", "status": 405, "code": "method_not_allowed", "instance": "/api/users/usr_01M7V99XM5AE7FQ4ADNB7VF14A"}
+```
+
+Not captured, because the local runtime does not produce the fault behind them: 404
+`not_found` (a valid session whose user is gone), 500 `internal_error` and 503
+`service_unavailable`. They have the same shape, with the code, title and status of their row
+in the tables above. A successful list (200) is shown under "List users".
+
 ## The event collector
 
 `POST /api/events` receives the page's analytics events. It is not part of the Users API, and
@@ -270,7 +435,8 @@ timeout, or a 500, 502, 503 or 504. It never retries a 4xx.
 |---|---|
 | 201, or a replay of it | Success, then the optional profile step |
 | 422 `validation_failed` | The message under each field, focus on the first |
-| 409 `email_taken` | "You already have an account", with the way to log in |
+| 409 `email_taken` | "This email already has an account on this demo", with where the real site's login is |
 | 429 `rate_limited` | "Too many attempts", with when to try again |
-| 5xx after the retry, timeout, offline | "We could not reach the server", the input kept, a retry button |
+| 5xx after the retry | "Something went wrong on our side", the input kept, a retry button |
+| Timeout, network failure, offline | "We could not reach the server" or "You appear to be offline", the input kept, a retry button |
 | Anything else | The same as a server error. It is logged as a contract violation |

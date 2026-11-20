@@ -31,7 +31,8 @@ believable, and it is what `experiment-analyst` will hold the data to.
 7. **Wire it.** Add the flag key to the experiment registry in `src/lib/experiments/`.
    Assignment happens at the edge, sticky per visitor, and the variant renders in the HTML
    with no flicker or layout shift. Add the exposure event with `/track-event`: it fires
-   before the variant renders and only for visitors who can see the difference.
+   when the edge serves the variant's document, and only for visitors who can see the
+   difference.
 8. **Commit the spec** before collecting data. If the plan must change later, change it in a
    new commit that says why. Never rewrite it in place.
 9. **Record it.** Which experiment runs first is an important decision: use `/adr`.

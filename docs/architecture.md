@@ -1,7 +1,7 @@
 # Architecture
 
 One deployable on Cloudflare: an Astro site whose pages are static files, and a small Worker
-that runs only where a request needs a decision. The page ships 90 KB of script, none of it
+that runs only where a request needs a decision. The page ships 87 KB of script, none of it
 from a third party.
 
 ```
@@ -75,12 +75,12 @@ for a browser that has not run the script, so the signup works before hydration 
 |---|---|---|
 | Hosting | Cloudflare Workers with static assets, free plan | The same model on a paid plan: higher CPU and request limits |
 | Deployment | `wrangler deploy`. D1 migrations are files applied by a command | Deploys from CI on merge, with a preview URL per pull request |
-| CI/CD | GitHub Actions on every push: format, lint, types, token and contrast rules, generated files, more than 300 unit and system tests, the build, the API contract over HTTP, 54 browser tests with axe, the Lighthouse budgets | The same checks gate the deploy. A failed budget fails the build |
+| CI/CD | GitHub Actions on every push: format, lint, types, token and contrast rules, generated files, more than 300 unit and system tests, the build, the API contract over HTTP, 82 browser tests with axe, the Lighthouse budgets on both arms, and SEO on a second, indexable build | The same checks gate the deploy. A failed budget fails the build |
 | DNS | A `workers.dev` hostname | A route on their own zone (below) |
 | CDN and edge | Assets are served from the edge without running code. The Worker runs for `/` and the API | Cache the landing document per experiment arm |
 | Caching | Hashed files are immutable for a year. HTML revalidates. API answers are `no-store` | The same, plus the per-arm cache key |
 | Observability | Structured error logs with a request id and no personal data. Field Web Vitals as an event. Every event carries the release SHA | Alerts on the signup failure rate, on 5xx, and on the gap between conversions and user rows. Error tracking |
-| Security | A strict CSP with no inline allowance, security headers on every response the Worker's code writes (the framework's own refusal of a cross-site form post is a bare 403), signed `__Host-` session cookie, `HttpOnly` visitor cookie, origin checks, rate limits, a honeypot, secrets declared and never stored | A WAF rule in front, bot management, secret rotation |
+| Security | A strict CSP with no inline allowance, security headers on every response the Worker's code writes (the framework's own refusal of a cross-site form post is a bare 403), signed `__Host-` session cookie, `HttpOnly` visitor cookie, origin checks, rate limits, a honeypot, secrets declared and never stored | A WAF rule in front, bot management, secret rotation, and a reporting endpoint for the CSP so a violation in a visitor's browser is seen |
 | Reliability | Create is idempotent, the client retries safely, the form keeps its input on failure, analytics can fail without touching the signup, the page works without script | D1 read replication, a status page, a runbook for the reconciliation alert |
 
 ## If this became a production FX Replay system

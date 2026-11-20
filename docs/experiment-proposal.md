@@ -1,6 +1,6 @@
 # Experiment proposal
 
-One experiment is specified in full and wired end to end. Three more are ranked behind it.
+One experiment is specified in full and wired end to end. Four more are ranked behind it.
 The method matters more than the idea: the plan is committed before any data exists, both
 sides of the metric are recorded on the server, and the decision table is written first.
 

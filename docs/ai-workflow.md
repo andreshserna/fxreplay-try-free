@@ -80,7 +80,7 @@ One change, the browser tracker, as it actually went:
 1. **A decision first.** The taxonomy and the collector were decided and recorded
    ([ADR 0013](decisions/0013-event-taxonomy-and-primary-metric.md),
    [0014](decisions/0014-first-party-event-collector.md)) before any tracking code.
-2. **The registry by hand, in the main session,** because it is the design: nine events, each
+2. **The registry by hand, in the main session,** because it is the design: nine events then (ten now), each
    with the decision it informs, and no free-text type.
 3. **A written specification to `implementer`** for the tracker: the dependencies to inject,
    the batching rule, what must never throw, the tests to write, the size to report.
@@ -235,7 +235,7 @@ By the system's reviewers and checks. What I sent back myself is under
   undecided.
 - **Screenshots taken the wrong way.** A first set came from headless Chrome on the command
   line, which laid a 360 px page out at about 500 px and cropped it. They were retaken
-  through the browser server and the mistake is in the notes for later sessions.
+  through the browser server.
 - **A stricter reading than specified.** The API client came back treating a 429 without a
   problem body as an unknown answer. An edge rule in front of the Worker answers exactly like
   that, so it was changed to "rate limited".
@@ -259,10 +259,33 @@ By the system's reviewers and checks. What I sent back myself is under
   dropped while offline, and preview pages counted as visits. All fixed.
 - **A design given up.** The first idempotency design had an "in progress" state. Writing the
   database transaction showed it could not occur, and the contract lost a status code.
+- **A check that measured one arm twice.** The Lighthouse check printed two tables, one per
+  experiment arm, and both were the same page: a calibration run added to the script had
+  left a cookie that chose the arm for every run after it. `code-reviewer` found it in the
+  release gate by comparing the two stored reports byte for byte. Each audit now proves
+  which arm it measured, or the check fails.
+- **A header nobody had looked at between a phone and a desktop.** At 768 px it cut off its
+  own call to action, at 320 px it made the page scroll sideways, and it covered the skip
+  link at every width. `design-critic`, `web-quality-auditor` and `code-reviewer` each
+  reported it. The browser tests ran at 412 px and at desktop width, and now also at 320,
+  360 and 768.
+- **Setup instructions that failed on a fresh clone.** The two commands in the README
+  worked only where a build already existed. A reader with no part in the work found it by
+  reading the adapter's source, and it was reproduced in a clean clone before the fix.
+
+## The release gate
+
+`/ship-check` ran once, on commit `8098e81`:
+[the report](ai/reports/ship-check-2026-11-19-1917.md). Eleven deterministic checks passed.
+Of the four reviewers, run in parallel against that commit on the local Workers runtime,
+three said fix first and one said ship. Their findings were fixed in the commits after it,
+and what was not applied is in [the decision log](decisions/log.md) with the reason. The
+gate has not been run again on the fixed commit: that run is the candidate's to start.
 
 ## Not done yet
 
-`/ship-check` has not run. Every reviewer agent has run on the deployed page and its findings
-are in the decision log, with what was not applied and why. `experiment-analyst` ran on a
+The earlier reviews, one per agent at the end of a phase, ran before the redesign of the
+page: `design-critic` and `web-quality-auditor` on the deployment, `analytics-qa` on the
+local runtime, `code-reviewer` on an export of the commit. `experiment-analyst` ran on a
 fixture labelled synthetic: no experiment has real data. No MCP server for PostHog is
 connected: the funnel in PostHog was built through the browser.

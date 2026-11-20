@@ -26,7 +26,8 @@ sections 5.1 and 8).
 
 Astro (current stable) with strict TypeScript. The landing is static HTML. Only the signup
 form hydrates. Whether the island runs on React or Preact is left open and gets its own
-decision card.
+decision card (it did: [ADR 0016](0016-preact-for-the-island.md), then
+[ADR 0017](0017-react-for-the-island.md), which stands).
 
 ## Consequences
 

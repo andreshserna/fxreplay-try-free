@@ -31,6 +31,7 @@ at the first failure.
 | Generated files are current | `npm run gen:check` |
 | Unit and contract tests | `npm test` |
 | Build | `npm run build` |
+| The API over HTTP | `npm run test:api` |
 | End to end, with axe | `npm run test:e2e` |
 | Lighthouse budgets | `npm run lighthouse` |
 
@@ -48,7 +49,7 @@ production build.
 - `web-quality-auditor`: the landing page and the signup flow against the budgets.
 
 If a report opens with a line saying the agent switched to another model, copy that line into
-the report. A silent fallback is not acceptable (ADR 0010).
+the report. A silent fallback is not acceptable (ADR 0012).
 
 ## 4. One report
 

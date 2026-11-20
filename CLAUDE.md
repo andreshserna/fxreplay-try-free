@@ -28,7 +28,7 @@ them. The business goal is a higher conversion rate from marketing traffic to ac
 | `npm test` | Unit and contract tests of the API in Node, with the in-memory repository |
 | `npm run test:api` | The API contract, the collector and edge assignment over HTTP against a running preview: the real Worker and a real D1 |
 | `npm run test:e2e` | The signup states and the funnel in a real browser, with axe, against a running preview |
-| `npm run lighthouse` | The lab budgets on both experiment arms, against a running preview: median of three mobile runs |
+| `npm run lighthouse` | The lab budgets on both experiment arms, against a running preview: median of three mobile runs, each in a new Chrome profile and checked to be the arm it names. `--seo` also judges SEO, on a build made with `ALLOW_INDEXING=true` |
 | `npm run test:system` | Tests for the hooks, checkers and generators (Node's test runner) |
 | `npm run gen` | Regenerate `tokens/*.css`, the contrast tables in `docs/brand-notes.md` and the event tables in `docs/analytics-plan.md` (`gen:check` fails if stale). `gen:og` redraws the share image |
 | `npm run check:tokens`, `check:contrast`, `check:kit` | No color literals or primitive tokens in product code; every UI pair meets its WCAG threshold; `tokens.json` still matches the kit |
@@ -49,7 +49,7 @@ A command that does not exist is "not available", never "passed".
 | `migrations/`, `wrangler.jsonc`, `astro.config.mjs` | D1 schema; bindings; adapter, fonts and build settings |
 | `tokens/` | The kit's tokens (`tokens.json`, generated `tokens.css`), ours (`extensions.*`), `contrast-pairs.json` |
 | `scripts/`, `tests/` | `checks/`, `gen/`, `experiment/` (sample size and analysis), `kit/`, `dev/setup.mjs`; `unit/`, `api/` and `e2e/` tests |
-| `docs/` | `evaluation-sheet.md` (the brief line by line), `api.md`, `analytics-plan.md`, `experiments/`, `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
+| `docs/` | `evaluation-sheet.md` (the brief line by line), `architecture.md`, `api.md`, `analytics-plan.md`, `experiment-proposal.md`, `experiments/`, `performance-review.md`, `ai-workflow.md`, `ai/reports/` (ship-check reports), `brand-notes.md`, `decisions/` (log and ADRs), `research/` |
 | `brief/`, `notes/` | Inputs and private notes. Gitignored. `brief/` is read-only |
 
 Area rules in `.claude/rules/` load with the files they govern. `/ship-check` reports go to `docs/ai/reports/`.

@@ -118,7 +118,7 @@ dataLayer.push(...)             GET /        ──▶ experiment_exposed ──
 - **One registry, three uses:** the types that make `track()` refuse an unknown event or
   property at compile time, the validation the collector runs on every event, and the tables
   above.
-- **No vendor script on the page.** The tracker (2.4 KB gzipped) posts to our own origin, and
+- **No vendor script on the page.** The tracker (2.6 KB compressed) posts to our own origin, and
   the Worker forwards to PostHog after the response is sent
   ([ADR 0014](decisions/0014-first-party-event-collector.md)). In production at FX Replay the
   forwarder would point at their existing first-party pipeline.
@@ -139,7 +139,7 @@ How the number is kept accurate and trustworthy, in the order a failure would be
 | A property with the wrong shape at runtime | The collector validates every event and drops what does not fit |
 | Personal data in a payload | The registry has no free-text type, unknown keys are dropped at the collector, and campaign parameters are forced into lowercase labels that cannot contain "@". A test sends an email in every place it could hide and asserts it never leaves |
 | The conversion lost to an ad blocker | It is emitted by the server after the row is committed, not by the browser |
-| A conversion counted twice | It is not emitted for an idempotent replay. Every event carries an `event_id` to deduplicate on in analysis, also sent as PostHog's own `uuid`: PostHog documents that a repeated uuid inside one request is dropped, and does not document what it does across requests |
+| A conversion counted twice | It is not emitted for an idempotent replay. Every event carries an `event_id` to deduplicate on in analysis, also sent as PostHog's own `uuid` (on the deployment, 2026-11-20, every stored event's `uuid` equals its `event_id`). PostHog documents that a repeated uuid inside one request is dropped, and does not document what it does across requests |
 | Events lost while offline | A batch the collector could not be reached with is kept and sent again when the connection returns, with the same `event_id`s. That is when a failed signup happens, so it is when the failure event matters |
 | A forged conversion | The collector refuses `signup_completed`, `profile_completed` and `experiment_exposed` from a browser |
 | The funnel firing twice or out of order | An end-to-end test drives the real page and asserts the browser events once, in order, with their properties |

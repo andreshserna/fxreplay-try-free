@@ -12,7 +12,7 @@ Live: https://fxreplay-try-free.mauricioserna123.workers.dev
 |---|---|
 | The page, in the arm the edge assigns you | [the live site](https://fxreplay-try-free.mauricioserna123.workers.dev) |
 | Each experiment arm by itself | [`/variants/cta_button/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/cta_button/) (control), [`/variants/inline_email/`](https://fxreplay-try-free.mauricioserna123.workers.dev/variants/inline_email/) (variant) |
-| Every check, on every push | [GitHub Actions](https://github.com/andreshserna/fxreplay-try-free/actions): lint, types, brand tokens, contrast, 355 unit and system tests, the API over HTTP, 54 browser tests with axe, the Lighthouse budgets. Each run's page shows the Lighthouse table, and the full reports download from it |
+| Every check, on every push | [GitHub Actions](https://github.com/andreshserna/fxreplay-try-free/actions): lint, types, brand tokens, contrast, 365 unit and system tests, the API over HTTP, 82 browser tests with axe, the Lighthouse budgets on both experiment arms, and SEO judged on a second build with indexing on. Each run's page shows the Lighthouse table, and the full reports download from it |
 | Lighthouse on the live page, run from Google's servers | [PageSpeed Insights](https://pagespeed.web.dev/analysis?url=https%3A%2F%2Ffxreplay-try-free.mauricioserna123.workers.dev%2F). SEO reads low there on purpose: the demo ships `noindex` ([ADR 0009](decisions/0009-demo-carrying-a-third-party-brand.md)) |
 | The analytics in PostHog, built from the page's own events | [A public dashboard](https://us.posthog.com/shared/-YCoEmJJKBpu1B7V5XPA-1M_Zt0K9g), no login needed: the funnel, the experiment by arm, exposed visitors per arm, field Web Vitals, failures by reason, the bot flag. All of it is test traffic: [how it was produced](analytics-plan.md#seen-working-end-to-end) |
 | The events as they leave the page | Open the live site with the network panel filtered to `events`: batches to `/api/events`, same origin, no third-party request |
@@ -22,7 +22,8 @@ Live: https://fxreplay-try-free.mauricioserna123.workers.dev
 SITE=https://fxreplay-try-free.mauricioserna123.workers.dev
 
 # Create: 201 with the user. Sent again with the same key: the same answer, one account.
-# (409 `email_taken` once that address exists under another key: change the address.)
+# (409 `email_taken` once that address exists under another key, or under this key more
+# than 24 hours later: change the address and the key.)
 curl -i -X POST $SITE/api/users -H 'Content-Type: application/json' \
   -H 'Idempotency-Key: review-0000000000000001' -d '{"email":"reviewer@example.com"}'
 
@@ -44,7 +45,7 @@ curl -i $SITE/api/users
 | A primary CTA | One action, "Start for free": in the hero, in a header that stays in view, and after the free plan's limits. All lead to the same form. In the variant arm the hero holds the email field itself | Astro. Clicks are measured per location (`cta_clicked`) | Click any of them. `tests/e2e/signup.spec.ts` |
 | A polished, production-quality interface | The brand kit's tokens enforced by a script, a fluid type scale with a 16 px floor, one spacing scale, original illustrations in one drawing language, a hero chart that plays when it is tapped | CSS custom properties generated from the kit. Inline SVG. Reviewed by the `design-critic` agent from its own screenshots | `npm run check:tokens`, [brand-notes.md](brand-notes.md), [what the category's pages do](research/visual-patterns.md) |
 | Responsive behavior across common screen sizes | Phone first. On a phone the first screen holds the headline, the action, the offer and the chart | CSS grid and fluid sizes. Browser tests on a desktop and a Pixel 7 profile | Resize the live site. `playwright.config.ts` |
-| Appropriate accessibility considerations | WCAG 2.2 AA as the target: contrast computed for every color pair, labelled fields, errors never by color alone, focus management, keyboard path, reduced motion, 52 px targets | axe inside the browser tests, a contrast script, Lighthouse | [performance-review.md, Accessibility](performance-review.md#accessibility). `npm run check:contrast` |
+| Appropriate accessibility considerations | WCAG 2.2 AA as the target: contrast computed for every color pair, labelled fields, errors never by color alone, focus management, keyboard path, a skip link and focus kept clear of the header, no sideways scroll at 320 px, reduced motion, targets of 44 px or more | axe inside the browser tests, a contrast script, Lighthouse | [performance-review.md, Accessibility](performance-review.md#accessibility). `npm run check:contrast` |
 
 ### 2. Signup flow
 
@@ -66,7 +67,7 @@ curl -i $SITE/api/users
 | Listing users | `GET /api/users`, paginated, behind an admin token | Bearer token from a secret | [api.md, List](api.md#list-users) |
 | The signup calls the API | The form's only path to an account is this API. The optional step is the update | Typed client, shared schemas | The network panel during a signup |
 | Persistence choice, rationale and trade-offs | A real database (Cloudflare D1, SQLite) behind a repository interface, so the same contract runs in memory in tests | D1, SQL migrations | [ADR 0003](decisions/0003-persistence-behind-a-repository.md), [ADR 0011](decisions/0011-cloudflare-workers-with-d1.md) |
-| The API contract | Written before the code. RFC 9457 errors with stable codes, an example for every status | Markdown contract, held by tests | [api.md](api.md), [ADR 0006](decisions/0006-contract-first-users-api.md) |
+| The API contract | Written before the code. RFC 9457 errors with stable codes, and a real answer captured for every status the local runtime can produce | Markdown contract, held by tests | [api.md](api.md), [ADR 0006](decisions/0006-contract-first-users-api.md) |
 | Validation, failures and asynchronous behavior | Tested in Node against an in-memory repository, and again over HTTP against the real Worker and a real D1 | Vitest, Node's test runner | `npm test`, `npm run test:api` |
 
 ## Analytics and measurement
@@ -74,7 +75,7 @@ curl -i $SITE/api/users
 | The brief asks for | What was built | Built with | Check it |
 |---|---|---|---|
 | Event taxonomy: name, trigger, properties, user and session context | Ten events in one typed registry. Each names its trigger, its properties and the decision it informs. The tables in the document are generated from the code | TypeScript. `track()` does not compile for an event that is not in the registry | [analytics-plan.md, Events](analytics-plan.md#events), `src/lib/analytics/registry.ts` |
-| Funnel entry and intermediate steps | `landing_viewed`, `cta_clicked`, `signup_started`, `signup_submitted` | A 2.4 KB first-party tracker, no vendor script | [analytics-plan.md, Funnel](analytics-plan.md#funnel) |
+| Funnel entry and intermediate steps | `landing_viewed`, `cta_clicked`, `signup_started`, `signup_submitted` | A 2.6 KB first-party tracker, no vendor script | [analytics-plan.md, Funnel](analytics-plan.md#funnel) |
 | Primary conversion event | `signup_completed`, recorded by the server after the row is committed, so an ad blocker cannot lose it | Server event from the Worker | `src/server/analytics/` |
 | Primary conversion metric | Signup conversion rate: visitors with an account within 7 days of their first view, over visitors with a view | Defined in the plan, computed in PostHog | [analytics-plan.md, Primary conversion metric](analytics-plan.md#primary-conversion-metric) |
 | An analytics architecture | Browser to a collector on the same origin, which validates every event against the registry and forwards it to PostHog. A `dataLayer` push per event for ad platforms | Cloudflare Worker, PostHog capture API | [ADR 0014](decisions/0014-first-party-event-collector.md), [the diagram](analytics-plan.md#architecture-and-tooling) |
@@ -98,10 +99,10 @@ curl -i $SITE/api/users
 
 | The brief asks for | What was built | Built with | Check it |
 |---|---|---|---|
-| Core Web Vitals | On the deployment: LCP 1.17 s, CLS 0.001, TBT 0 ms, performance 100. Budgets fail the build, and where a number depends on the machine that measured it the review says so. Field data is reported by the page as an event | Lighthouse 13 in CI, the `web-vitals` library | [performance-review.md](performance-review.md#core-web-vitals), `npm run lighthouse`, the PageSpeed link above |
+| Core Web Vitals | On the deployment: LCP 1.10 s and 1.05 s per arm, CLS 0.001, TBT 0 ms, performance 100. Budgets fail the build, and where a number depends on the machine that measured it the review says so. Field data is reported by the page as an event | Lighthouse 13 in CI, the `web-vitals` library | [performance-review.md](performance-review.md#core-web-vitals), `npm run lighthouse`, the PageSpeed link above |
 | Loading strategy | CSS inside the HTML, one preloaded font, the largest element is text, all script deferred | Astro's build | [The decisions behind the numbers](performance-review.md#the-decisions-behind-the-numbers) |
 | Rendering strategy | Static first: one prerendered document per arm. Code runs only to pick the arm, for the API and for the collector | Astro prerendering, a Worker | [Rendering strategy](performance-review.md#rendering-strategy) |
-| Asset optimization | Illustrations are inline SVG, fonts are self-hosted subsets, the page is 14 requests and 184 KiB | Astro fonts and assets | The network panel on the live site |
+| Asset optimization | Illustrations are inline SVG, fonts are self-hosted subsets, the page is 15 requests and 184 KiB | Astro fonts and assets | [performance-review.md](performance-review.md#the-decisions-behind-the-numbers), and the network panel on the live site |
 | JavaScript execution | One island hydrates: the signup form. React and Preact were both built and measured before choosing | React 19 | [ADR 0017](decisions/0017-react-for-the-island.md) |
 | Third-party scripts | None | First-party collector | The network panel: one origin |
 
@@ -148,6 +149,7 @@ The system is in the repository, not only described: [`CLAUDE.md`](../CLAUDE.md)
 |---|---|---|
 | Project-level instructions | `CLAUDE.md`: what the project is, how it is judged, the commands, ten invariants, how decisions are made. Six rule files that load only with the files they govern | [`CLAUDE.md`](../CLAUDE.md), [`.claude/rules/`](../.claude/rules/) |
 | A reusable skill or workflow | Four skills: `/adr`, `/track-event`, `/new-experiment`, `/ship-check` | [`.claude/skills/`](../.claude/skills/) |
+| The workflow in use | The release gate, `/ship-check`, run on one commit: eleven checks, four reviewers in parallel, three of them asking for fixes, and what was done about each finding | [The report](ai/reports/ship-check-2026-11-19-1917.md), [ai-workflow.md, The release gate](ai-workflow.md#the-release-gate) |
 | Agents with clearly defined responsibilities | Seven, each with one job, its own tools and its own model. Reviewers have no write access, so the author of a change never grades it | [`.claude/agents/`](../.claude/agents/), [the table](ai-workflow.md#agents) |
 | MCP where it provides value | Two in use: `chrome-devtools`, so an agent sees the real page, and `astro-docs`, for a framework newer than the model. Six proposed for production, with who uses each and why | [`.mcp.json`](../.mcp.json), [ai-workflow.md, MCP](ai-workflow.md#mcp) |
 | Beyond the list: hooks | Before an edit, secrets, the brief and generated files are refused. After an edit, the file is formatted and checked against the brand rules. The hooks have their own tests | [`.claude/settings.json`](../.claude/settings.json), [`.claude/hooks/`](../.claude/hooks/) |
@@ -160,7 +162,7 @@ The brief's example areas, and the agent that covers each:
 | Implementation | `implementer` | Code and tests from a written specification: the API client, the statistics, the attribution capture, the tracker |
 | Analytics | `analytics-qa` | The events in a real browser against the registry |
 | Testing and code review | `code-reviewer` | Findings on a diff it did not write, including tests that proved nothing |
-| Accessibility and performance | `web-quality-auditor` | Lighthouse, axe, the keyboard path and the headers, on the deployment |
+| Accessibility and performance | `web-quality-auditor` | Lighthouse, axe, the keyboard path and the headers |
 | Experiment analysis | `experiment-analyst` | [The rehearsal on synthetic data](experiments/hero_signup.synthetic-analysis.md) |
 | Design | `design-critic` | The five changes with the most impact, from its own screenshots |
 
@@ -170,8 +172,16 @@ The brief's example areas, and the agent that covers each:
 |---|---|
 | What was delegated to AI | [What I delegated](ai-workflow.md#what-i-delegated): the implementation, the gathering of research, the reviews, the routine technical choices and the detail inside the specification, each written down so it could be changed |
 | What was kept for a person | [What I did myself](ai-workflow.md#what-i-did-myself): the specification (product, API, measurement, experiment, stack, budgets, scope), the design of the AI system, the brand kit's contrast audit, the review of every decision that is costly to reverse, the visual direction, React for the island, the model policy, the reviews of the deployed page |
-| What AI output was rejected or corrected | [What I sent back](ai-workflow.md#what-i-rejected-or-corrected): seven cases. [What the system's reviewers caught](ai-workflow.md#where-ai-output-was-corrected-or-rejected): eleven more, each with how it was found |
+| What AI output was rejected or corrected | [What I sent back](ai-workflow.md#what-i-rejected-or-corrected): seven cases. [What the system's reviewers caught](ai-workflow.md#where-ai-output-was-corrected-or-rejected): fourteen more, each with how it was found |
 | How AI-generated work was validated | [By the system, by me and by a rule about the record](ai-workflow.md#how-ai-generated-work-was-validated) |
+
+## Scope and expectations
+
+| The brief asks | Where it is answered |
+|---|---|
+| Where something is not implemented, the approach and what would come next | [README.md, What is not done](../README.md#what-is-not-done-and-what-would-come-next), and what would change in production in [architecture.md](architecture.md) |
+| Reasonable assumptions, documented | [README.md, Assumptions](../README.md#assumptions). The ones about FX Replay were checked first: [research/assumptions.md](research/assumptions.md) |
+| Prioritization and trade-offs over completeness | One line per decision in [the log](decisions/log.md), with what was given up, including the optional items that were not built |
 
 ## Deliverables
 
@@ -201,4 +211,5 @@ The brief's example areas, and the agent that covers each:
 Stated where each belongs, and gathered in
 [README.md](../README.md#what-is-not-done-and-what-would-come-next): no field data, no real
 experiment result, no real authentication or email delivery, no screen reader pass by a
-person, no consent banner.
+person, no consent banner, rate limits not verified on Cloudflare's network, no automated
+reconciliation of conversions against the users table.

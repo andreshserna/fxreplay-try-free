@@ -217,7 +217,7 @@
       "foreground": "blue-500",
       "background": "btn-bg-primary-hover",
       "kind": "boundary",
-      "note": "A blue-500 edge would keep the hovered button's shape. Proposed; the candidate chooses."
+      "note": "A blue-500 edge keeps the hovered button's shape. Adopted as the extension btn-border-primary."
     },
     {
       "foreground": "blue-500",

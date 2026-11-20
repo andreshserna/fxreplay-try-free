@@ -56,7 +56,8 @@ project or is costly to reverse also has an ADR in this folder.
   fresh visitor on every start, and a development tool that sends nothing to Google.
   Verified locally: 33 tools, screenshots at 360, 768 and 1440.
 - **The PostHog MCP server is not configured yet.** It is added when the PostHog project
-  exists, in Phase 4.
+  exists, in Phase 4. (It was not added: the funnel and the dashboard were built through
+  the browser, and the server stays a production proposal in `docs/ai-workflow.md`.)
 - **Permissions.** Allowed without asking: npm scripts, the project's node scripts,
   `git add` and `git commit`, both MCP servers, web search, and fetches to fxreplay.com and
   to the Astro and Claude Code docs. Always asked: `gh repo` commands and force pushes.
@@ -109,7 +110,9 @@ project or is costly to reverse also has an ADR in this folder.
   names, and the two are compared on bytes shipped and blocking time before the choice is
   recorded.
 
-## Phase 2: foundation (started 2026-11-18)
+## Phase 2 onward (from 2026-11-18)
+
+The phases overlapped from here, so the lines stay in the order the decisions were taken.
 
 - **Scaffolded by hand on Astro 7.4, `@astrojs/cloudflare` 14.4 and React 19,** with
   TypeScript 6 on Astro's `strictest` preset. Every file in the scaffold is one that was
@@ -371,7 +374,7 @@ project or is costly to reverse also has an ADR in this folder.
     have moved every running visitor with all tests passing.
 - **Code nothing used is gone,** from the code review's list: the API client's caller-supplied
   abort signal and its `replayed` flag, two pass-through methods in the Users API, two type
-  guards, and a `dropped` list only tests read. 163 lines out, 76 in.
+  guards, and a `dropped` list only tests read. 168 lines out, 82 in, under `src` and `tests`.
 - **An experiment that is switched off records no arm.** Before, every user and conversion
   was stored with the control's name while nothing was being tested, which reads later as
   an experiment that ran. The page's events name no arm either.
@@ -417,8 +420,10 @@ project or is costly to reverse also has an ADR in this folder.
   - **The header stays, with a call to action in it,** as on four of five. It is an outline
     button, so the filled one still belongs to the hero and the form. A new
     `cta_location: header`.
-  - **The illustration reaches the first phone screen:** its top is at 444px of 780 at 360
-    wide, with its controls in view. Before, it started at about 520.
+  - **The illustration reaches the first phone screen:** in the control arm its top is at
+    444px of 780 at 360 wide, with its controls in view. Before, it started at about 520. In
+    the variant arm the form sits above it: it starts at 538 and its controls end just
+    below the first screen.
   - **No stock photographs.** Two were mocked up and dropped: one stock-looking photo was
     found on one of the five sites, outside its pitch. The category shows the tool.
 - **The footer ends the page the way a replay ends:** a tape of candles that stops at the
@@ -437,8 +442,8 @@ project or is costly to reverse also has an ADR in this folder.
   not by that list. The sheet follows the brief line by line and only points: what was
   built, with what, and where to check it. It makes no claim another document does not hold.
 - **Total blocking time is judged only on a host with four cores or more; below that it is
-  reported.** After the calibration, three CI runs of four still missed the budget at about
-  190 ms. Pinning Chrome and the server on one machine, at one benchmark: 0 ms on twelve
+  reported.** After the calibration, three of the five two-core CI runs still missed the
+  budget, at 187 to 215 ms. Pinning Chrome and the server on one machine, at one benchmark: 0 ms on twelve
   cores, 0 to 10 ms on four, 109 to 122 ms on two. The number on a two-core runner is the
   runner's contention, which Lighthouse's own hardware guidance warns of. Given up: on the
   current runner a blocking-time regression does not fail the build. The budget itself is
@@ -448,9 +453,9 @@ project or is costly to reverse also has an ADR in this folder.
   screenshot shows that the pipeline counted once. A dashboard lets a reviewer see it count:
   the funnel, the experiment by arm, exposures per arm, field Web Vitals, failures by reason
   and the bot flag. It holds aggregates only and is labelled as test traffic.
-- **The four-core rule held on its first judged CI run.** On a four-core shared runner the
-  same commit that measured 193 and 215 ms on two cores measured 13 and 7 ms, judged and
-  passing. Blocking time is judged in CI again.
+- **The four-core rule held on its first judged CI run.** The run that measured 136 and
+  187 ms on a two-core runner measured 13 and 7 ms when it was run again on a four-core
+  one, judged and passing. Blocking time is judged in CI again.
 - **Two faults in the performance gate, found on one CI run and fixed.** Piping the check
   into `tee` to publish its table made the step report `tee`'s status: a run where
   Lighthouse could not audit the page passed. The step now sets `pipefail`. And a run
@@ -474,3 +479,55 @@ project or is costly to reverse also has an ADR in this folder.
   script ran only the setup. Where `localhost` resolves to `::1` first, the server also
   listened only there while the tests default to `127.0.0.1:4321`. Both were found during
   the first ship-check and reproduced in a fresh clone.
+- **The four optional items of the scope that were not built, and why.** A consent banner:
+  nothing third-party loads and the one analytics cookie is first-party, so the page states
+  the gap (README) and leaves the banner to the consent tool a production site already has.
+  Error tracking: it means a vendor script or an account, and the Worker already logs every
+  error with a request id. Claude Code reviewing pull requests in CI: it needs an API key
+  in the repository's secrets and the work went to `main` without pull requests; it is in
+  the production proposal. An internal users view: the list endpoint behind the admin token
+  answers the need, and a screen for it is surface a reviewer would not miss. (The other
+  two were built: the form without JavaScript, and the playable hero illustration.)
+- **`/ship-check` ran for the first time, on `8098e81`,** and said fix first
+  ([report](../ai/reports/ship-check-2026-11-19-1917.md)). What follows is what was done
+  about it.
+- **The Lighthouse check proves which arm it measured, and the calibration is gone.** The
+  calibration's probe left a visitor cookie in the shared Chrome, so every run since
+  `95bfe3c` measured one arm and printed it as both, and its cold benchmark under-throttled
+  CI by up to a third. Each audit now starts in a new Chrome profile at Lighthouse's default
+  4x, and exits 2 if the document it measured is not the arm it was asked for. The
+  four-core rule stays: it is what steadied CI. Given up: a fast laptop measures an easier
+  run than CI does, which the review now says.
+- **CI judges SEO, on a second build with indexing on.** The budget of 100 was in the
+  invariants and no machine held it.
+- **The header gives way before it overflows.** Its notice shows whole only from 62rem,
+  shortens below it, and leaves the bar under 360px, where the wordmark and the call to
+  action are all that fits. The skip link sits above the header, and `scroll-padding-top`
+  keeps whatever takes focus below it. Browser tests hold all three at 320, 360 and 768px:
+  the "phone" project is 412px wide and saw none of it.
+- **The easing of the journey to the form moved from the stylesheet to the click.**
+  `scroll-behavior: smooth` on the page also slowed every move of keyboard focus by about a
+  second. Without the script the link still works and cuts to the form.
+- **One signup per page.** After an account is created, the page's other form shows that
+  it is done and the header's and the plan's calls to action step aside. Before, the variant
+  arm kept offering a signup that could only answer "already registered".
+- **"Already registered" says the account is the demo's.** It linked to the real site's
+  login as the way in, where that account does not exist. It still gives the path the
+  experience rule asks for, named as what it is.
+- **`profile_completed` is sent once per profile,** when it goes from no answer to an
+  answer, read in the same transaction as the update. A retried save sent it twice. A
+  profile cleared of every answer and answered again sends it again: accepted.
+- **A signup without the visitor cookie records no experiment arm.** The server minted an
+  id and computed an arm the visitor may never have seen.
+- **The exposure is timed when the document is served,** not when the deferred work sends
+  it, and no document says "before the HTML is sent" any more: the rate limit runs first.
+- **The event id also goes to PostHog as its `uuid`.** Its documentation states that a
+  repeated uuid inside one request is dropped and says nothing about later requests, so the
+  plan still deduplicates on `event_id` in analysis.
+- **Not applied from the ship-check, and why.** The footer's tape of candles stays (a
+  third of the page's elements, 3.5 KB compressed: a visual choice, and the budgets pass).
+  Server events get no device class: parsing user agents is more than the split is worth,
+  and the plan states the limit. The already-registered field keeps `aria-invalid`: the
+  value is refused, which is what the attribute says. The CSP has no reporting endpoint:
+  there is nowhere to send reports on a demo, and it is in the production list. The
+  message under the form still takes the promises' place when it shows.

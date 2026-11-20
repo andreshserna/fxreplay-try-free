@@ -101,7 +101,7 @@ Every ratio below is computed from the token sources by `scripts/checks/contrast
 | `btn-text` on `btn-bg-primary-active` | #F6F6F6 on #0260FD | 4.74:1 | 4.5 (text) | pass | Passes narrowly. Do not lighten the button or thin the label. |
 | `btn-bg-primary-hover` on `bg-primary` | #01307F on #030303 | 1.69:1 | 3 (boundary) | **fail** | The hovered CTA fades into the ground. Its label stays readable. |
 | `btn-bg-primary-pressed` on `bg-primary` | #012054 on #030303 | 1.31:1 | 3 (boundary) | **fail** | The pressed CTA fades into the ground. Its label stays readable. |
-| `blue-500` on `btn-bg-primary-hover` | #2C7BFD on #01307F | 3.09:1 | 3 (boundary) | pass | A blue-500 edge would keep the hovered button's shape. Proposed; the candidate chooses. |
+| `blue-500` on `btn-bg-primary-hover` | #2C7BFD on #01307F | 3.09:1 | 3 (boundary) | pass | A blue-500 edge keeps the hovered button's shape. Adopted as the extension btn-border-primary. |
 | `blue-500` on `btn-bg-primary-pressed` | #2C7BFD on #012054 | 4.01:1 | 3 (boundary) | pass | The same edge against the pressed fill. |
 | `btn-bg-primary-disabled` on `bg-primary` | #000000 on #030303 | 1.01:1 | 3 (boundary) | **fail** | blue-950 is undefined; with the kit page's black fallback a disabled primary button disappears. We never render it. |
 | `border-primary` on `bg-primary` | #1A1A1A on #030303 | 1.18:1 | 3 (boundary) | **fail** | Fine as a divider. Not enough for a control's boundary. |

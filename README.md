@@ -22,8 +22,9 @@ line: what was built for each, with what, and where to check it.
 2. **Sign up** with any address. Then try the states: a malformed email, the same email
    twice, the optional profile step, "Skip".
 3. **Turn JavaScript off and sign up again.** It still creates the account.
-4. **Open the network panel.** No third-party request. Events go to `/api/events` on the
-   same origin, and the conversion is recorded by the server, not by the browser.
+4. **Open the network panel, on `/`.** No third-party request. Events go to `/api/events`
+   on the same origin, and the conversion is recorded by the server, not by the browser.
+   (The `/variants/…` addresses are previews and record nothing, by design.)
 
 ## Where each deliverable lives
 
@@ -58,21 +59,31 @@ npm run preview        # builds, then serves the build on the real Workers runti
 npm run lint && npm run typecheck      # format, lint, types
 npm run check:tokens                   # no color outside the brand tokens
 npm run check:contrast                 # every color pair the interface uses, against WCAG
-npm test                               # 223 unit and contract tests
-npm run test:system                    # 132 tests of the hooks, checkers, generators and statistics
+npm test                               # 232 unit and contract tests
+npm run test:system                    # 133 tests of the hooks, checkers, generators and statistics
 ```
 
 With the preview running:
 
 ```sh
 npm run test:api                       # the API contract over HTTP, against the Worker and a real D1
-npm run test:e2e                       # 54 browser tests on desktop and phone, with axe
+npm run test:e2e                       # 82 browser tests on desktop and phone, with axe
 npm run lighthouse                     # the performance budgets, on both experiment arms
 ```
 
 CI runs all of it on every push ([.github/workflows/ci.yml](.github/workflows/ci.yml)). The
 end-to-end tests use an installed Chrome locally and Playwright's Chromium in CI
 (`npx playwright install chromium` if you have neither).
+
+**SEO is judged on a build that may be indexed:** `npx astro preview stop`, then
+`ALLOW_INDEXING=true npm run preview` and `npm run lighthouse -- --seo`. CI does the same.
+
+**Settings.** None is needed locally. The first `npm run preview` writes `.dev.vars` with
+generated secrets: `SESSION_SECRET`, and `ADMIN_TOKEN`, which the list operation asks for
+as `Authorization: Bearer …`. The build reads `SITE_URL` (the canonical address),
+`ALLOW_INDEXING` and `RELEASE` (the commit, by default). The Worker reads `POSTHOG_KEY` and
+`POSTHOG_HOST`: without a key, events are validated and then discarded. Deployment is by
+hand: `SITE_URL=… npm run build`, then `npx wrangler deploy`.
 
 ## What it is made of
 
@@ -112,6 +123,11 @@ and the event collector. The page loads nothing from another origin.
   page would ask there. With ad pixels,
   marketing destinations would wait for the answer.
 - **Their languages.** One more prerendered document per locale and arm.
+- **The rate limits on Cloudflare's network.** They are tested on the local Workers
+  runtime. Under real traffic, and with the client address header they key on, they are
+  not verified ([docs/architecture.md](docs/architecture.md)).
+- **An automated reconciliation** of the conversion events against the users table. The
+  plan says how; nothing runs it ([docs/analytics-plan.md](docs/analytics-plan.md)).
 
 How this would sit inside FX Replay's own Astro site is the last section of
 [docs/architecture.md](docs/architecture.md).

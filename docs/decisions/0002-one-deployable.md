@@ -29,7 +29,8 @@ The API is a set of server endpoints in the same Astro project as the landing pa
 
 - Same origin: no CORS, a simple `SameSite` session cookie, shared schemas imported by both
   sides.
-- One CI/CD pipeline and one preview URL per change.
+- One pipeline. (As built: CI on every push and a manual deploy. A preview URL per change
+  is the production setup, in `docs/architecture.md`.)
 - The API scales and deploys with the site. That is fine at this size and would be the first
   thing to revisit under real load.
 - **Cost to change later:** moderate, kept low on purpose. Endpoints stay thin adapters over

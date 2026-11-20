@@ -33,8 +33,9 @@ visitor and the signup. If it answers none, cut it. The expected shape:
   clear next action.
 - The submit button is never disabled. While a request is in flight it stays on the active
   fill with a spinner and `aria-busy`.
-- Only the signup form hydrates. Everything else is static HTML, with one small plain
-  script: the controls of the hero illustration.
+- Only the signup form hydrates. Everything else is static HTML, with two small plain
+  scripts: the page's (the view, clicks on calls to action, field performance) and the
+  controls of the hero illustration.
 - Anything drawn as a control responds when it is tapped. An illustration does not show a
   button that does nothing.
 - No text is set below 16px.
