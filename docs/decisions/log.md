@@ -616,3 +616,6 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   the form at the end of the page, past the one in the hero. Choosing the nearer form
   touches the journey and its history entry again, and that code was wrong twice this
   week.
+- **The public dashboard has a seventh chart: sections reached.** Unique visitors per
+  section from `section_viewed`, with automated agents left out, so the checks run on the
+  deployment do not stand in for readers.
