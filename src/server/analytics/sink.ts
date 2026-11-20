@@ -33,10 +33,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 /** An event in the shape PostHog's capture API takes. */
 export function toPostHog(event: AnalyticsEvent) {
   const { anonymous_id, occurred_at, experiments, ...context } = event.context;
-  // The event id also goes as PostHog's own `uuid`, the identity it gives an event. Its
-  // documentation states that a repeated uuid inside one request is dropped; it does not
-  // state what happens across requests, so analysis still deduplicates on `event_id`. An id
-  // that is not a UUID is not sent as one: PostHog refuses a request with a malformed uuid.
+  // The event id also goes as PostHog's own `uuid`. PostHog treats events with the same
+  // uuid, name, distinct id and UTC day as one and merges them in the background, so a
+  // batch sent twice converges to one copy. That is eventual: until the merge both count,
+  // and analysis still deduplicates on `event_id`. An id that is not a UUID is not sent as
+  // one, so a malformed uuid never reaches PostHog.
   const uuid = UUID_PATTERN.test(context.event_id) ? { uuid: context.event_id } : {};
   // One property per experiment, so a chart can be broken down by variant.
   const assignments = Object.fromEntries(

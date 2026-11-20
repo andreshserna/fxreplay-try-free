@@ -95,8 +95,9 @@ const running = EXPERIMENTS.hero_signup.enabled
   const isLocation = (value: string | undefined): value is CtaLocation =>
     (locations as readonly (string | undefined)[]).includes(value);
 
-  // A browser may render the page ahead of a visit. The view counts when it is shown,
-  // which is also when the edge would have counted the exposure.
+  // A browser may render the page ahead of a visit. The view counts when it is shown.
+  // (The edge records no exposure for a document asked for ahead of a visit, and none
+  // later: the analytics plan states that gap.)
   const prerendering = (document as Document & { prerendering?: boolean }).prerendering;
   if (prerendering) {
     document.addEventListener('prerenderingchange', () => track('landing_viewed'), { once: true });
@@ -114,19 +115,26 @@ const running = EXPERIMENTS.hero_signup.enabled
     const target = event.target instanceof Element ? event.target.closest('[data-cta]') : null;
     const location = target instanceof HTMLElement ? target.dataset.cta : undefined;
     if (!isLocation(location)) return;
+    // Counted from the click that was counted, so a visitor who keeps pressing is one click
+    // a second and not one click for ever. After the account exists a press is not an
+    // intent to sign up, and is not counted.
     const now = performance.now();
-    if (now - (lastClick.get(location) ?? -Infinity) >= 1000) {
+    const signedUp = 'signedUp' in document.documentElement.dataset;
+    if (!signedUp && now - (lastClick.get(location) ?? -Infinity) >= 1000) {
       track('cta_clicked', { cta_name: 'start_free', cta_location: location });
+      lastClick.set(location, now);
     }
-    lastClick.set(location, now);
     // Without this script the link is the browser's own anchor and cuts to the form. With
     // it the page travels there. The easing is asked for here, for this one journey, and
     // not in the stylesheet, where it would also slow every move of keyboard focus.
     const form = document.getElementById('signup');
+    const from = window.scrollY;
     if (form) {
       event.preventDefault();
+      // A history entry, as the link itself would have made: Back returns to where the
+      // visitor was on the page instead of leaving it.
+      if (window.location.hash !== '#signup') history.pushState(null, '', '#signup');
       form.scrollIntoView({ behavior: still.matches ? 'auto' : 'smooth', block: 'start' });
-      history.replaceState(null, '', '#signup');
     }
     // Once the page has arrived, put the cursor in the field too, so one tap is enough.
     // Focusing earlier would raise a phone's keyboard mid-way.
@@ -139,7 +147,10 @@ const running = EXPERIMENTS.hero_signup.enabled
       field.focus({ preventScroll: true });
     };
     document.addEventListener('scrollend', focus, { once: true });
-    // For a browser without `scrollend`, and for a form that was already in view.
-    window.setTimeout(focus, 1200);
+    // A form that was already in view never scrolls: focus it at once. Otherwise the
+    // timer is only for a browser without `scrollend`, and long enough for the longest
+    // journey, so it does not raise the keyboard before the page arrives.
+    window.setTimeout(() => (window.scrollY === from ? focus() : undefined), 150);
+    window.setTimeout(focus, 3000);
   });
 </script>

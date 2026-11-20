@@ -84,6 +84,8 @@ const { status, title, when } = PROBLEMS[code];
   code {
     font-family: inherit;
     font-weight: 700;
+    /* A code is one long token: let it break, or it widens the page on a narrow phone. */
+    overflow-wrap: anywhere;
   }
 
   dl {

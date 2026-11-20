@@ -200,6 +200,14 @@
   box-shadow: inset 0 0 0 3px var(--bg-secondary);
 }
 
+/* Where the system replaces colors, a mark drawn with a fill and a shadow disappears:
+   the browser's own control comes back and shows what is chosen. */
+@media (forced-colors: active) {
+  .signup-choices input {
+    appearance: auto;
+  }
+}
+
 @media (hover: hover) {
   .signup-choices label:hover {
     background: var(--bg-secondary);
@@ -237,18 +245,6 @@
   .signup-actions button[type='submit'] {
     flex: none;
     min-width: 12rem;
-  }
-}
-
-/* On a phone the step is taller than the screen: the way out stays in reach. */
-@media (width < 62rem) {
-  .signup-actions {
-    position: sticky;
-    bottom: 0;
-    margin-inline: calc(-1 * var(--space-5));
-    padding: var(--space-3) var(--space-5);
-    border-top: 1px solid var(--border-primary);
-    background: var(--bg-card);
   }
 }
 

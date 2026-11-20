@@ -76,9 +76,10 @@ const stop = Math.min(...sinceEntry.map((candle) => candle.low)) - 3;
 const reach = Math.max(...sinceEntry.map((candle) => candle.high)) - entryPrice;
 const target = entryPrice + Math.max(reach + 3, (entryPrice - stop) * 1.5);
 
-// The picture never shows a result. That rests on the two seeds above, so a change to the
-// walk that lets any candle after the entry touch a level fails the build instead.
-if ([...sinceEntry.slice(1), ...ahead].some((c) => c.high >= target || c.low <= stop)) {
+// The picture never shows a result. The levels are computed from the candles shown, so
+// those cannot reach them. The candles ahead come from a second seed: a change to the walk
+// that lets one of them touch a level fails the build instead.
+if (ahead.some((c) => c.high >= target || c.low <= stop)) {
   throw new Error('ReplayChart: a candle reaches the target or the stop of the drawn trade.');
 }
 

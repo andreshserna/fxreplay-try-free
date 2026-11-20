@@ -233,17 +233,13 @@ describe('the PostHog sink', () => {
     });
   });
 
-  it("sends a UUID event id as PostHog's own uuid too, the same on a resend", () => {
+  it("sends a UUID event id as PostHog's own uuid too", () => {
     const id = '0b5c1b0e-6a54-4d0f-9d43-2f6f0e7a9c11';
     const mapped = toPostHog({
       ...analyticsEvent,
       context: { ...analyticsEvent.context, event_id: id },
     });
     expect(mapped).toMatchObject({ uuid: id, properties: { event_id: id } });
-    // The same event resent maps to the same uuid.
-    expect(
-      toPostHog({ ...analyticsEvent, context: { ...analyticsEvent.context, event_id: id } }).uuid,
-    ).toBe(id);
   });
 
   it('sends no uuid for an event id that is not a UUID, rather than a malformed one', () => {

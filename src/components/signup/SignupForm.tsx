@@ -176,8 +176,9 @@ export default function SignupForm({ location, cta, layout = 'row', promises = [
     if (state.step !== before.step && (state.step === 'profile' || state.step === 'done')) {
       noteSignedUp();
       // Focus alone does not move a heading that is partly on screen, and it may be under
-      // the header: bring it into view, below the header, then name the new step.
-      heading.current?.scrollIntoView({ block: 'nearest' });
+      // the header: bring the card it opens into view, below the header, then name the
+      // new step.
+      (heading.current?.parentElement ?? heading.current)?.scrollIntoView({ block: 'nearest' });
       heading.current?.focus({ preventScroll: true });
     }
   }, [state, location]);

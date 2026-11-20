@@ -496,6 +496,19 @@ test.describe('the header', () => {
     }
   });
 
+  test('leaves Back to return to where the visitor was on the page', async ({ page, baseURL }) => {
+    await openAs(page, baseURL, 'cta_button');
+    await page.getByRole('main').getByRole('link', { name: 'Start for free' }).first().click();
+    await expect(page).toHaveURL(/#signup$/);
+    await page.goBack();
+    // Still this page, without the anchor: not the page the visitor came from.
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.locator('html')).toHaveAttribute(
+      'data-experiments',
+      'hero_signup:cta_button',
+    );
+  });
+
   test('counts a double click on a call to action once', async ({ page, baseURL }) => {
     const sent = recordEvents(page);
     await openAs(page, baseURL, 'cta_button');
@@ -503,6 +516,44 @@ test.describe('the header', () => {
     await flushEvents(page);
     expect(sent.events.filter((event) => event.name === 'cta_clicked')).toHaveLength(1);
   });
+});
+
+test.describe('the profile step on a phone', () => {
+  for (const [arm, width, height] of [
+    ['cta_button', 360, 780],
+    ['inline_email', 360, 780],
+    ['inline_email', 320, 640],
+  ] as const) {
+    test(`nothing covers the option that has keyboard focus (${arm}, ${width}px)`, async ({
+      page,
+      baseURL,
+    }) => {
+      await page.setViewportSize({ width, height });
+      await openAs(page, baseURL, arm);
+      await page.getByLabel('Email', { exact: true }).last().fill(uniqueEmail());
+      await page.getByLabel('Email', { exact: true }).last().press('Enter');
+      await expect(
+        page.getByRole('heading', { name: 'Your free account is ready.' }),
+      ).toBeFocused();
+
+      // Every option, then the two buttons: what a sighted keyboard user sees at the centre
+      // of the control with focus is that control, not a bar or a header drawn over it.
+      for (let stop = 0; stop < 13; stop += 1) {
+        await page.keyboard.press('Tab');
+        const covered = await page.evaluate(() => {
+          const focused = document.activeElement;
+          if (!focused?.closest('.signup-profile')) return null;
+          const shown = focused.closest('label') ?? focused;
+          const box = shown.getBoundingClientRect();
+          const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2);
+          return top && shown.contains(top)
+            ? null
+            : `${shown.textContent?.trim().slice(0, 30)} at ${Math.round(box.top)}`;
+        });
+        expect(covered).toBeNull();
+      }
+    });
+  }
 });
 
 test.describe('after the account exists', () => {

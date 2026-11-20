@@ -68,9 +68,8 @@ jobs:
           npx astro preview stop
           npm run preview -- --port 4322 > preview-seo.log 2>&1 &
           curl --silent --show-error --retry 120 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:4322/ || { cat preview-seo.log; exit 1; }
-          # Three runs: the check judges every budget again here, not SEO alone, and a single
-          # run on a shared runner is too noisy for the timing budgets.
-          LIGHTHOUSE_BASE_URL=http://127.0.0.1:4322 npm run lighthouse -- --seo --runs 3 --out .artifacts/lighthouse/seo | tee lighthouse-seo.txt
+          # Five runs, as above: the check judges every budget again here, not SEO alone.
+          LIGHTHOUSE_BASE_URL=http://127.0.0.1:4322 npm run lighthouse -- --seo --runs 5 --out .artifacts/lighthouse/seo | tee lighthouse-seo.txt
 
       # The Lighthouse table on the run's own page and the full reports to download, whether
       # the budgets were met or not: a missed budget can then be read, not only seen.
