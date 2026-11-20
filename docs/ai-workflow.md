@@ -202,7 +202,8 @@ The corrections the system's own reviewers made to the AI's work are a separate 
 - **By the system, on every change:** hooks on each edit, tests run and diffs read before a
   commit, reviewer agents with no write access, budgets that fail the build, and
   measurements on the deployment instead of the local machine.
-- **By me, on the result:** on the rendered, deployed page and not on reports of it. And by
+- **By me, on the result:** on the rendered, deployed page and not on reports of it, by hand
+  on my own phone in Safari and Firefox, the browsers the automated tests do not run. And by
   asking for the reasoning behind each decision I had not made myself (the island library,
   the form without JavaScript, the signup body, the analytics tooling), to be able to defend
   each one myself.
