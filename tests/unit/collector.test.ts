@@ -392,6 +392,19 @@ describe('the PostHog sink', () => {
       'in_app',
       'ios',
     ],
+    // An app this list does not name is still a web view on iOS: no "Safari/" at the end.
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [Pinterest/iOS]',
+      {},
+      'in_app',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Barcelona 359.0.0.27.83 (iPhone15,2; iOS 18_1; en_US; scale=3.00)',
+      {},
+      'in_app',
+      'ios',
+    ],
     [
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36',
       {},

@@ -38,12 +38,12 @@ the page was fast for the people in it, and which arm they saw.
   number. They are for finding bugs: a step or a failure reason that is worse in one
   browser is a defect before it is a conversion problem.
   What each label lumps together: `in_app` is a page opened inside an app (Instagram,
-  Facebook, TikTok, Snapchat, LinkedIn, and any Android WebView), whatever engine draws
+  Facebook, TikTok, Snapchat, LinkedIn, any Android WebView and any iOS web view), whatever engine draws
   it, because that is where paid social traffic lands and where forms most often
   misbehave. `chrome` includes Brave, Vivaldi and other browsers that present themselves as
   Chrome. `safari` includes Google's iOS app. An iPad that asks for the desktop site calls
-  itself a Mac and is counted as `safari` on `macos`. Automated agents are `other` and are
-  flagged by `is_bot`.
+  itself a Mac and is counted as `safari` on `macos`. `other` is what none of these names:
+  mostly automated agents, which `is_bot` flags separately.
 - In an experiment the denominator is `experiment_exposed`, which the server records, so both
   sides of the ratio are immune to blocked scripts ([experiment plan](experiments/hero_signup.md)).
   One gap: a document a browser asks for ahead of a visit (a prefetch or a prerender) is not

@@ -62,7 +62,9 @@ type System = (typeof CONTEXT.os.values)[number];
 const BROWSERS: readonly (readonly [Browser, RegExp])[] = [
   [
     'in_app',
-    /; wv\)|\bFBAN\b|\bFBAV\b|FB_IAB|\bInstagram\b|musical_ly|trill_|BytedanceWebview|\bSnapchat\b|LinkedInApp/,
+    // Named apps, any Android WebView, and on iOS any web view: there a page that is not
+    // in a browser is the one agent that does not end by calling itself Safari.
+    /; wv\)|\bFBAN\b|\bFBAV\b|FB_IAB|\bInstagram\b|musical_ly|trill_|BytedanceWebview|\bSnapchat\b|LinkedInApp|\b(?:iPhone|iPad|iPod)\b.*AppleWebKit(?!.*Safari\/)/,
   ],
   ['edge', /\bEdg(?:e|A|iOS)?\//],
   ['samsung', /\bSamsungBrowser\//],
