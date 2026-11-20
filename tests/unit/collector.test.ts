@@ -348,21 +348,70 @@ describe('the PostHog sink', () => {
       'chrome',
       'linux',
     ],
-    // Chromium's reduced agent says "Linux; Android 10; K" or "X11; Linux": the hint is the truth.
+    // Where the browser sends the platform hint, it wins over what the agent says.
     [
       'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
       { 'Sec-CH-UA-Platform': '"Chrome OS"' },
       'chrome',
       'chromeos',
     ],
+    // A page opened inside an app: a WebView on Android, no "Safari" token on iOS.
+    [
+      'Mozilla/5.0 (Linux; Android 14; SM-S921B Build/UP1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.0.0 Mobile Safari/537.36 Instagram 359.0.0.59.89 Android',
+      {},
+      'in_app',
+      'android',
+    ],
+    [
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UQ1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.0.0 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/489.0.0.66.81;]',
+      {},
+      'in_app',
+      'android',
+    ],
+    [
+      'Mozilla/5.0 (Linux; Android 14; Pixel 8 Build/UQ1A; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/131.0.0.0 Mobile Safari/537.36 trill_370005 BytedanceWebview/d8a21c6',
+      {},
+      'in_app',
+      'android',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 Instagram 359.0.0.27.83 (iPhone15,2; iOS 18_1; en_US; scale=3.00)',
+      {},
+      'in_app',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 [FBAN/FBIOS;FBAV/489.0.0.59.108;FBDV/iPhone15,2]',
+      {},
+      'in_app',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/22B83 musical_ly_37.0.0 JsSdk/2.0 BytedanceWebview/d8a21c6',
+      {},
+      'in_app',
+      'ios',
+    ],
+    [
+      'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36',
+      {},
+      'chrome',
+      'linux',
+    ],
+    [
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1 OPX/2.6.0',
+      {},
+      'opera',
+      'ios',
+    ],
     ['curl/8.11.0', {}, 'other', 'other'],
     ['', {}, 'other', 'other'],
-  ])('reads %s as %s on %s', async (agent, hints, _browser, _os) => {
+  ])('reads the agent %s', async (agent, hints, browser, os) => {
     await send(
       { context: shared, events: [event('landing_viewed')] },
-      { 'User-Agent': agent, ...(hints as Record<string, string>) },
+      { 'User-Agent': agent, ...hints },
     );
-    expect(sink.events[0]?.context).toMatchObject({ browser: _browser, os: _os });
+    expect(sink.events[0]?.context).toMatchObject({ browser, os });
   });
 
   it('takes the country from the edge, never from the body, and flags a request with no agent', async () => {

@@ -405,10 +405,6 @@ export class UsersApi {
   }
 }
 
-/**
- * The analytics context of a server event about this user: the visitor as stored with
- * the user at signup, so the profile event joins the same visitor as the conversion.
- */
 /** The campaign touch in the address of the page a form was posted from, if it is ours. */
 function touchOf(request: Request, own: URL, now: Date): Touch | null {
   try {
@@ -419,6 +415,12 @@ function touchOf(request: Request, own: URL, now: Date): Touch | null {
   }
 }
 
+/**
+ * The analytics context of a server event about this user. The visitor, the arm and the
+ * attribution are the ones stored with the user at signup, so the profile event joins the
+ * same visitor as the conversion. The country, the browser and the system are read from
+ * the request in hand: nothing about the agent is stored.
+ */
 function visitorContext(request: Request, user: UserRecord): VisitorContext {
   const country = requestCountry(request);
   const experiments = formatAssignments(user.experiments);

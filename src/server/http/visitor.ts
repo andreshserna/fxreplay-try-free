@@ -54,14 +54,22 @@ export function isPageView(request: Request): boolean {
 type Browser = (typeof CONTEXT.browser.values)[number];
 type System = (typeof CONTEXT.os.values)[number];
 
-// The order matters: Edge, Samsung Internet and Opera also say "Chrome", every Chromium
-// browser also says "Safari", and Android also says "Linux".
+// The order matters. A page opened inside an app comes first: on Android it is a WebView
+// that also says "Chrome", on iOS it says neither "Safari" nor anything else, and it is
+// where paid social traffic lands and where forms most often misbehave. Then Edge, Samsung
+// Internet and Opera, which also say "Chrome", and every Chromium browser also says
+// "Safari". Android also says "Linux".
 const BROWSERS: readonly (readonly [Browser, RegExp])[] = [
+  [
+    'in_app',
+    /; wv\)|\bFBAN\b|\bFBAV\b|FB_IAB|\bInstagram\b|musical_ly|trill_|BytedanceWebview|\bSnapchat\b|LinkedInApp/,
+  ],
   ['edge', /\bEdg(?:e|A|iOS)?\//],
   ['samsung', /\bSamsungBrowser\//],
-  ['opera', /\b(?:OPR|OPT)\//],
+  ['opera', /\b(?:OPR|OPT|OPX)\/|Opera Mini/],
   ['firefox', /\b(?:Firefox|FxiOS)\//],
-  ['chrome', /\b(?:Chrome|CriOS)\//],
+  // No word boundary: a headless Chrome says "HeadlessChrome/".
+  ['chrome', /Chrome\/|\bCriOS\//],
   ['safari', /\bSafari\//],
 ];
 const SYSTEMS: readonly (readonly [System, RegExp])[] = [

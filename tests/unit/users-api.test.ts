@@ -182,7 +182,11 @@ describe('POST /api/users', () => {
   });
 
   it('emits the conversion once, after the user exists, and never for a replay or a refusal', async () => {
-    const cookie = { Cookie: `${VISITOR_COOKIE}=visitor-1` };
+    const cookie = {
+      Cookie: `${VISITOR_COOKIE}=visitor-1`,
+      'User-Agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 18_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Mobile/15E148 Safari/604.1',
+    };
     const attribution = { first_touch: { source: 'instagram', medium: 'paid_social' } };
     const created = await post({ email: 'ada@example.com', attribution }, cookie);
     const user = (await created.json()) as User;
@@ -198,6 +202,8 @@ describe('POST /api/users', () => {
         first_source: 'instagram',
         first_medium: 'paid_social',
         experiments: `hero_signup:${assign('hero_signup', 'visitor-1')}`,
+        browser: 'safari',
+        os: 'ios',
       },
     });
     expect(JSON.stringify(sink.events)).not.toContain('ada@example.com');
@@ -223,11 +229,20 @@ describe('POST /api/users', () => {
     await patch(user.id, { markets: null }, session);
     expect(sink.events.map((event) => event.name)).toEqual(['signup_completed']);
 
-    await patch(user.id, { markets: ['forex', 'indices'], goal: 'prop_firm' }, session);
+    // The browser and the system are those of the request that saved the profile.
+    const agent = {
+      'User-Agent':
+        'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/27.0 Chrome/125.0.0.0 Mobile Safari/537.36',
+    };
+    await patch(
+      user.id,
+      { markets: ['forex', 'indices'], goal: 'prop_firm' },
+      { ...session, ...agent },
+    );
     expect(sink.events[1]).toMatchObject({
       name: 'profile_completed',
       properties: { user_id: user.id, markets_count: 2, goal: 'prop_firm' },
-      context: { anonymous_id: 'visitor-1', source: 'server' },
+      context: { anonymous_id: 'visitor-1', source: 'server', browser: 'samsung', os: 'android' },
     });
   });
 

@@ -590,3 +590,9 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   point at a bug without singling out a visitor. The server's own events carry them too.
   This reverses "the server does not parse user agents" for these two labels only: the
   device class still comes from the viewport.
+- **A page opened inside an app is its own browser label, `in_app`.** `analytics-qa` ran
+  real agent strings through the first version: Instagram, Facebook and TikTok were read as
+  `chrome` on Android and as `other` on iOS, beside curl. That is the traffic the page
+  assumes and the place a signup form most often breaks, so it is tested for first. A
+  headless Chrome is now read as Chrome, Opera on iOS as Opera, and the plan says what each
+  label lumps together.

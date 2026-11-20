@@ -60,7 +60,7 @@ npm run preview        # builds, then serves the build on the real Workers runti
 npm run lint && npm run typecheck      # format, lint, types
 npm run check:tokens                   # no color outside the brand tokens
 npm run check:contrast                 # every color pair the interface uses, against WCAG
-npm test                               # 245 unit and contract tests
+npm test                               # 253 unit and contract tests
 npm run test:system                    # 133 tests of the hooks, checkers, generators and statistics
 ```
 

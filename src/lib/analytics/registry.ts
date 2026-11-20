@@ -269,10 +269,10 @@ export const CONTEXT = {
   },
   browser: {
     type: 'enum',
-    values: ['chrome', 'safari', 'firefox', 'edge', 'samsung', 'opera', 'other'],
+    values: ['in_app', 'chrome', 'safari', 'firefox', 'edge', 'samsung', 'opera', 'other'],
     optional: true,
     description:
-      'The browser family of the request, with no version. Set by the server. A funnel step or a failure reason that is worse in one family is a bug to fix, not a conversion problem.',
+      'The browser family of the request, with no version. `in_app` is a page opened inside an app (Instagram, Facebook, TikTok and others), whatever engine draws it. Set by the server. A funnel step or a failure reason that is worse in one family is a bug to fix, not a conversion problem.',
   },
   os: {
     type: 'enum',
