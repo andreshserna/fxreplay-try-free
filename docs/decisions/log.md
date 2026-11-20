@@ -535,3 +535,9 @@ The phases overlapped from here, so the lines stay in the order the decisions we
   that said fix first could not be run again until he typed it, and the fixed commit stood
   unchecked meanwhile. The rule that matters is kept: the gate fixes nothing while it runs,
   and its reviewers are agents that wrote none of the code.
+- **`/ship-check` ran a second time, on `fa7778b`,** and said fix first again
+  ([report](../ai/reports/ship-check-2026-11-19-2304.md)): the first gate's blockers are
+  closed, and two of its fixes brought defects of their own.
+- **The main session ran on Opus 5.5 from `fa7778b`,** set by the candidate, where
+  [ADR 0012](0012-models-by-kind-of-work.md) puts it on Fable. The reviewers kept the models
+  their definitions name, so the critique of the work stayed where the ADR wants it.

@@ -282,6 +282,13 @@ Of the four reviewers, run in parallel against that commit on the local Workers 
 three said fix first and one said ship. Their findings were fixed in the commits after it,
 and what was not applied is in [the decision log](decisions/log.md) with the reason.
 
+It ran again on `fa7778b`, the commit that holds those fixes:
+[the second report](ai/reports/ship-check-2026-11-19-2304.md). Every check passed again and
+the reviewers confirmed the first gate's three blockers closed. Three of the four still said
+fix first, for a defect the fixes themselves had introduced: a bar of buttons kept at the
+bottom of a phone's screen that hid the option with keyboard focus. A gate that finds its
+own fixes wanting is the gate working.
+
 ## Not done yet
 
 The earlier reviews, one per agent at the end of a phase, ran before the redesign of the
