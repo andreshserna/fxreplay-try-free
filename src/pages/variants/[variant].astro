@@ -29,10 +29,10 @@ export const getStaticPaths = (() =>
 
 const variant = Astro.params.variant as VariantOf<'hero_signup'>;
 
-// Short enough to show whole in a search result, with the disclaimer where it is not cut.
+// Short enough to show whole in a search result. The title says it is a candidate's demo.
 const TITLE = 'Try FX Replay Free (candidate demo)';
 const DESCRIPTION =
-  'Candidate demo, not the official FX Replay site. Replay real market history candle by candle and practise your strategy with simulated trades. Free plan.';
+  'Replay real market history candle by candle and practise your strategy with simulated trades. Free plan.';
 
 // What the page is, for a search engine: one page about FX Replay that answers questions.
 // It claims no publisher: this is a demo, and it does not speak for the company.
